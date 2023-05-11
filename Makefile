@@ -5,6 +5,7 @@ help: ## Display this help.
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
 ##@ Dev
+
 .PHONY: lint
 lint: ## Run the linter
 	@poetry run black . --check
@@ -27,7 +28,16 @@ test: ## Run the tests
 	@poetry run coverage run -m pytest -v .
 
 ##@ Install
+.PHONY: poetry
+poetry: ## Install poetry
+	@which poetry || curl -sSL https://install.python-poetry.org | python3 -
+
 .PHONY: install-dev
 install-dev: ## Install CloudSurfer with all the development dependencies
 	@which poetry || pip install poetry
 	poetry install --no-interaction --no-root --with dev
+
+.PHONY: setup
+setup: poetry install-dev ## Setup the dev environment
+	@pre-commit install
+	@pre-commit install-hooks
