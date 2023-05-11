@@ -19,15 +19,16 @@ jobs:
     needs: ci
 
     steps:
-       - name: Checkout repo
-         uses: actions/checkout@v3
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
-       - name: Run code quality check
-         uses: sonarsource/sonarcloud-github-action@master
-         env:
-           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-         args: >
-           -Dsonar.pullrequest.key=${{ github.event.number }}
-           -Dsonar.pullrequest.branch=${{ github.HEAD_REF }}
-           -Dsonar.pullrequest.base=${{ github.base_ref}
+      - name: Run code quality check
+        uses: sonarsource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.pullrequest.key=${{ github.event.number }}
+            -Dsonar.pullrequest.branch=${{ github.HEAD_REF }}
+            -Dsonar.pullrequest.base=${{ github.base_ref }}
