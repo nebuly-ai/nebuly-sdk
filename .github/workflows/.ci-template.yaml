@@ -91,7 +91,7 @@ jobs:
       - name: Generate coverage report
         run: poetry run coverage xml
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         name: Upload coverage report
         with:
           name: coverage
