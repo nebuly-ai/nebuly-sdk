@@ -6,8 +6,3 @@ exclude_lines =
     pragma: no cover
     raise NotImplementedError
 
-[xml]
-exclude_lines =
-    pragma: no cover
-    raise NotImplementedError
-

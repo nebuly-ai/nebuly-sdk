@@ -26,6 +26,7 @@ lint-fix: format ## Run the linter and fix issues
 .PHONY: test
 test: ## Run the tests
 	@poetry run coverage run -m pytest -v .
+	@poetry run coverage report
 
 ##@ Install
 .PHONY: poetry
