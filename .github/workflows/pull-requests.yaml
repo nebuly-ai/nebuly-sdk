@@ -31,4 +31,4 @@ jobs:
           args: >
             -Dsonar.pullrequest.key=${{ github.event.number }}
             -Dsonar.pullrequest.branch=${{ github.HEAD_REF }}
-            -Dsonar.pullrequest.base=${{ github.base_ref}
+            -Dsonar.pullrequest.base=${{ github.base_ref }}
