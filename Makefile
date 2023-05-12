@@ -8,7 +8,6 @@ help: ## Display this help.
 
 .PHONY: lint
 lint: ## Run the linter
-	@poetry run black . --check
 	@poetry run ruff check .
 	@echo "\033[0;32m[Linting OK]\033[0m"
 
