@@ -511,3 +511,29 @@ class TestOpenAITracker(unittest.TestCase):
         openai_tracker.replace_sdk_functions()
 
         self.assertFalse(isinstance(mocked_openai.FineTune.create, MagicMock))
+
+    @patch("nebuly.trackers.openai.openai")
+    def test_replace_sdk_functions__is_issuing_the_track_request_for_moderation(
+        self,
+        mocked_openai,
+    ):
+        mocked_nebuly_queue = MagicMock()
+        mocked_openai.Moderation.create.return_value = self.mocked_openai_response
+
+        openai_tracker = OpenAITracker(mocked_nebuly_queue)
+        openai_tracker.replace_sdk_functions()
+        mocked_openai.Moderation.create()
+
+        mocked_nebuly_queue.put.assert_called_once()
+
+    @patch("nebuly.trackers.openai.openai")
+    def test_replace_sdk_functions__is_replacing_the_method_moderation(
+        self,
+        mocked_openai,
+    ):
+        mocked_nebuly_queue = MagicMock()
+
+        openai_tracker = OpenAITracker(mocked_nebuly_queue)
+        openai_tracker.replace_sdk_functions()
+
+        self.assertFalse(isinstance(mocked_openai.Moderation.create, MagicMock))

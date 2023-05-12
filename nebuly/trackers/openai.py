@@ -21,6 +21,7 @@ class OpenAIAPIType(Enum):
     AUDIO_TRANSLATE = "audio_translate"
     EMBEDDING = "embedding"
     FINETUNE = "finetune"
+    MODERATION = "moderation"
     UNKNOWN = None
 
 
@@ -72,6 +73,8 @@ class OpenAIQueueObject(QueueObject):
             ) = self._get_voice_request_data()
         elif self._api_type == OpenAIAPIType.FINETUNE:
             (model_name) = self._get_finetune_request_data()
+        elif self._api_type == OpenAIAPIType.MODERATION:
+            (model_name) = self._get_moderation_request_data()
         else:
             nebuly_logger.error("Unknown OpenAI API type")
 
@@ -168,6 +171,14 @@ class OpenAIQueueObject(QueueObject):
         # https://platform.openai.com/docs/api-reference/fine-tunes/create
         return model_name
 
+    def _get_moderation_request_data(self) -> str:
+        model_name = "undetected"
+        if "model" in self._response.keys():
+            model_name = self._response["model"]
+        # TODO: price for this API is not clear yet, since for now this API is in beta,
+        # and delivered for free.
+        return model_name
+
 
 class OpenAITracker:
     def __init__(self, nebuly_queue: NebulyQueue):
@@ -182,6 +193,7 @@ class OpenAITracker:
         self._original_embedding_create = None
         self._original_audio_transcribe = None
         self._original_audio_translate = None
+        self._original_moderation_create = None
 
     def replace_sdk_functions(self):
         self._replace_text_completion()
@@ -191,6 +203,7 @@ class OpenAITracker:
         self._replace_embedding()
         self._replace_audio()
         self._replace_finetune()
+        self._replace_moderation()
 
     def _replace_text_completion(self):
         self._original_completion_create = openai.Completion.create
@@ -247,10 +260,17 @@ class OpenAITracker:
         new_tracked_method = partial(self._track_method, self._original_finetune)
         openai.FineTune.create = new_tracked_method
 
+    def _replace_moderation(self):
+        self._original_moderation_create = openai.Moderation.create
+        new_tracked_method = partial(
+            self._track_method, self._original_moderation_create
+        )
+        openai.Moderation.create = new_tracked_method
+
     def _track_method(
         self, original_method: callable, *request_args, **request_kwargs
     ) -> Dict:
-        # TODO: still missing the case
+        # TODO: still missing the case of the request failing.
         response = original_method(*request_args, **request_kwargs)
         parameters = transform_args_to_kwargs(
             original_method, request_args, request_kwargs
@@ -280,6 +300,8 @@ class OpenAITracker:
             return OpenAIAPIType.EMBEDDING
         elif original_method == self._original_finetune:
             return OpenAIAPIType.FINETUNE
+        elif original_method == self._original_moderation_create:
+            return OpenAIAPIType.MODERATION
         else:
             return OpenAIAPIType.UNKNOWN
 
