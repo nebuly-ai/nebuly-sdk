@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-import logging
 from queue import Queue, Empty
 from typing import Dict, Optional
 from threading import Thread
@@ -7,6 +6,7 @@ import time
 
 from nebuly.core.schemas import DevelopmentPhase, Task, TagData, NebulyDataPackage
 from nebuly.utils.task_detector import TaskDetector
+from nebuly.utils.nebuly_logger import nebuly_logger
 
 
 class QueueObject(ABC, TaskDetector):
@@ -79,7 +79,7 @@ class NebulyQueue(Queue):
 
 class NebulyClient:
     def send_request_to_nebuly_server(self, request_data: NebulyDataPackage):
-        logging.info(f"\n\nDetected Data:\n {request_data.json()}")
+        nebuly_logger.info(f"\n\nDetected Data:\n {request_data.json()}")
 
 
 class NebulyTrackingDataThread(Thread):

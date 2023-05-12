@@ -1,11 +1,11 @@
 from enum import Enum
-import logging
 from functools import partial
 from typing import Dict, Tuple
 
+from nebuly.core.nebuly_client import NebulyQueue, QueueObject
 from nebuly.core.schemas import Provider, Task, NebulyDataPackage
 from nebuly.utils.functions import transform_args_to_kwargs
-from nebuly.core.nebuly_client import NebulyQueue, QueueObject
+from nebuly.utils.nebuly_logger import nebuly_logger
 
 import openai
 
@@ -73,7 +73,7 @@ class OpenAIQueueObject(QueueObject):
         elif self._api_type == OpenAIAPIType.FINETUNE:
             (model_name) = self._get_finetune_request_data()
         else:
-            logging.error("Unknown OpenAI API type")
+            nebuly_logger.error("Unknown OpenAI API type")
 
         return NebulyDataPackage(
             project=self._project,

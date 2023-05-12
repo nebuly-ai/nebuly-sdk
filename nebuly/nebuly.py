@@ -1,14 +1,12 @@
 import contextlib
 import copy
 from enum import Enum
-import logging
 from typing import Optional
 
 from nebuly.core.schemas import Task, DevelopmentPhase, TagData
 from nebuly.core.nebuly_client import NebulyQueue, NebulyTrackingDataThread
 
 
-logging.basicConfig(level=logging.INFO)
 _nebuly_queue = None
 
 
