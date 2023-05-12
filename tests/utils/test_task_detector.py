@@ -5,44 +5,45 @@ from nebuly.utils.task_detector import TaskDetector
 
 
 class TestPromptDiscriminator(unittest.TestCase):
+    mocked_prompt1 = "I am a test prompt and I am here to stay"
+    mocked_prompt2 = "I am another test prompt and I am different"
+
     def test_discriminate__is_adding_prompts_when_prompt_list_is_empty(
         self,
     ):
         task_detector = TaskDetector()
-        task_detector.detect_task_from_text("I am a test prompt and I am here to stay")
+        task_detector.detect_task_from_text(self.mocked_prompt1)
 
         self.assertEqual(
             task_detector._prompt_list[0].text,
-            "I am a test prompt and I am here to stay",
+            self.mocked_prompt1,
         )
 
     def test_discriminate__is_adding_prompts_when_prompt_list_is_not_empty(
         self,
     ):
         task_detector = TaskDetector()
-        task_detector.detect_task_from_text("I am a test prompt and I am here to stay")
-        task_detector.detect_task_from_text(
-            "I am another test prompt and I am different"
-        )
+        task_detector.detect_task_from_text(self.mocked_prompt1)
+        task_detector.detect_task_from_text(self.mocked_prompt2)
 
         self.assertEqual(
             task_detector._prompt_list[0].text,
-            "I am a test prompt and I am here to stay",
+            self.mocked_prompt1,
         )
         self.assertEqual(
             task_detector._prompt_list[1].text,
-            "I am another test prompt and I am different",
+            self.mocked_prompt2,
         )
         self.assertEqual(len(task_detector._prompt_list), 2)
 
     def test_discriminate__is_detecting_identical_prompts_as_one(self):
         task_detector = TaskDetector()
-        task_detector.detect_task_from_text("I am a test prompt and I am here to stay")
-        task_detector.detect_task_from_text("I am a test prompt and I am here to stay")
+        task_detector.detect_task_from_text(self.mocked_prompt1)
+        task_detector.detect_task_from_text(self.mocked_prompt1)
 
         self.assertEqual(
             task_detector._prompt_list[0].text,
-            "I am a test prompt and I am here to stay",
+            self.mocked_prompt1,
         )
         self.assertEqual(len(task_detector._prompt_list), 1)
 

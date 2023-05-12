@@ -250,13 +250,15 @@ class TestOpenAIDataManager(unittest.TestCase):
 
 
 class TestOpenAITracker(unittest.TestCase):
+    mocked_openai_response = "OpenAIResponse"
+
     @patch("nebuly.trackers.openai.openai")
     def test_replace_sdk_functions__is_issuing_the_track_request_for_text_completion(
         self,
         mocked_openai,
     ):
         mocked_nebuly_queue = MagicMock()
-        mocked_openai.Completion.create.return_value = "OpenAI response"
+        mocked_openai.Completion.create.return_value = self.mocked_openai_response
 
         openai_tracker = OpenAITracker(mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
@@ -282,7 +284,7 @@ class TestOpenAITracker(unittest.TestCase):
         mocked_openai,
     ):
         mocked_nebuly_queue = MagicMock()
-        mocked_openai.ChatCompletion.create.return_value = "OpenAI response"
+        mocked_openai.ChatCompletion.create.return_value = self.mocked_openai_response
 
         openai_tracker = OpenAITracker(mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
@@ -308,7 +310,7 @@ class TestOpenAITracker(unittest.TestCase):
         mocked_openai,
     ):
         mocked_nebuly_queue = MagicMock()
-        mocked_openai.Edit.create.return_value = "OpenAI response"
+        mocked_openai.Edit.create.return_value = self.mocked_openai_response
 
         openai_tracker = OpenAITracker(mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
@@ -334,7 +336,7 @@ class TestOpenAITracker(unittest.TestCase):
         mocked_openai,
     ):
         mocked_nebuly_queue = MagicMock()
-        mocked_openai.Embedding.create.return_value = "OpenAI response"
+        mocked_openai.Embedding.create.return_value = self.mocked_openai_response
 
         openai_tracker = OpenAITracker(mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
@@ -360,7 +362,7 @@ class TestOpenAITracker(unittest.TestCase):
         mocked_openai,
     ):
         mocked_nebuly_queue = MagicMock()
-        mocked_openai.Audio.transcribe.return_value = "OpenAI response"
+        mocked_openai.Audio.transcribe.return_value = self.mocked_openai_response
 
         openai_tracker = OpenAITracker(mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
@@ -386,7 +388,7 @@ class TestOpenAITracker(unittest.TestCase):
         mocked_openai,
     ):
         mocked_nebuly_queue = MagicMock()
-        mocked_openai.Audio.translate.return_value = "OpenAI response"
+        mocked_openai.Audio.translate.return_value = self.mocked_openai_response
 
         openai_tracker = OpenAITracker(mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
@@ -412,7 +414,7 @@ class TestOpenAITracker(unittest.TestCase):
         mocked_openai,
     ):
         mocked_nebuly_queue = MagicMock()
-        mocked_openai.Image.create.return_value = "OpenAI response"
+        mocked_openai.Image.create.return_value = self.mocked_openai_response
 
         openai_tracker = OpenAITracker(mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
@@ -438,7 +440,7 @@ class TestOpenAITracker(unittest.TestCase):
         mocked_openai,
     ):
         mocked_nebuly_queue = MagicMock()
-        mocked_openai.Image.create_edit.return_value = "OpenAI response"
+        mocked_openai.Image.create_edit.return_value = self.mocked_openai_response
 
         openai_tracker = OpenAITracker(mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
@@ -464,7 +466,7 @@ class TestOpenAITracker(unittest.TestCase):
         mocked_openai,
     ):
         mocked_nebuly_queue = MagicMock()
-        mocked_openai.Image.create_variation.return_value = "OpenAI response"
+        mocked_openai.Image.create_variation.return_value = self.mocked_openai_response
 
         openai_tracker = OpenAITracker(mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
@@ -490,7 +492,7 @@ class TestOpenAITracker(unittest.TestCase):
         mocked_openai,
     ):
         mocked_nebuly_queue = MagicMock()
-        mocked_openai.FineTune.create.return_value = "OpenAI response"
+        mocked_openai.FineTune.create.return_value = self.mocked_openai_response
 
         openai_tracker = OpenAITracker(mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import logging
 from queue import Queue, Empty
-from typing import Dict
+from typing import Dict, Optional
 from threading import Thread
 import time
 
@@ -54,23 +54,30 @@ class NebulyQueue(Queue):
         if new_tag_data.task is not None:
             self.tagged_data.task = new_tag_data.task
 
-    def put(self, queue_object: QueueObject):
-        queue_object._project = self.tagged_data.project
-        queue_object._phase = self.tagged_data.phase
-        queue_object._task = self.tagged_data.task
-        super().put(queue_object)
+    def put(
+        self, item: QueueObject, block: bool = True, timeout: Optional[float] = None
+    ):
+        item._project = self.tagged_data.project
+        item._phase = self.tagged_data.phase
+        item._task = self.tagged_data.task
+        super().put(item=item, block=block, timeout=timeout)
 
     def save_current_status(self):
+        # Not implemented yet.
+        # save the current status of the queue to disk
+        # required when the program is interrupted and must resume
+        # without losing data
         pass
 
     def load_previous_status(self):
+        # Not implemented yet.
+        # load the previous status of the queue from disk
+        # required when the program is interrupted and must resume
+        # without losing data
         pass
 
 
 class NebulyClient:
-    def __init__(self):
-        pass
-
     def send_request_to_nebuly_server(self, request_data: NebulyDataPackage):
         logging.info(f"\n\nDetected Data:\n {request_data.json()}")
 

@@ -92,7 +92,7 @@ class OpenAIQueueObject(QueueObject):
 
     def _assign_task(
         self,
-    ) -> Task:
+    ):
         if self._task != Task.UNDETECTED:
             return
         elif self._api_type == OpenAIAPIType.CHAT:
