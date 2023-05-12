@@ -178,7 +178,6 @@ class TestOpenAIDataManager(unittest.TestCase):
 
         request_data = queue_object.get_request_data()
 
-        request_data = queue_object.get_request_data()
         expected_response = NebulyDataPackage(
             project="unknown_project",
             phase="unknown",
