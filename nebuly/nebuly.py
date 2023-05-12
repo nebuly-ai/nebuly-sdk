@@ -1,3 +1,4 @@
+import atexit
 import contextlib
 import copy
 from enum import Enum
@@ -28,6 +29,7 @@ def init(
     _nebuly_queue.load_previous_status()
 
     nebuly_tracking_thread = NebulyTrackingDataThread(queue=_nebuly_queue)
+    atexit.register(_stop_thread_when_main_ends, nebuly_tracking_thread)
     nebuly_tracking_thread.start()
 
     tracker_list = _instantiate_trackers(_nebuly_queue)
@@ -61,7 +63,7 @@ def tracker(
 def _instantiate_trackers(nebuly_queue: NebulyQueue) -> list:
     tracker_list = []
     try:
-        from trackers.openai import OpenAITracker
+        from nebuly.trackers.openai import OpenAITracker
 
         tracker_list.append(OpenAITracker(nebuly_queue=nebuly_queue))
     except ImportError:
@@ -77,3 +79,9 @@ def _check_input_types(project: str, phase: DevelopmentPhase, task: Task):
         raise TypeError(f"phase must be of type DevelopmentPhase, not {type(phase)}")
     if isinstance(task, Task) is False:
         raise TypeError(f"task must be of type Task, not {type(task)}")
+
+
+def _stop_thread_when_main_ends(nebuly_thread_instance):
+    if nebuly_thread_instance is not None:
+        nebuly_thread_instance.thread_running = False
+        nebuly_thread_instance.join()

@@ -4,8 +4,11 @@ from typing import Dict, Tuple
 
 from nebuly.core.nebuly_client import NebulyQueue, QueueObject
 from nebuly.core.schemas import Provider, Task, NebulyDataPackage
-from nebuly.utils.functions import transform_args_to_kwargs
-from nebuly.utils.nebuly_logger import nebuly_logger
+from nebuly.utils.functions import (
+    transform_args_to_kwargs,
+    get_media_file_length_in_seconds,
+)
+from nebuly.utils.logger import nebuly_logger
 
 import openai
 
@@ -153,19 +156,17 @@ class OpenAIQueueObject(QueueObject):
         if "model" in self._parameters.keys():
             model_name = self._parameters["model"]
 
-        # TODO: duration_in_seconds is not trivial.
-        # it may requires additional external libraries:
-        # (https://www.geeksforgeeks.org/how-to-get-the-duration-of-audio-in-python/)
-        # reference to openai docs:
-        # https://platform.openai.com/docs/api-reference/audio
-        duration_in_seconds = 0
+        duration_in_seconds = -1
+        if "file" in self._parameters.keys():
+            file_name = self._parameters["file"].name
+            duration_in_seconds = get_media_file_length_in_seconds(file_name)
+
         return model_name, duration_in_seconds
 
     def _get_finetune_request_data(self) -> str:
         model_name = "undetected"
         if "model" in self._parameters.keys():
             model_name = self._parameters["model"]
-
         # TODO: trainings tokens may not be available in the response.
         # openaidocs:
         # https://platform.openai.com/docs/api-reference/fine-tunes/create

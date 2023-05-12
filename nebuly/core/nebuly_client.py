@@ -6,7 +6,7 @@ import time
 
 from nebuly.core.schemas import DevelopmentPhase, Task, TagData, NebulyDataPackage
 from nebuly.utils.task_detector import TaskDetector
-from nebuly.utils.nebuly_logger import nebuly_logger
+from nebuly.utils.logger import nebuly_logger
 
 
 class QueueObject(ABC, TaskDetector):
@@ -80,23 +80,30 @@ class NebulyQueue(Queue):
 class NebulyClient:
     def send_request_to_nebuly_server(self, request_data: NebulyDataPackage):
         nebuly_logger.info(f"\n\nDetected Data:\n {request_data.json()}")
+        print("\n\nDetected Data:\n", request_data.json())
 
 
 class NebulyTrackingDataThread(Thread):
+    # TODO: add a way to stop the thread.
+    # If i define the thread as deamon it will stop when the main thread stops
+    # and this can create unexpected behaviour.
+    # i.e. if i am processing an audio track what happens is:
+    # the main finish the execution before the audio track is processed
+    # and the thread gets killed before issuing the request to the server
+
     def __init__(
         self,
         queue: NebulyQueue,
         nebuly_client: NebulyClient = NebulyClient(),
     ):
         super().__init__()
-        self.deamon = True
 
         self._queue = queue
         self._nebuly_client = nebuly_client
-        self._thread_running = True
+        self.thread_running = True
 
     def run(self):
-        while self._thread_running:
+        while self.thread_running:
             try:
                 queue_object = self._queue.get()
             except Empty:

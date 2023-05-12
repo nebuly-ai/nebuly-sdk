@@ -601,6 +601,18 @@ files = [
 ]
 
 [[package]]
+name = "mutagen"
+version = "1.46.0"
+description = "read and write audio tags for many formats"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "mutagen-1.46.0-py3-none-any.whl", hash = "sha256:8af0728aa2d5c3ee5a727e28d0627966641fddfe804c23eabb5926a4d770aed5"},
+    {file = "mutagen-1.46.0.tar.gz", hash = "sha256:6e5f8ba84836b99fe60be5fb27f84be4ad919bbb6b49caa6ae81e70584b55e58"},
+]
+
+[[package]]
 name = "mypy-extensions"
 version = "1.0.0"
 description = "Type system extensions for programs checked with the mypy type checker."
@@ -970,4 +982,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8, <3.11"
-content-hash = "19ad628a8d384ef1b2a547140c76d6c2ea66e69adb4d7a271a200fe19b271f32"
+content-hash = "3fb5ad854b3876be0d58d4ef87bbb1311a0bc78f623892a28edf8490be4a58e3"

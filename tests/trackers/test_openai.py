@@ -33,7 +33,9 @@ class TestOpenAIDataManager(unittest.TestCase):
         "usage": {"prompt_tokens": 5, "completion_tokens": 7, "total_tokens": 12},
     }
 
-    audio_parameters = {"file": "audio.mp3", "model": "whisper-1"}
+    audio_file = MagicMock()
+    audio_file.name = "french_audio.mp3"
+    audio_parameters = {"file": audio_file, "model": "whisper-1"}
 
     audio_response = {
         "text": (
@@ -158,9 +160,12 @@ class TestOpenAIDataManager(unittest.TestCase):
 
         self.assertEqual(request_data, expected_response)
 
+    @patch("nebuly.trackers.openai.get_media_file_length_in_seconds")
     def test_get_request_data__is_returning_the_correct_data_for_audio_api(
         self,
+        mocked_function,
     ):
+        mocked_function.return_value = 10
         mocked_api_type = OpenAIAPIType.AUDIO_TRANSCRIBE
         queue_object = OpenAIQueueObject(
             parameters=self.audio_parameters,
@@ -170,6 +175,9 @@ class TestOpenAIDataManager(unittest.TestCase):
         queue_object._project = "unknown_project"
         queue_object._phase = DevelopmentPhase.UNKNOWN
         queue_object._task = Task.AUDIO_TRANSCRIPTION
+
+        request_data = queue_object.get_request_data()
+
         request_data = queue_object.get_request_data()
         expected_response = NebulyDataPackage(
             project="unknown_project",
@@ -183,7 +191,7 @@ class TestOpenAIDataManager(unittest.TestCase):
             completion_tokens=None,
             number_of_images=None,
             image_size=None,
-            duration_in_seconds=0,
+            duration_in_seconds=10,
         )
 
         self.assertEqual(request_data, expected_response)

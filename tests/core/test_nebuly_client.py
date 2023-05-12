@@ -63,7 +63,7 @@ class TestNebulyTrackingDataThread(TestCase):
         )
         nebuly_tracking_data_thread.start()
         time.sleep(0.001)
-        nebuly_tracking_data_thread._thread_running = False
+        nebuly_tracking_data_thread.thread_running = False
         nebuly_tracking_data_thread.join()
 
         mocked_nebuly_queue.get.assert_called()
@@ -81,7 +81,7 @@ class TestNebulyTrackingDataThread(TestCase):
         )
         nebuly_tracking_data_thread.start()
         time.sleep(0.001)
-        nebuly_tracking_data_thread._thread_running = False
+        nebuly_tracking_data_thread.thread_running = False
         nebuly_tracking_data_thread.join()
 
         mocked_nebuly_client.send_request_to_nebuly_server.assert_called()
@@ -99,7 +99,7 @@ class TestNebulyTrackingDataThread(TestCase):
         )
         nebuly_tracking_data_thread.start()
         time.sleep(0.001)
-        nebuly_tracking_data_thread._thread_running = False
+        nebuly_tracking_data_thread.thread_running = False
         nebuly_tracking_data_thread.join()
 
         mocked_object.get_request_data.assert_called()
