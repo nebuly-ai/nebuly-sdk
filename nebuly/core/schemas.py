@@ -19,7 +19,7 @@ class Task(Enum):
     AUDIO_TRANSLATION = "audio_translation"
     TEXT_EMBEDDING = "text_embedding"
     FINETUNING = "finetuning"
-    MODERATING = "moderating"
+    TEXT_MODERATION = "text_moderation"
 
 
 class DevelopmentPhase(Enum):

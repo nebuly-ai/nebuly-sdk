@@ -124,6 +124,8 @@ class OpenAIQueueObject(QueueObject):
             self._task = Task.TEXT_EMBEDDING
         elif self._api_type == OpenAIAPIType.FINETUNE:
             self._task = Task.FINETUNING
+        elif self._api_type == OpenAIAPIType.MODERATION:
+            self._task = Task.TEXT_MODERATION
         elif self._api_type == OpenAIAPIType.TEXT_COMPLETION:
             if "prompt" in self._parameters.keys():
                 self._task = self.detect_task_from_text(self._parameters["prompt"][0])
