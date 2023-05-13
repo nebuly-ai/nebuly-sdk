@@ -28,7 +28,10 @@ def init(
     _nebuly_queue.update_tagged_data(tag_data)
     _nebuly_queue.load_previous_status()
 
-    nebuly_tracking_thread = NebulyTrackingDataThread(queue=_nebuly_queue)
+    nebuly_tracking_thread = NebulyTrackingDataThread(
+        queue=_nebuly_queue,
+    )
+    nebuly_tracking_thread.daemon = True
     atexit.register(_stop_thread_when_main_ends, nebuly_tracking_thread)
     nebuly_tracking_thread.start()
 

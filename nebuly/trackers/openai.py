@@ -1,6 +1,6 @@
 from enum import Enum
 from functools import partial
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 
 from nebuly.core.nebuly_client import NebulyQueue, QueueObject
 from nebuly.core.schemas import Provider, Task, NebulyDataPackage
@@ -44,6 +44,7 @@ class OpenAIQueueObject(QueueObject):
         number_of_images = None
         image_size = None
         duration_in_seconds = None
+        training_file_id = None
 
         self._assign_task()
 
@@ -75,7 +76,10 @@ class OpenAIQueueObject(QueueObject):
                 duration_in_seconds,
             ) = self._get_voice_request_data()
         elif self._api_type == OpenAIAPIType.FINETUNE:
-            (model_name) = self._get_finetune_request_data()
+            (
+                model_name,
+                training_file_id,
+            ) = self._get_finetune_request_data()
         elif self._api_type == OpenAIAPIType.MODERATION:
             (model_name) = self._get_moderation_request_data()
         else:
@@ -94,6 +98,7 @@ class OpenAIQueueObject(QueueObject):
             number_of_images=number_of_images,
             image_size=image_size,
             duration_in_seconds=duration_in_seconds,
+            training_file_id=training_file_id,
         )
 
     def _assign_task(
@@ -125,55 +130,57 @@ class OpenAIQueueObject(QueueObject):
             else:
                 self._task = Task.TEXT_GENERATION
 
-    def _get_text_api_data(self) -> Tuple[str, int, int]:
-        model_name = "undetected"
+    def _get_text_api_data(self) -> Tuple[Optional[str], Optional[int], Optional[int]]:
+        model_name = None
         if "model" in self._parameters.keys():
             model_name = self._parameters["model"]
 
-        prompt_tokens = -1
+        prompt_tokens = None
         if "usage" in self._response.keys():
             if "prompt_tokens" in self._response["usage"].keys():
                 prompt_tokens = int(self._response["usage"]["prompt_tokens"])
 
-        completion_tokens = -1
+        completion_tokens = None
         if "usage" in self._response.keys():
             if "prompt_tokens" in self._response["usage"].keys():
                 completion_tokens = int(self._response["usage"]["completion_tokens"])
         return model_name, prompt_tokens, completion_tokens
 
-    def _get_image_api_data(self) -> Tuple[int, str]:
-        number_of_images = -1
+    def _get_image_api_data(self) -> Tuple[Optional[int], Optional[str]]:
+        number_of_images = None
         if "n" in self._parameters.keys():
             number_of_images = int(self._parameters["n"])
 
-        image_size = "undetected"
+        image_size = None
         if "size" in self._parameters.keys():
             image_size = self._parameters["size"]
         return number_of_images, image_size
 
-    def _get_voice_request_data(self) -> Tuple[str, int]:
-        model_name = "undetected"
+    def _get_voice_request_data(self) -> Tuple[Optional[str], Optional[int]]:
+        model_name = None
         if "model" in self._parameters.keys():
             model_name = self._parameters["model"]
 
-        duration_in_seconds = -1
+        duration_in_seconds = None
         if "file" in self._parameters.keys():
             file_name = self._parameters["file"].name
             duration_in_seconds = get_media_file_length_in_seconds(file_name)
 
         return model_name, duration_in_seconds
 
-    def _get_finetune_request_data(self) -> str:
-        model_name = "undetected"
+    def _get_finetune_request_data(self) -> Tuple[Optional[str], Optional[str]]:
+        model_name = None
         if "model" in self._parameters.keys():
             model_name = self._parameters["model"]
-        # TODO: trainings tokens may not be available in the response.
-        # openaidocs:
-        # https://platform.openai.com/docs/api-reference/fine-tunes/create
-        return model_name
 
-    def _get_moderation_request_data(self) -> str:
-        model_name = "undetected"
+        training_file_id = None
+        if "training_file" in self._parameters.keys():
+            training_file_id = self._parameters["training_file"]
+
+        return model_name, training_file_id
+
+    def _get_moderation_request_data(self) -> Optional[str]:
+        model_name = None
         if "model" in self._response.keys():
             model_name = self._response["model"]
         # TODO: price for this API is not clear yet, since for now this API is in beta,

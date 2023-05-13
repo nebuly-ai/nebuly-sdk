@@ -57,4 +57,4 @@ class NebulyDataPackage(BaseModel):
 
     duration_in_seconds: Optional[float] = None
 
-    training_tokens: Optional[int] = None
+    training_file_id: Optional[str] = None

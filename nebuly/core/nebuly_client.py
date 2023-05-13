@@ -80,7 +80,6 @@ class NebulyQueue(Queue):
 class NebulyClient:
     def send_request_to_nebuly_server(self, request_data: NebulyDataPackage):
         nebuly_logger.info(f"\n\nDetected Data:\n {request_data.json()}")
-        print("\n\nDetected Data:\n", request_data.json())
 
 
 class NebulyTrackingDataThread(Thread):
@@ -94,9 +93,11 @@ class NebulyTrackingDataThread(Thread):
     def __init__(
         self,
         queue: NebulyQueue,
+        *args,
         nebuly_client: NebulyClient = NebulyClient(),
+        **kwargs,
     ):
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
         self._queue = queue
         self._nebuly_client = nebuly_client

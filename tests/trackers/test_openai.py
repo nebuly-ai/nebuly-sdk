@@ -251,6 +251,7 @@ class TestOpenAIDataManager(unittest.TestCase):
             number_of_images=None,
             image_size=None,
             duration_in_seconds=None,
+            training_file_id="file-XGinujblHPwGLSztz8cPS8XY",
         )
 
         self.assertEqual(request_data, expected_response)

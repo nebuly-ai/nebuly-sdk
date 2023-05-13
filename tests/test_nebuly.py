@@ -39,7 +39,7 @@ class TestNebuly(unittest.TestCase):
     @patch("nebuly.nebuly.NebulyQueue")
     @patch("nebuly.nebuly.NebulyTrackingDataThread")
     @patch("nebuly.nebuly._instantiate_trackers")
-    def test_init__is_initializing_the_trackers(
+    def test_init__is_initializing_the_trackers_list(
         self, mocked_instantiate_trackers, mocked_thread, mocked_queue
     ):
         nebuly.init(
@@ -48,6 +48,26 @@ class TestNebuly(unittest.TestCase):
         )
 
         mocked_instantiate_trackers.assert_called_once()
+
+    @patch("nebuly.nebuly.NebulyQueue")
+    @patch("nebuly.nebuly.NebulyTrackingDataThread")
+    @patch("nebuly.trackers.openai.OpenAITracker")
+    def test_init__is_initializing_openai_tracker(
+        self,
+        mocked_openai_tracker,
+        mocked_thread,
+        mocked_queue,
+    ):
+        mocked_openai_tracker_instance = MagicMock()
+        mocked_openai_tracker.return_value = mocked_openai_tracker_instance
+        mocked_openai_tracker_instance.replace_sdk_functions = MagicMock()
+        nebuly.init(
+            project="test_project",
+            phase=DevelopmentPhase.DEVELOPMENT,
+        )
+
+        mocked_openai_tracker.assert_called_once()
+        mocked_openai_tracker_instance.replace_sdk_functions.assert_called_once()
 
     def test_init__is_detecting_wrong_project_type(self):
         error_text = "project must be of type str"
