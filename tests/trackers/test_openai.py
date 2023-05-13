@@ -95,6 +95,35 @@ class TestOpenAIDataManager(unittest.TestCase):
         "updated_at": 1614807352,
     }
 
+    moderation_parameters = {"input": "I want to kill them."}
+    moderation_response = {
+        "id": "modr-XXXXX",
+        "model": "text-moderation-001",
+        "results": [
+            {
+                "categories": {
+                    "hate": False,
+                    "hate/threatening": False,
+                    "self-harm": False,
+                    "sexual": False,
+                    "sexual/minors": False,
+                    "violence": False,
+                    "violence/graphic": False,
+                },
+                "category_scores": {
+                    "hate": 0.18805529177188873,
+                    "hate/threatening": 0.0001250059431185946,
+                    "self-harm": 0.0003706029092427343,
+                    "sexual": 0.0008735615410842001,
+                    "sexual/minors": 0.0007470346172340214,
+                    "violence": 0.0041268812492489815,
+                    "violence/graphic": 0.00023186142789199948,
+                },
+                "flagged": False,
+            }
+        ],
+    }
+
     def test_get_request_data__is_raising_an_error_when_unpacked_before_placing_in_the_queue(  # noqa E501
         self,
     ):
@@ -252,6 +281,39 @@ class TestOpenAIDataManager(unittest.TestCase):
             image_size=None,
             duration_in_seconds=None,
             training_file_id="file-XGinujblHPwGLSztz8cPS8XY",
+        )
+
+        self.assertEqual(request_data, expected_response)
+
+    def test_get_request_data__is_returning_the_correct_data_for_moderation_api(
+        self,
+    ):
+        mocked_api_type = OpenAIAPIType.MODERATION
+        queue_object = OpenAIQueueObject(
+            parameters=self.moderation_parameters,
+            response=self.moderation_response,
+            api_type=mocked_api_type,
+        )
+        queue_object._project = "unknown_project"
+        queue_object._phase = DevelopmentPhase.UNKNOWN
+        queue_object._task = Task.MODERATING
+
+        request_data = queue_object.get_request_data()
+
+        expected_response = NebulyDataPackage(
+            project="unknown_project",
+            phase="unknown",
+            task="moderating",
+            provider="openai",
+            api_type="moderation",
+            timestamp=queue_object._timestamp,
+            model_name="text-moderation-001",
+            prompt_tokens=None,
+            completion_tokens=None,
+            number_of_images=None,
+            image_size=None,
+            duration_in_seconds=None,
+            training_file_id=None,
         )
 
         self.assertEqual(request_data, expected_response)

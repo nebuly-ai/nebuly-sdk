@@ -1,15 +1,14 @@
 import inspect
-from typing import Dict
+from typing import Dict, Optional, Tuple
 
 import mutagen
 
 
-def transform_args_to_kwargs(func, args, kwargs) -> Dict:
-    """
-    Transform args to kwargs based on the function signature.
-    """
+def transform_args_to_kwargs(
+    func: callable, func_args: Tuple, func_kwargs: Dict
+) -> Dict:
     sig = inspect.signature(func)
-    bound_args = sig.bind(*args, **kwargs)
+    bound_args = sig.bind(*func_args, **func_kwargs)
     complete_kwargs = dict(bound_args.arguments)
 
     # if signature presents only **kwargs or **params i need to unpack it
@@ -23,9 +22,9 @@ def transform_args_to_kwargs(func, args, kwargs) -> Dict:
     return complete_kwargs
 
 
-def get_media_file_length_in_seconds(file_path: str) -> int:
+def get_media_file_length_in_seconds(file_path: str) -> Optional[int]:
     try:
         audio_file = mutagen.File(file_path)
     except Exception:
-        return -1
+        return None
     return int(audio_file.info.length)
