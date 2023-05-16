@@ -7,10 +7,10 @@ from pydantic import BaseModel
 
 class Task(Enum):
     UNDETECTED = "undetected"
-    TEXT_GENERATION = "generation"
-    TEXT_SUMMARIZATION = "summarization"
+    TEXT_GENERATION = "text_generation"
+    TEXT_SUMMARIZATION = "text_summarization"
     CHAT = "chat"
-    TEXT_CLASSIFICATION = "classification"
+    TEXT_CLASSIFICATION = "text_classification"
     TEXT_EDITING = "text_editing"
     IMAGE_GENERATION = "image_generation"
     IMAGE_EDITING = "image_editing"
@@ -30,6 +30,7 @@ class DevelopmentPhase(Enum):
 
 
 class Provider(Enum):
+    UNKNOWN = "unknown"
     OPENAI = "openai"
 
 
@@ -42,11 +43,11 @@ class TagData:
 
 class NebulyDataPackage(BaseModel):
     project: str
-    phase: str
-    task: str
+    phase: DevelopmentPhase
+    task: Task
     timestamp: float
 
-    provider: Optional[str] = None
+    provider: Optional[Provider] = None
     api_type: Optional[str] = None
 
     model_name: Optional[str] = None

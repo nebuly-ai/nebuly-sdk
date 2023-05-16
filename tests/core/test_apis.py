@@ -1,20 +1,20 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
-import nebuly.nebuly as nebuly
+import nebuly.core.apis as nebuly
 
 from nebuly.core.schemas import DevelopmentPhase, Task, TagData
-from nebuly.core.nebuly_client import NebulyQueue
+from nebuly.core.clients import NebulyQueue
 
 
-class TestNebuly(unittest.TestCase):
-    @patch("nebuly.nebuly.NebulyQueue")
-    @patch("nebuly.nebuly.NebulyTrackingDataThread")
-    @patch("nebuly.nebuly._instantiate_trackers")
+class TestAPIs(unittest.TestCase):
+    @patch("nebuly.core.apis.NebulyQueue")
+    @patch("nebuly.core.apis.NebulyTrackingDataThread")
+    @patch("nebuly.core.apis._instantiate_trackers")
     def test_init__is_initializing_the_queue(
         self, mocked_instantiate_trackers, mocked_thread, mocked_queue
     ):
-        with patch("nebuly.nebuly._instantiate_trackers"):
+        with patch("nebuly.core.apis._instantiate_trackers"):
             nebuly.init(
                 project="test_project",
                 phase=DevelopmentPhase.DEVELOPMENT,
@@ -22,13 +22,13 @@ class TestNebuly(unittest.TestCase):
 
         self.assertIsInstance(nebuly._nebuly_queue, MagicMock)
 
-    @patch("nebuly.nebuly.NebulyQueue")
-    @patch("nebuly.nebuly.NebulyTrackingDataThread")
-    @patch("nebuly.nebuly._instantiate_trackers")
+    @patch("nebuly.core.apis.NebulyQueue")
+    @patch("nebuly.core.apis.NebulyTrackingDataThread")
+    @patch("nebuly.core.apis._instantiate_trackers")
     def test_init__is_initializing_the_thread(
         self, mocked_instantiate_trackers, mocked_thread, mocked_queue
     ):
-        with patch("nebuly.nebuly._instantiate_trackers"):
+        with patch("nebuly.core.apis._instantiate_trackers"):
             nebuly.init(
                 project="test_project",
                 phase=DevelopmentPhase.DEVELOPMENT,
@@ -36,9 +36,9 @@ class TestNebuly(unittest.TestCase):
 
         mocked_thread.assert_called_once()
 
-    @patch("nebuly.nebuly.NebulyQueue")
-    @patch("nebuly.nebuly.NebulyTrackingDataThread")
-    @patch("nebuly.nebuly._instantiate_trackers")
+    @patch("nebuly.core.apis.NebulyQueue")
+    @patch("nebuly.core.apis.NebulyTrackingDataThread")
+    @patch("nebuly.core.apis._instantiate_trackers")
     def test_init__is_initializing_the_trackers_list(
         self, mocked_instantiate_trackers, mocked_thread, mocked_queue
     ):
@@ -49,8 +49,8 @@ class TestNebuly(unittest.TestCase):
 
         mocked_instantiate_trackers.assert_called_once()
 
-    @patch("nebuly.nebuly.NebulyQueue")
-    @patch("nebuly.nebuly.NebulyTrackingDataThread")
+    @patch("nebuly.core.apis.NebulyQueue")
+    @patch("nebuly.core.apis.NebulyTrackingDataThread")
     @patch("nebuly.trackers.openai.OpenAITracker")
     def test_init__is_initializing_openai_tracker(
         self,

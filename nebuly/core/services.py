@@ -14,6 +14,19 @@ class PromptInfo:
         prompt: "PromptInfo",
         required_matching_words: int = 5,
     ) -> bool:
+        """Checks if the prompt is matching with the current prompt.
+        A prompt is matching if the first required_matching_words
+        are the same.
+
+        Args:
+            prompt (PromptInfo): The prompt object to compare with.
+            required_matching_words (int, optional): The number of words
+                that should match. Defaults to 5.
+
+        Returns:
+            bool: Whether the prompt is matching or not accordingly to the
+                required number of matching words.
+        """
         first_prompt_words = self.text.split(" ")
         second_prompt_words = prompt.text.split(" ")
 
@@ -28,6 +41,15 @@ class PromptInfo:
         return True
 
     def get_common_text(self, prompt: "PromptInfo") -> str:
+        """Gets the first words that are in common between the current prompt
+        object and the given prompt object.
+
+        Args:
+            prompt (PromptInfo): The prompt object to compare with.
+
+        Returns:
+            str: The common text between the two prompts.
+        """
         first_prompt_words = self.text.split(" ")
         second_prompt_words = prompt.text.split(" ")
         number_of_words = min(len(first_prompt_words), len(second_prompt_words))
@@ -51,6 +73,14 @@ class TaskDetector:
         }
 
     def detect_task_from_text(self, text: str) -> Task:
+        """Detects the task from the given text.
+
+        Args:
+            text (str): The text to detect the task from.
+
+        Returns:
+            Task: The task detected from the text.
+        """
         prompt_info = PromptInfo(text=text, task=Task.UNDETECTED)
         current_prompt = self._get_prompt_from_prompt_list(prompt_info)
         self._assign_prompt_task(current_prompt)

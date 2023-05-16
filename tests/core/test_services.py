@@ -1,14 +1,14 @@
 import unittest
 
 from nebuly.core.schemas import Task
-from nebuly.utils.task_detector import TaskDetector
+from nebuly.core.services import TaskDetector
 
 
-class TestPromptDiscriminator(unittest.TestCase):
+class TestTaskDetector(unittest.TestCase):
     mocked_prompt1 = "I am a test prompt and I am here to stay"
     mocked_prompt2 = "I am another test prompt and I am different"
 
-    def test_discriminate__is_adding_prompts_when_prompt_list_is_empty(
+    def test_detect_task_from_text__is_adding_prompts_when_prompt_list_is_empty(
         self,
     ):
         task_detector = TaskDetector()
@@ -19,7 +19,7 @@ class TestPromptDiscriminator(unittest.TestCase):
             self.mocked_prompt1,
         )
 
-    def test_discriminate__is_adding_prompts_when_prompt_list_is_not_empty(
+    def test_detect_task_from_text__is_adding_prompts_when_prompt_list_is_not_empty(
         self,
     ):
         task_detector = TaskDetector()
@@ -36,7 +36,7 @@ class TestPromptDiscriminator(unittest.TestCase):
         )
         self.assertEqual(len(task_detector._prompt_list), 2)
 
-    def test_discriminate__is_detecting_identical_prompts_as_one(self):
+    def test_detect_task_from_text__is_detecting_identical_prompts_as_one(self):
         task_detector = TaskDetector()
         task_detector.detect_task_from_text(self.mocked_prompt1)
         task_detector.detect_task_from_text(self.mocked_prompt1)
@@ -47,7 +47,7 @@ class TestPromptDiscriminator(unittest.TestCase):
         )
         self.assertEqual(len(task_detector._prompt_list), 1)
 
-    def test_discriminate__is_detecting_only_the_common_text(self):
+    def test_detect_task_from_text__is_detecting_only_the_common_text(self):
         task_detector = TaskDetector()
         task_detector.detect_task_from_text(
             (
@@ -68,7 +68,7 @@ class TestPromptDiscriminator(unittest.TestCase):
         )
         self.assertEqual(len(task_detector._prompt_list), 1)
 
-    def test_discriminate__is_detecting_the_task_from_keywords(self):
+    def test_detect_task_from_text__is_detecting_the_task_from_keywords(self):
         prompt_detector = TaskDetector()
         task = prompt_detector.detect_task_from_text(
             (
