@@ -1,7 +1,14 @@
 import unittest
 from unittest.mock import MagicMock, patch
+import time
 
-from nebuly.core.schemas import NebulyDataPackage, DevelopmentPhase, Task, TagData
+from nebuly.core.schemas import (
+    NebulyDataPackage,
+    DevelopmentPhase,
+    Task,
+    TagData,
+    Provider,
+)
 from nebuly.trackers.openai import (
     OpenAITracker,
     OpenaiAIDataPackageConverter,
@@ -133,6 +140,40 @@ class TestOpenaiAIDataPackageConverter(unittest.TestCase):
             }
         ],
     }
+
+    @patch("nebuly.trackers.openai.openai")
+    def test_init__is_detecting_the_openai_provider(
+        self,
+        mocked_openai,
+    ):
+        mocked_openai.api_type = "open_ai"
+        data_converter = OpenaiAIDataPackageConverter(
+            request_kwargs=MagicMock(),
+            request_response=MagicMock(),
+            api_type=MagicMock(),
+        )
+        self.assertEqual(data_converter._provider, Provider.OPENAI)
+        mocked_openai.api_type = "azure"
+        data_converter = OpenaiAIDataPackageConverter(
+            request_kwargs=MagicMock(),
+            request_response=MagicMock(),
+            api_type=MagicMock(),
+        )
+        self.assertEqual(data_converter._provider, Provider.AZURE_OPENAI)
+
+    @patch("nebuly.trackers.openai.openai")
+    def test_init__is_assigning_the_timestamp(
+        self,
+        mocked_openai,
+    ):
+        mocked_openai.api_type = "open_ai"
+        data_converter = OpenaiAIDataPackageConverter(
+            request_kwargs=MagicMock(),
+            request_response=MagicMock(),
+            api_type=MagicMock(),
+        )
+        timestamp = time.time()
+        self.assertAlmostEqual(data_converter._timestamp, timestamp, delta=1)
 
     @patch("nebuly.trackers.openai.openai")
     def test_get_data_package__is_returning_an_instance_of_nebuly_data_package(
