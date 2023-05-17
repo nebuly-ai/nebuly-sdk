@@ -43,6 +43,9 @@ APITYPE_TO_TASK_DICT = {
 }
 
 
+OPENAI_PROVIDER_DICT = {"azure": Provider.AZURE_OPENAI, "open_ai": Provider.OPENAI}
+
+
 class OpenaiAIDataPackageConverter(DataPackageConverter):
     def __init__(
         self,
@@ -51,7 +54,7 @@ class OpenaiAIDataPackageConverter(DataPackageConverter):
         api_type: OpenAIAPIType,
     ):
         super().__init__()
-        self._provider = Provider.OPENAI
+        self._provider = OPENAI_PROVIDER_DICT[openai.api_type]
         self._request_kwargs = request_kwargs
         self._request_response = request_response
         self._api_type = api_type

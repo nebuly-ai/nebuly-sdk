@@ -31,6 +31,7 @@ class DevelopmentPhase(Enum):
 
 class Provider(Enum):
     UNKNOWN = "unknown"
+    AZURE_OPENAI = "azure_openai"
     OPENAI = "openai"
 
 

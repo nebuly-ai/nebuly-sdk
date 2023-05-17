@@ -134,9 +134,12 @@ class TestOpenaiAIDataPackageConverter(unittest.TestCase):
         ],
     }
 
+    @patch("nebuly.trackers.openai.openai")
     def test_get_data_package__is_returning_an_instance_of_nebuly_data_package(
         self,
+        mocked_openai,
     ):
+        mocked_openai.api_type = "open_ai"
         mocked_api_type = OpenAIAPIType.TEXT_COMPLETION
         tag_data = TagData(
             project="unknown_project",
@@ -153,9 +156,12 @@ class TestOpenaiAIDataPackageConverter(unittest.TestCase):
 
         self.assertIsInstance(request_data, NebulyDataPackage)
 
+    @patch("nebuly.trackers.openai.openai")
     def test_as_data_package__is_returning_the_correct_data_for_text_api(
         self,
+        mocked_openai,
     ):
+        mocked_openai.api_type = "open_ai"
         mocked_api_type = OpenAIAPIType.TEXT_COMPLETION
         tag_data = TagData(
             project="unknown_project",
@@ -207,11 +213,14 @@ class TestOpenaiAIDataPackageConverter(unittest.TestCase):
         expected_response.api_type = OpenAIAPIType.EDIT.value
         self.assertEqual(request_data, expected_response)
 
+    @patch("nebuly.trackers.openai.openai")
     @patch("nebuly.trackers.openai.get_media_file_length_in_seconds")
     def test_get_data_package__is_returning_the_correct_data_for_audio_api(
         self,
         mocked_function,
+        mocked_openai,
     ):
+        mocked_openai.api_type = "open_ai"
         mocked_function.return_value = 10
         mocked_api_type = OpenAIAPIType.AUDIO_TRANSCRIBE
         tag_data = TagData(
@@ -252,9 +261,12 @@ class TestOpenaiAIDataPackageConverter(unittest.TestCase):
         expected_response.api_type = OpenAIAPIType.AUDIO_TRANSLATE.value
         self.assertEqual(request_data, expected_response)
 
+    @patch("nebuly.trackers.openai.openai")
     def test_get_data_package__is_returning_the_correct_data_for_image_api(
         self,
+        mocked_openai,
     ):
+        mocked_openai.api_type = "open_ai"
         mocked_api_type = OpenAIAPIType.IMAGE_CREATE
         tag_data = TagData(
             project="unknown_project",
@@ -302,9 +314,12 @@ class TestOpenaiAIDataPackageConverter(unittest.TestCase):
         expected_response.api_type = OpenAIAPIType.IMAGE_VARIATION.value
         self.assertEqual(request_data, expected_response)
 
+    @patch("nebuly.trackers.openai.openai")
     def test_get_data_package__is_returning_the_correct_data_for_finetune_api(
         self,
+        mocked_openai,
     ):
+        mocked_openai.api_type = "open_ai"
         mocked_api_type = OpenAIAPIType.FINETUNE
         tag_data = TagData(
             project="unknown_project",
@@ -336,9 +351,12 @@ class TestOpenaiAIDataPackageConverter(unittest.TestCase):
         )
         self.assertEqual(request_data, expected_response)
 
+    @patch("nebuly.trackers.openai.openai")
     def test_get_data_package__is_returning_the_correct_data_for_moderation_api(
         self,
+        mocked_openai,
     ):
+        mocked_openai.api_type = "open_ai"
         mocked_api_type = OpenAIAPIType.MODERATION
         tag_data = TagData(
             project="unknown_project",
@@ -382,6 +400,7 @@ class TestOpenAITracker(unittest.TestCase):
         self,
         mocked_openai,
     ):
+        mocked_openai.api_type = "open_ai"
         mocked_nebuly_queue = MagicMock()
         mocked_openai.Completion.create.return_value = self.mocked_openai_response
 
@@ -421,6 +440,7 @@ class TestOpenAITracker(unittest.TestCase):
         self,
         mocked_openai,
     ):
+        mocked_openai.api_type = "open_ai"
         mocked_nebuly_queue = MagicMock()
         mocked_openai.ChatCompletion.create.return_value = self.mocked_openai_response
 
@@ -459,6 +479,7 @@ class TestOpenAITracker(unittest.TestCase):
         self,
         mocked_openai,
     ):
+        mocked_openai.api_type = "open_ai"
         mocked_nebuly_queue = MagicMock()
         mocked_openai.Edit.create.return_value = self.mocked_openai_response
 
@@ -497,6 +518,7 @@ class TestOpenAITracker(unittest.TestCase):
         self,
         mocked_openai,
     ):
+        mocked_openai.api_type = "open_ai"
         mocked_nebuly_queue = MagicMock()
         mocked_openai.Embedding.create.return_value = self.mocked_openai_response
 
@@ -535,6 +557,7 @@ class TestOpenAITracker(unittest.TestCase):
         self,
         mocked_openai,
     ):
+        mocked_openai.api_type = "open_ai"
         mocked_nebuly_queue = MagicMock()
         mocked_openai.Audio.transcribe.return_value = self.mocked_openai_response
 
@@ -574,6 +597,7 @@ class TestOpenAITracker(unittest.TestCase):
         self,
         mocked_openai,
     ):
+        mocked_openai.api_type = "open_ai"
         mocked_nebuly_queue = MagicMock()
         mocked_openai.Audio.translate.return_value = self.mocked_openai_response
 
@@ -613,6 +637,7 @@ class TestOpenAITracker(unittest.TestCase):
         self,
         mocked_openai,
     ):
+        mocked_openai.api_type = "open_ai"
         mocked_nebuly_queue = MagicMock()
         mocked_openai.Image.create.return_value = self.mocked_openai_response
 
@@ -651,6 +676,7 @@ class TestOpenAITracker(unittest.TestCase):
         self,
         mocked_openai,
     ):
+        mocked_openai.api_type = "open_ai"
         mocked_nebuly_queue = MagicMock()
         mocked_openai.Image.create_edit.return_value = self.mocked_openai_response
 
@@ -689,6 +715,7 @@ class TestOpenAITracker(unittest.TestCase):
         self,
         mocked_openai,
     ):
+        mocked_openai.api_type = "open_ai"
         mocked_nebuly_queue = MagicMock()
         mocked_openai.Image.create_variation.return_value = self.mocked_openai_response
 
@@ -728,6 +755,7 @@ class TestOpenAITracker(unittest.TestCase):
         self,
         mocked_openai,
     ):
+        mocked_openai.api_type = "open_ai"
         mocked_nebuly_queue = MagicMock()
         mocked_openai.FineTune.create.return_value = self.mocked_openai_response
 
@@ -766,6 +794,7 @@ class TestOpenAITracker(unittest.TestCase):
         self,
         mocked_openai,
     ):
+        mocked_openai.api_type = "open_ai"
         mocked_nebuly_queue = MagicMock()
         mocked_openai.Moderation.create.return_value = self.mocked_openai_response
 
