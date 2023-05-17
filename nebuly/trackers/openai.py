@@ -46,9 +46,15 @@ APITYPE_TO_TASK_DICT = {
 class OpenaiAIDataPackageConverter(DataPackageConverter):
     def __init__(
         self,
+        request_kwargs: Dict,
+        request_response: Dict,
+        api_type: OpenAIAPIType,
     ):
         super().__init__()
         self._provider = Provider.OPENAI
+        self._request_kwargs = request_kwargs
+        self._request_response = request_response
+        self._api_type = api_type
 
     def get_data_package(
         self,
@@ -110,9 +116,9 @@ class OpenaiAIDataPackageConverter(DataPackageConverter):
             nebuly_logger.error(f"Unknown OpenAI API type: {self._api_type}")
 
         return NebulyDataPackage(
-            project=self._tagged_data.project,
-            phase=self._tagged_data.phase,
-            task=self._tagged_data.task,
+            project=self._tag_data.project,
+            phase=self._tag_data.phase,
+            task=self._tag_data.task,
             api_type=self._api_type.value,
             provider=self._provider,
             timestamp=self._timestamp,
@@ -126,16 +132,16 @@ class OpenaiAIDataPackageConverter(DataPackageConverter):
         )
 
     def _assign_task(self):
-        if self._tagged_data.task != Task.UNDETECTED:
+        if self._tag_data.task != Task.UNDETECTED:
             return
         if (self._api_type == OpenAIAPIType.TEXT_COMPLETION) and (
             "prompt" in self._request_kwargs.keys()
         ):
-            self._tagged_data.task = self._task_detector.detect_task_from_text(
+            self._tag_data.task = self._task_detector.detect_task_from_text(
                 self._request_kwargs["prompt"][0]
             )
         else:
-            self._tagged_data.task = APITYPE_TO_TASK_DICT[self._api_type]
+            self._tag_data.task = APITYPE_TO_TASK_DICT[self._api_type]
 
     def _get_text_api_data(self) -> Tuple[Optional[str], Optional[int], Optional[int]]:
         model_name = None
@@ -330,9 +336,10 @@ class OpenAITracker:
         api_type: OpenAIAPIType,
     ):
         queue_object = QueueObject(
-            request_kwargs=request_kwargs,
-            request_response=request_response,
-            api_type=api_type,
-            data_package_converter=OpenaiAIDataPackageConverter(),
+            data_package_converter=OpenaiAIDataPackageConverter(
+                request_kwargs=request_kwargs,
+                request_response=request_response,
+                api_type=api_type,
+            ),
         )
         self._nebuly_queue.put(queue_object)

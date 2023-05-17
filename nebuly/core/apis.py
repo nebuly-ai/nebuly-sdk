@@ -39,7 +39,7 @@ def init(
         phase=phase,
         task=task,
     )
-    _nebuly_queue.patch_tagged_data(tag_data)
+    _nebuly_queue.patch_tag_data(tag_data)
     _nebuly_queue.load_previous_status()
 
     nebuly_tracking_thread = NebulyTrackingDataThread(
@@ -81,15 +81,15 @@ def tracker(
     if _nebuly_queue is None:
         raise RuntimeError("Please call nebuly.init() before using nebuly.tracker()")
 
-    old_tag_data = copy.deepcopy(_nebuly_queue.tagged_data)
+    old_tag_data = copy.deepcopy(_nebuly_queue.tag_data)
     new_tag_data = TagData(
         project=project,
         phase=phase,
         task=task,
     )
-    _nebuly_queue.patch_tagged_data(new_tag_data)
+    _nebuly_queue.patch_tag_data(new_tag_data)
     yield
-    _nebuly_queue.patch_tagged_data(old_tag_data)
+    _nebuly_queue.patch_tag_data(old_tag_data)
 
 
 def _instantiate_trackers(nebuly_queue: NebulyQueue) -> list:

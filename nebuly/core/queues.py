@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
+import copy
 from queue import Queue
-from typing import Dict, Optional, Any
+from typing import Optional
 import time
 
 from nebuly.core.schemas import (
@@ -18,7 +19,7 @@ class DataPackageConverter(ABC):
         self,
         task_detector: TaskDetector = TaskDetector(),
     ):
-        self._tagged_data = TagData(
+        self._tag_data = TagData(
             project=None,
             phase=None,
             task=None,
@@ -26,34 +27,15 @@ class DataPackageConverter(ABC):
         self._task_detector = task_detector
         self._api_type = None
         self._provider = Provider.UNKNOWN
+        self._timestamp = time.time()
 
-    def load_tag_data(self, tagged_data: TagData):
+    def set_tag_data(self, tag_data: TagData):
         """Updates the tagged data.
 
         Args:
-            tagged_data (TagData): The tagged data.
+            tag_data (TagData): The tagged data.
         """
-        self._tagged_data.project = tagged_data.project
-        self._tagged_data.phase = tagged_data.phase
-        self._tagged_data.task = tagged_data.task
-
-    def load_request_data(
-        self,
-        request_kwargs: Dict,
-        request_response: Dict,
-        api_type: Any,
-        timestamp: float,
-    ):
-        """Loads the request data.
-
-        Args:
-            request_kwargs (Dict): The request kwargs.
-            request_response (Dict): The request response.
-        """
-        self._request_kwargs = request_kwargs
-        self._request_response = request_response
-        self._timestamp = timestamp
-        self._api_type = api_type
+        self._tag_data = tag_data
 
     @abstractmethod
     def get_data_package(self) -> NebulyDataPackage:
@@ -68,42 +50,31 @@ class DataPackageConverter(ABC):
 class QueueObject:
     def __init__(
         self,
-        request_kwargs: Dict,
-        request_response: Dict,
-        api_type: Any,
         data_package_converter: DataPackageConverter,
     ):
-        self._request_kwargs = request_kwargs
-        self._request_response = request_response
-        self._api_type = api_type
         self._data_package_converter = data_package_converter
-
-        self._tagged_data = TagData(
+        self._tag_data = TagData(
             project=None,
             phase=None,
             task=None,
         )
 
-        self._timestamp = time.time()
-
-    def tag(self, tagged_data: TagData):
+    def tag(self, tag_data: TagData):
         """Updates the tagged data.
 
         Args:
-            tagged_data (TagData): The tagged data.
+            tag_data (TagData): The tagged data.
 
         Raises:
             ValueError: If project name is not set.
             ValueError: If development phase is not set.
         """
-        if tagged_data.project is None:
+        if tag_data.project is None:
             raise ValueError("Project name is not set.")
-        if tagged_data.phase is None:
+        if tag_data.phase is None:
             raise ValueError("Development phase is not set.")
 
-        self._tagged_data.project = tagged_data.project
-        self._tagged_data.phase = tagged_data.phase
-        self._tagged_data.task = tagged_data.task
+        self._tag_data = self._clone(tag_data)
 
     def as_data_package(self) -> NebulyDataPackage:
         """Converts the queue object to a data package.
@@ -111,14 +82,11 @@ class QueueObject:
         Returns:
             NebulyDataPackage: The data package.
         """
-        self._data_package_converter.load_tag_data(self._tagged_data)
-        self._data_package_converter.load_request_data(
-            self._request_kwargs,
-            self._request_response,
-            self._api_type,
-            self._timestamp,
-        )
+        self._data_package_converter.set_tag_data(self._tag_data)
         return self._data_package_converter.get_data_package()
+
+    def _clone(self, item):
+        return copy.deepcopy(item)
 
 
 class NebulyQueue(Queue):
@@ -126,24 +94,24 @@ class NebulyQueue(Queue):
         self,
     ):
         super().__init__()
-        self.tagged_data = TagData(
+        self.tag_data = TagData(
             project="unknown_project",
             phase=DevelopmentPhase.UNKNOWN,
             task=Task.UNDETECTED,
         )
 
-    def patch_tagged_data(self, new_tag_data: TagData):
+    def patch_tag_data(self, tag_data: TagData):
         """Patches the tagged data with the new tagged data.
 
         Args:
             new_tag_data (TagData): The new tagged data.
         """
-        if new_tag_data.project is not None:
-            self.tagged_data.project = new_tag_data.project
-        if new_tag_data.phase is not None:
-            self.tagged_data.phase = new_tag_data.phase
-        if new_tag_data.task is not None:
-            self.tagged_data.task = new_tag_data.task
+        if tag_data.project is not None:
+            self.tag_data.project = tag_data.project
+        if tag_data.phase is not None:
+            self.tag_data.phase = tag_data.phase
+        if tag_data.task is not None:
+            self.tag_data.task = tag_data.task
 
     def put(
         self, item: QueueObject, block: bool = True, timeout: Optional[float] = None
@@ -158,7 +126,7 @@ class NebulyQueue(Queue):
             timeout (Optional[float], optional): The timeout for the queue.
                 Defaults to None.
         """
-        item.tag(self.tagged_data)
+        item.tag(self.tag_data)
         super().put(item=item, block=block, timeout=timeout)
 
     def get(self, block: bool = True, timeout: Optional[float] = None) -> QueueObject:

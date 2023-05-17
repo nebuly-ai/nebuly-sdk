@@ -57,6 +57,6 @@ class NebulyDataPackage(BaseModel):
     number_of_images: Optional[int] = None
     image_size: Optional[str] = None
 
-    duration_in_seconds: Optional[float] = None
+    duration_in_seconds: Optional[int] = None
 
     training_file_id: Optional[str] = None

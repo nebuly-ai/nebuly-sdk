@@ -104,27 +104,27 @@ class TestAPIs(unittest.TestCase):
         self,
     ):
         nebuly._nebuly_queue = NebulyQueue()
-        tagged_data = TagData(
+        tag_data = TagData(
             project="test_project",
             phase=DevelopmentPhase.DEVELOPMENT,
             task=Task.TEXT_GENERATION,
         )
-        nebuly._nebuly_queue.tagged_data = tagged_data
+        nebuly._nebuly_queue.tag_data = tag_data
 
         with nebuly.tracker(
             project="test_project_2",
             phase=DevelopmentPhase.PRODUCTION,
             task=Task.CHAT,
         ):
-            tagged_data = nebuly._nebuly_queue.tagged_data
-            self.assertEqual(tagged_data.project, "test_project_2")
-            self.assertEqual(tagged_data.phase, DevelopmentPhase.PRODUCTION)
-            self.assertEqual(tagged_data.task, Task.CHAT)
+            tag_data = nebuly._nebuly_queue.tag_data
+            self.assertEqual(tag_data.project, "test_project_2")
+            self.assertEqual(tag_data.phase, DevelopmentPhase.PRODUCTION)
+            self.assertEqual(tag_data.task, Task.CHAT)
 
-        tagged_data = nebuly._nebuly_queue.tagged_data
-        self.assertEqual(tagged_data.project, "test_project")
-        self.assertEqual(tagged_data.phase, DevelopmentPhase.DEVELOPMENT)
-        self.assertEqual(tagged_data.task, Task.TEXT_GENERATION)
+        tag_data = nebuly._nebuly_queue.tag_data
+        self.assertEqual(tag_data.project, "test_project")
+        self.assertEqual(tag_data.phase, DevelopmentPhase.DEVELOPMENT)
+        self.assertEqual(tag_data.task, Task.TEXT_GENERATION)
 
     def test_context_manger__is_detecting_missing_init(self):
         error_text = "nebuly.init()"
