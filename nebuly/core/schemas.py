@@ -52,7 +52,7 @@ class NebulyDataPackage(BaseModel):
     api_type: Optional[str] = None
 
     model: Optional[str] = None
-    n_input_tokens: Optional[int] = None
+    n_prompt_tokens: Optional[int] = None
     n_output_tokens: Optional[int] = None
 
     n_output_images: Optional[int] = None

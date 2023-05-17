@@ -71,12 +71,12 @@ class OpenaiAIDataPackageConverter(DataPackageConverter):
             NebulyDataPackage: The NebulyDataPackage representation of the QueueObject
         """
 
-        model_name = None
-        prompt_tokens = None
-        completion_tokens = None
+        model = None
+        n_input_tokens = None
+        n_completion_tokens = None
         number_of_images = None
-        image_size = None
-        duration_in_seconds = None
+        n_output_images = None
+        audio_duration_seconds = None
         training_file_id = None
 
         self._assign_task()
@@ -88,9 +88,9 @@ class OpenaiAIDataPackageConverter(DataPackageConverter):
             or (self._api_type == OpenAIAPIType.EDIT)
         ):
             (
-                model_name,
-                prompt_tokens,
-                completion_tokens,
+                model,
+                n_input_tokens,
+                n_completion_tokens,
             ) = self._get_text_api_data()
         elif (
             (self._api_type == OpenAIAPIType.IMAGE_CREATE)
@@ -99,22 +99,22 @@ class OpenaiAIDataPackageConverter(DataPackageConverter):
         ):
             (
                 number_of_images,
-                image_size,
+                n_output_images,
             ) = self._get_image_api_data()
         elif (self._api_type == OpenAIAPIType.AUDIO_TRANSCRIBE) or (
             self._api_type == OpenAIAPIType.AUDIO_TRANSLATE
         ):
             (
-                model_name,
-                duration_in_seconds,
+                model,
+                audio_duration_seconds,
             ) = self._get_voice_request_data()
         elif self._api_type == OpenAIAPIType.FINETUNE:
             (
-                model_name,
+                model,
                 training_file_id,
             ) = self._get_finetune_request_data()
         elif self._api_type == OpenAIAPIType.MODERATION:
-            (model_name) = self._get_moderation_request_data()
+            model = self._get_moderation_request_data()
         else:
             nebuly_logger.error(f"Unknown OpenAI API type: {self._api_type}")
 
@@ -125,12 +125,12 @@ class OpenaiAIDataPackageConverter(DataPackageConverter):
             api_type=self._api_type.value,
             provider=self._provider,
             timestamp=self._timestamp,
-            model=model_name,
-            n_input_tokens=prompt_tokens,
-            n_output_tokens=completion_tokens,
+            model=model,
+            n_prompt_tokens=n_input_tokens,
+            n_output_tokens=n_completion_tokens,
             n_output_images=number_of_images,
-            image_size=image_size,
-            audio_duration_seconds=duration_in_seconds,
+            image_size=n_output_images,
+            audio_duration_seconds=audio_duration_seconds,
             training_file_id=training_file_id,
         )
 
@@ -147,22 +147,22 @@ class OpenaiAIDataPackageConverter(DataPackageConverter):
             self._tag_data.task = APITYPE_TO_TASK_DICT[self._api_type]
 
     def _get_text_api_data(self) -> Tuple[Optional[str], Optional[int], Optional[int]]:
-        model_name = None
+        model = None
         if "model" in self._request_kwargs.keys():
-            model_name = self._request_kwargs["model"]
+            model = self._request_kwargs["model"]
 
-        prompt_tokens = None
+        n_prompt_tokens = None
         if "usage" in self._request_response.keys():
             if "prompt_tokens" in self._request_response["usage"].keys():
-                prompt_tokens = int(self._request_response["usage"]["prompt_tokens"])
+                n_prompt_tokens = int(self._request_response["usage"]["prompt_tokens"])
 
-        completion_tokens = None
+        n_completion_tokens = None
         if "usage" in self._request_response.keys():
             if "prompt_tokens" in self._request_response["usage"].keys():
-                completion_tokens = int(
+                n_completion_tokens = int(
                     self._request_response["usage"]["completion_tokens"]
                 )  # noqa 501
-        return model_name, prompt_tokens, completion_tokens
+        return model, n_prompt_tokens, n_completion_tokens
 
     def _get_image_api_data(self) -> Tuple[Optional[int], Optional[str]]:
         number_of_images = None
@@ -175,35 +175,35 @@ class OpenaiAIDataPackageConverter(DataPackageConverter):
         return number_of_images, image_size
 
     def _get_voice_request_data(self) -> Tuple[Optional[str], Optional[int]]:
-        model_name = None
+        model = None
         if "model" in self._request_kwargs.keys():
-            model_name = self._request_kwargs["model"]
+            model = self._request_kwargs["model"]
 
-        duration_in_seconds = None
+        audio_duration_seconds = None
         if "file" in self._request_kwargs.keys():
             file_name = self._request_kwargs["file"].name
-            duration_in_seconds = get_media_file_length_in_seconds(file_name)
+            audio_duration_seconds = get_media_file_length_in_seconds(file_name)
 
-        return model_name, duration_in_seconds
+        return model, audio_duration_seconds
 
     def _get_finetune_request_data(self) -> Tuple[Optional[str], Optional[str]]:
-        model_name = None
+        model = None
         if "model" in self._request_kwargs.keys():
-            model_name = self._request_kwargs["model"]
+            model = self._request_kwargs["model"]
 
         training_file_id = None
         if "training_file" in self._request_kwargs.keys():
             training_file_id = self._request_kwargs["training_file"]
 
-        return model_name, training_file_id
+        return model, training_file_id
 
     def _get_moderation_request_data(self) -> Optional[str]:
-        model_name = None
+        model = None
         if "model" in self._request_response.keys():
-            model_name = self._request_response["model"]
+            model = self._request_response["model"]
         # TODO: price for this API is not clear yet, since for now this API is in beta,
         # and delivered for free.
-        return model_name
+        return model
 
 
 class OpenAITracker:
