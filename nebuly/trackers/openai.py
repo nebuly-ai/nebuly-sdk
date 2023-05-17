@@ -125,12 +125,12 @@ class OpenaiAIDataPackageConverter(DataPackageConverter):
             api_type=self._api_type.value,
             provider=self._provider,
             timestamp=self._timestamp,
-            model_name=model_name,
-            prompt_tokens=prompt_tokens,
-            completion_tokens=completion_tokens,
-            number_of_images=number_of_images,
+            model=model_name,
+            n_input_tokens=prompt_tokens,
+            n_output_tokens=completion_tokens,
+            n_output_images=number_of_images,
             image_size=image_size,
-            duration_in_seconds=duration_in_seconds,
+            audio_duration_seconds=duration_in_seconds,
             training_file_id=training_file_id,
         )
 

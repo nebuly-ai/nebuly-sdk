@@ -51,13 +51,13 @@ class NebulyDataPackage(BaseModel):
     provider: Optional[Provider] = None
     api_type: Optional[str] = None
 
-    model_name: Optional[str] = None
-    prompt_tokens: Optional[int] = None
-    completion_tokens: Optional[int] = None
+    model: Optional[str] = None
+    n_input_tokens: Optional[int] = None
+    n_output_tokens: Optional[int] = None
 
-    number_of_images: Optional[int] = None
+    n_output_images: Optional[int] = None
     image_size: Optional[str] = None
 
-    duration_in_seconds: Optional[int] = None
+    audio_duration_seconds: Optional[int] = None
 
     training_file_id: Optional[str] = None

@@ -183,12 +183,12 @@ class TestOpenaiAIDataPackageConverter(unittest.TestCase):
             provider="openai",
             api_type=OpenAIAPIType.TEXT_COMPLETION.value,
             timestamp=self.mocked_timestamp,
-            model_name="text-davinci-003",
-            prompt_tokens=5,
-            completion_tokens=7,
-            number_of_images=None,
+            model="text-davinci-003",
+            n_input_tokens=5,
+            n_output_tokens=7,
+            n_output_images=None,
             image_size=None,
-            duration_in_seconds=None,
+            audio_duration_seconds=None,
         )
         self.assertEqual(request_data, expected_response)
 
@@ -244,12 +244,12 @@ class TestOpenaiAIDataPackageConverter(unittest.TestCase):
             provider="openai",
             api_type=OpenAIAPIType.AUDIO_TRANSCRIBE.value,
             timestamp=self.mocked_timestamp,
-            model_name="whisper-1",
-            prompt_tokens=None,
-            completion_tokens=None,
-            number_of_images=None,
+            model="whisper-1",
+            n_input_tokens=None,
+            n_output_tokens=None,
+            n_output_images=None,
             image_size=None,
-            duration_in_seconds=10,
+            audio_duration_seconds=10,
         )
 
         self.assertEqual(request_data, expected_response)
@@ -288,12 +288,12 @@ class TestOpenaiAIDataPackageConverter(unittest.TestCase):
             provider="openai",
             api_type=OpenAIAPIType.IMAGE_CREATE.value,
             timestamp=self.mocked_timestamp,
-            model_name=None,
-            prompt_tokens=None,
-            completion_tokens=None,
-            number_of_images=2,
+            model=None,
+            n_input_tokens=None,
+            n_output_tokens=None,
+            n_output_images=2,
             image_size="1024x1024",
-            duration_in_seconds=None,
+            audio_duration_seconds=None,
         )
 
         print(request_data)
@@ -341,12 +341,12 @@ class TestOpenaiAIDataPackageConverter(unittest.TestCase):
             provider="openai",
             api_type=OpenAIAPIType.FINETUNE.value,
             timestamp=self.mocked_timestamp,
-            model_name="curie",
-            prompt_tokens=None,
-            completion_tokens=None,
-            number_of_images=None,
+            model="curie",
+            n_input_tokens=None,
+            n_output_tokens=None,
+            n_output_images=None,
             image_size=None,
-            duration_in_seconds=None,
+            audio_duration_seconds=None,
             training_file_id="file-XGinujblHPwGLSztz8cPS8XY",
         )
         self.assertEqual(request_data, expected_response)
@@ -379,12 +379,12 @@ class TestOpenaiAIDataPackageConverter(unittest.TestCase):
             provider="openai",
             api_type=OpenAIAPIType.MODERATION.value,
             timestamp=self.mocked_timestamp,
-            model_name="text-moderation-001",
-            prompt_tokens=None,
-            completion_tokens=None,
-            number_of_images=None,
+            model="text-moderation-001",
+            n_input_tokens=None,
+            n_output_tokens=None,
+            n_output_images=None,
             image_size=None,
-            duration_in_seconds=None,
+            audio_duration_seconds=None,
             training_file_id=None,
         )
 
