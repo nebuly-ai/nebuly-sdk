@@ -42,7 +42,7 @@ class NebulyTrackingDataThread(Thread):
                 # what happens if there is a keyboard interrupt?
                 # I need to save the status of the queue and load it
                 # back when it is started again
-                pass
+                return
 
             request_data = queue_object.as_data_package()
             self._nebuly_client.send_request_to_nebuly_server(request_data)

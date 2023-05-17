@@ -92,20 +92,10 @@ class TestQueueObject(TestCase):
 
         queue_object.as_data_package()
 
-        data_package_converter_mocked.set_tag_data.assert_called_once()
+        self.assertEqual(data_package_converter_mocked.tag_data, queue_object._tag_data)
         data_package_converter_mocked.get_data_package.assert_called_once()
 
 
 class ImplementedDataPackageConverter(DataPackageConverter):
     def get_data_package(self):
         pass
-
-
-class TestDataPackageConverter(TestCase):
-    def test_set_tag_data__is_assigning_tag_data(self):
-        data_package_converter = ImplementedDataPackageConverter()
-        tag_data = TagData(project="project", phase="phase", task="task")
-        data_package_converter.set_tag_data(tag_data)
-        self.assertEqual(data_package_converter._tag_data.project, "project")
-        self.assertEqual(data_package_converter._tag_data.phase, "phase")
-        self.assertEqual(data_package_converter._tag_data.task, "task")

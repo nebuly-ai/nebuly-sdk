@@ -2,14 +2,12 @@ from abc import ABC, abstractmethod
 import copy
 from queue import Queue
 from typing import Optional
-import time
 
 from nebuly.core.schemas import (
     DevelopmentPhase,
     Task,
     TagData,
     NebulyDataPackage,
-    Provider,
 )
 from nebuly.core.services import TaskDetector
 
@@ -19,23 +17,12 @@ class DataPackageConverter(ABC):
         self,
         task_detector: TaskDetector = TaskDetector(),
     ):
-        self._tag_data = TagData(
+        self.tag_data = TagData(
             project=None,
             phase=None,
             task=None,
         )
         self._task_detector = task_detector
-        self._api_type = None
-        self._provider = Provider.UNKNOWN
-        self._timestamp = time.time()
-
-    def set_tag_data(self, tag_data: TagData):
-        """Updates the tagged data.
-
-        Args:
-            tag_data (TagData): The tagged data.
-        """
-        self._tag_data = tag_data
 
     @abstractmethod
     def get_data_package(self) -> NebulyDataPackage:
@@ -82,10 +69,11 @@ class QueueObject:
         Returns:
             NebulyDataPackage: The data package.
         """
-        self._data_package_converter.set_tag_data(self._tag_data)
+        self._data_package_converter.tag_data = self._tag_data
         return self._data_package_converter.get_data_package()
 
-    def _clone(self, item):
+    @staticmethod
+    def _clone(item):
         return copy.deepcopy(item)
 
 

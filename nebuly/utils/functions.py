@@ -1,4 +1,5 @@
 import inspect
+import time
 from typing import Dict, Optional, Tuple
 
 import mutagen
@@ -46,3 +47,12 @@ def get_media_file_length_in_seconds(file_path: str) -> Optional[int]:
     except Exception:
         return None
     return int(audio_file.info.length)
+
+
+def get_current_timestamp() -> float:
+    """Gets the current timestamp.
+
+    Returns:
+        float: The current timestamp.
+    """
+    return float(time.time())

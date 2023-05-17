@@ -9,6 +9,7 @@ from nebuly.utils.functions import (
     get_media_file_length_in_seconds,
 )
 from nebuly.utils.logger import nebuly_logger
+from nebuly.utils.functions import get_current_timestamp
 
 import openai
 
@@ -52,12 +53,14 @@ class OpenaiAIDataPackageConverter(DataPackageConverter):
         request_kwargs: Dict,
         request_response: Dict,
         api_type: OpenAIAPIType,
+        timestamp: float,
     ):
         super().__init__()
         self._provider = OPENAI_PROVIDER_DICT[openai.api_type]
         self._request_kwargs = request_kwargs
         self._request_response = request_response
         self._api_type = api_type
+        self._timestamp = timestamp
 
     def get_data_package(
         self,
@@ -119,9 +122,9 @@ class OpenaiAIDataPackageConverter(DataPackageConverter):
             nebuly_logger.error(f"Unknown OpenAI API type: {self._api_type}")
 
         return NebulyDataPackage(
-            project=self._tag_data.project,
-            phase=self._tag_data.phase,
-            task=self._tag_data.task,
+            project=self.tag_data.project,
+            phase=self.tag_data.phase,
+            task=self.tag_data.task,
             api_type=self._api_type.value,
             provider=self._provider,
             timestamp=self._timestamp,
@@ -135,16 +138,16 @@ class OpenaiAIDataPackageConverter(DataPackageConverter):
         )
 
     def _assign_task(self):
-        if self._tag_data.task != Task.UNDETECTED:
+        if self.tag_data.task != Task.UNDETECTED:
             return
         if (self._api_type == OpenAIAPIType.TEXT_COMPLETION) and (
             "prompt" in self._request_kwargs.keys()
         ):
-            self._tag_data.task = self._task_detector.detect_task_from_text(
+            self.tag_data.task = self._task_detector.detect_task_from_text(
                 self._request_kwargs["prompt"][0]
             )
         else:
-            self._tag_data.task = APITYPE_TO_TASK_DICT[self._api_type]
+            self.tag_data.task = APITYPE_TO_TASK_DICT[self._api_type]
 
     def _get_text_api_data(self) -> Tuple[Optional[str], Optional[int], Optional[int]]:
         model = None
@@ -343,6 +346,7 @@ class OpenAITracker:
                 request_kwargs=request_kwargs,
                 request_response=request_response,
                 api_type=api_type,
+                timestamp=get_current_timestamp(),
             ),
         )
         self._nebuly_queue.put(queue_object)
