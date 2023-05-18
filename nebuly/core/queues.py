@@ -55,6 +55,13 @@ class QueueObject:
         api_type: str,
         timestamp: float,
     ):
+        # TODO: request here can be replaced with a more generic noun for the queue
+        # initialization? the same goes for api_type.
+        # could it be:
+        # api_type -> kind ("api_type" for api trackers and "method_type" for
+        #               Pytorch and similar)
+        # request -> tracked_kwargs
+        # request_response -> tracked_response
         self._data_package_converter = data_package_converter
         self._request_kwargs = request_kwargs
         self._request_response = request_response
