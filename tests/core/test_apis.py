@@ -17,7 +17,7 @@ class TestAPIs(unittest.TestCase):
         with patch("nebuly.core.apis._instantiate_trackers"):
             nebuly.init(
                 project="test_project",
-                phase=DevelopmentPhase.DEVELOPMENT,
+                phase=DevelopmentPhase.EXPERIMENTATION,
             )
 
         self.assertIsInstance(nebuly._nebuly_queue, MagicMock)
@@ -31,7 +31,7 @@ class TestAPIs(unittest.TestCase):
         with patch("nebuly.core.apis._instantiate_trackers"):
             nebuly.init(
                 project="test_project",
-                phase=DevelopmentPhase.DEVELOPMENT,
+                phase=DevelopmentPhase.EXPERIMENTATION,
             )
 
         mocked_thread.assert_called_once()
@@ -44,7 +44,7 @@ class TestAPIs(unittest.TestCase):
     ):
         nebuly.init(
             project="test_project",
-            phase=DevelopmentPhase.DEVELOPMENT,
+            phase=DevelopmentPhase.EXPERIMENTATION,
         )
 
         mocked_instantiate_trackers.assert_called_once()
@@ -63,7 +63,7 @@ class TestAPIs(unittest.TestCase):
         mocked_openai_tracker_instance.replace_sdk_functions = MagicMock()
         nebuly.init(
             project="test_project",
-            phase=DevelopmentPhase.DEVELOPMENT,
+            phase=DevelopmentPhase.EXPERIMENTATION,
         )
 
         mocked_openai_tracker.assert_called_once()
@@ -74,7 +74,7 @@ class TestAPIs(unittest.TestCase):
         with self.assertRaises(TypeError) as context:
             nebuly.init(
                 project=1,
-                phase=DevelopmentPhase.DEVELOPMENT,
+                phase=DevelopmentPhase.EXPERIMENTATION,
             )
 
         self.assertTrue(error_text in str(context.exception))
@@ -94,7 +94,7 @@ class TestAPIs(unittest.TestCase):
         with self.assertRaises(TypeError) as context:
             nebuly.init(
                 project="test_project",
-                phase=DevelopmentPhase.DEVELOPMENT,
+                phase=DevelopmentPhase.EXPERIMENTATION,
                 task=1,
             )
 
@@ -106,7 +106,7 @@ class TestAPIs(unittest.TestCase):
         nebuly._nebuly_queue = NebulyQueue()
         tag_data = TagData(
             project="test_project",
-            phase=DevelopmentPhase.DEVELOPMENT,
+            phase=DevelopmentPhase.EXPERIMENTATION,
             task=Task.TEXT_GENERATION,
         )
         nebuly._nebuly_queue.tag_data = tag_data
@@ -123,7 +123,7 @@ class TestAPIs(unittest.TestCase):
 
         tag_data = nebuly._nebuly_queue.tag_data
         self.assertEqual(tag_data.project, "test_project")
-        self.assertEqual(tag_data.phase, DevelopmentPhase.DEVELOPMENT)
+        self.assertEqual(tag_data.phase, DevelopmentPhase.EXPERIMENTATION)
         self.assertEqual(tag_data.task, Task.TEXT_GENERATION)
 
     def test_context_manger__is_detecting_missing_init(self):
@@ -144,7 +144,7 @@ class TestAPIs(unittest.TestCase):
         with self.assertRaises(TypeError) as context:
             with nebuly.tracker(
                 project=1,
-                phase=DevelopmentPhase.DEVELOPMENT,
+                phase=DevelopmentPhase.EXPERIMENTATION,
             ):
                 pass
 
@@ -166,7 +166,7 @@ class TestAPIs(unittest.TestCase):
         with self.assertRaises(TypeError) as context:
             with nebuly.tracker(
                 project="test_project",
-                phase=DevelopmentPhase.DEVELOPMENT,
+                phase=DevelopmentPhase.EXPERIMENTATION,
                 task=1,
             ):
                 pass

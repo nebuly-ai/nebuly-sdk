@@ -23,8 +23,10 @@ class Task(Enum):
 
 
 class DevelopmentPhase(Enum):
-    RESEARCH = "research"
-    DEVELOPMENT = "development"
+    EXPERIMENTATION = "experimentation"
+    PREPROCESSING = "preprocessing"
+    TRAINING = "training"
+    FINETUNING = "fine-tuning"
     PRODUCTION = "production"
     UNKNOWN = "unknown"
 
