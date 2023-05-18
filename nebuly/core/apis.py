@@ -8,6 +8,9 @@ from nebuly.core.clients import NebulyQueue, NebulyTrackingDataThread
 
 
 _nebuly_queue: Optional[NebulyQueue] = None
+# TODO: Add the structure to check if the API key is set
+# and it is valid.
+api_key = None
 
 
 def init(
