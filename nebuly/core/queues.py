@@ -12,6 +12,9 @@ from nebuly.core.schemas import (
 from nebuly.core.services import TaskDetector
 
 
+QUEUE_MAX_SIZE = 1000
+
+
 class DataPackageConverter(ABC):
     def __init__(
         self,
@@ -103,7 +106,7 @@ class NebulyQueue(Queue):
     def __init__(
         self,
     ):
-        super().__init__()
+        super().__init__(maxsize=QUEUE_MAX_SIZE)
         self.tag_data = TagData(
             project="unknown_project",
             phase=DevelopmentPhase.UNKNOWN,

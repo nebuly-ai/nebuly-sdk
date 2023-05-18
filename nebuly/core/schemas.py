@@ -9,17 +9,17 @@ class Task(Enum):
     UNDETECTED = "undetected"
     TEXT_GENERATION = "text_generation"
     TEXT_SUMMARIZATION = "text_summarization"
-    CHAT = "chat"
     TEXT_CLASSIFICATION = "text_classification"
+    TEXT_EMBEDDING = "text_embedding"
     TEXT_EDITING = "text_editing"
+    TEXT_MODERATION = "text_moderation"
+    CHAT = "chat"
     IMAGE_GENERATION = "image_generation"
     IMAGE_EDITING = "image_editing"
     IMAGE_VARIATION = "image_variation"
     AUDIO_TRANSCRIPTION = "audio_transcription"
     AUDIO_TRANSLATION = "audio_translation"
-    TEXT_EMBEDDING = "text_embedding"
     FINETUNING = "finetuning"
-    TEXT_MODERATION = "text_moderation"
 
 
 class DevelopmentPhase(Enum):
