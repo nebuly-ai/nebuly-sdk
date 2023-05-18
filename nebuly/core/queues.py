@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import copy
 from queue import Queue
-from typing import Optional
+from typing import Optional, Dict
 
 from nebuly.core.schemas import (
     DevelopmentPhase,
@@ -17,16 +17,25 @@ class DataPackageConverter(ABC):
         self,
         task_detector: TaskDetector = TaskDetector(),
     ):
-        self.tag_data = TagData(
-            project=None,
-            phase=None,
-            task=None,
-        )
         self._task_detector = task_detector
 
     @abstractmethod
-    def get_data_package(self) -> NebulyDataPackage:
+    def get_data_package(
+        self,
+        tag_data: TagData,
+        request_kwargs: Dict,
+        request_response: Dict,
+        api_type: str,
+        timestamp: float,
+    ) -> NebulyDataPackage:
         """Converts the queue object to a data package.
+
+        Args:
+            tag_data (TagData): The tagged data contained the user specified-tags.
+            request_kwargs (Dict): The request kwargs.
+            request_response (Dict): The request response.
+            api_type (str): The api type.
+            timestamp (float): The timestamp of the tracked request.
 
         Returns:
             NebulyDataPackage: The data package.
@@ -38,8 +47,16 @@ class QueueObject:
     def __init__(
         self,
         data_package_converter: DataPackageConverter,
+        request_kwargs: Dict,
+        request_response: Dict,
+        api_type: str,
+        timestamp: float,
     ):
         self._data_package_converter = data_package_converter
+        self._request_kwargs = request_kwargs
+        self._request_response = request_response
+        self._api_type = api_type
+        self._timestamp = timestamp
         self._tag_data = TagData(
             project=None,
             phase=None,
@@ -69,8 +86,13 @@ class QueueObject:
         Returns:
             NebulyDataPackage: The data package.
         """
-        self._data_package_converter.tag_data = self._tag_data
-        return self._data_package_converter.get_data_package()
+        return self._data_package_converter.get_data_package(
+            tag_data=self._tag_data,
+            request_kwargs=self._request_kwargs,
+            request_response=self._request_response,
+            api_type=self._api_type,
+            timestamp=self._timestamp,
+        )
 
     @staticmethod
     def _clone(item):
@@ -92,7 +114,7 @@ class NebulyQueue(Queue):
         """Patches the tagged data with the new tagged data.
 
         Args:
-            new_tag_data (TagData): The new tagged data.
+            tag_data (TagData): The new tagged data.
         """
         if tag_data.project is not None:
             self.tag_data.project = tag_data.project
