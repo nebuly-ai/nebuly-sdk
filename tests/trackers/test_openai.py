@@ -10,12 +10,12 @@ from nebuly.core.schemas import (
 )
 from nebuly.trackers.openai import (
     OpenAITracker,
-    OpenaiAIDataPackageConverter,
+    OpenAIDataPackageConverter,
     OpenAIAPIType,
 )
 
 
-class TestOpenaiAIDataPackageConverter(unittest.TestCase):
+class TestOpenAIDataPackageConverter(unittest.TestCase):
     mocked_timestamp = 1614807352
 
     text_request_kwargs = {
@@ -146,7 +146,7 @@ class TestOpenaiAIDataPackageConverter(unittest.TestCase):
         mocked_openai,
     ):
         mocked_openai.api_type = "open_ai"
-        data_converter = OpenaiAIDataPackageConverter(
+        data_converter = OpenAIDataPackageConverter(
             request_kwargs=MagicMock(),
             request_response=MagicMock(),
             api_type=MagicMock(),
@@ -154,7 +154,7 @@ class TestOpenaiAIDataPackageConverter(unittest.TestCase):
         )
         self.assertEqual(data_converter._provider, Provider.OPENAI)
         mocked_openai.api_type = "azure"
-        data_converter = OpenaiAIDataPackageConverter(
+        data_converter = OpenAIDataPackageConverter(
             request_kwargs=MagicMock(),
             request_response=MagicMock(),
             api_type=MagicMock(),
@@ -174,7 +174,7 @@ class TestOpenaiAIDataPackageConverter(unittest.TestCase):
             phase=DevelopmentPhase.UNKNOWN,
             task=Task.UNDETECTED,
         )
-        data_converter = OpenaiAIDataPackageConverter(
+        data_converter = OpenAIDataPackageConverter(
             request_kwargs=self.text_request_kwargs,
             request_response=self.text_response,
             api_type=mocked_api_type,
@@ -197,7 +197,7 @@ class TestOpenaiAIDataPackageConverter(unittest.TestCase):
             phase=DevelopmentPhase.UNKNOWN,
             task=Task.UNDETECTED,
         )
-        data_converter = OpenaiAIDataPackageConverter(
+        data_converter = OpenAIDataPackageConverter(
             request_kwargs=self.text_request_kwargs,
             request_response=self.text_response,
             api_type=mocked_api_type,
@@ -258,7 +258,7 @@ class TestOpenaiAIDataPackageConverter(unittest.TestCase):
             phase=DevelopmentPhase.UNKNOWN,
             task=Task.UNDETECTED,
         )
-        data_converter = OpenaiAIDataPackageConverter(
+        data_converter = OpenAIDataPackageConverter(
             request_kwargs=self.audio_request_kwargs,
             request_response=self.audio_response,
             api_type=mocked_api_type,
@@ -303,7 +303,7 @@ class TestOpenaiAIDataPackageConverter(unittest.TestCase):
             phase=DevelopmentPhase.UNKNOWN,
             task=Task.UNDETECTED,
         )
-        data_converter = OpenaiAIDataPackageConverter(
+        data_converter = OpenAIDataPackageConverter(
             request_kwargs=self.image_request_kwargs,
             request_response=self.image_response,
             api_type=mocked_api_type,
@@ -357,7 +357,7 @@ class TestOpenaiAIDataPackageConverter(unittest.TestCase):
             phase=DevelopmentPhase.UNKNOWN,
             task=Task.UNDETECTED,
         )
-        data_converter = OpenaiAIDataPackageConverter(
+        data_converter = OpenAIDataPackageConverter(
             request_kwargs=self.finetune_request_kwargs,
             request_response=self.finetune_response,
             api_type=mocked_api_type,
@@ -395,7 +395,7 @@ class TestOpenaiAIDataPackageConverter(unittest.TestCase):
             phase=DevelopmentPhase.UNKNOWN,
             task=Task.UNDETECTED,
         )
-        data_converter = OpenaiAIDataPackageConverter(
+        data_converter = OpenAIDataPackageConverter(
             request_kwargs=self.moderation_request_kwargs,
             request_response=self.moderation_response,
             api_type=mocked_api_type,

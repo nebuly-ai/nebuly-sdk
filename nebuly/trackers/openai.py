@@ -47,7 +47,7 @@ APITYPE_TO_TASK_DICT = {
 OPENAI_PROVIDER_DICT = {"azure": Provider.AZURE_OPENAI, "open_ai": Provider.OPENAI}
 
 
-class OpenaiAIDataPackageConverter(DataPackageConverter):
+class OpenAIDataPackageConverter(DataPackageConverter):
     def __init__(
         self,
         request_kwargs: Dict,
@@ -342,7 +342,7 @@ class OpenAITracker:
         api_type: OpenAIAPIType,
     ):
         queue_object = QueueObject(
-            data_package_converter=OpenaiAIDataPackageConverter(
+            data_package_converter=OpenAIDataPackageConverter(
                 request_kwargs=request_kwargs,
                 request_response=request_response,
                 api_type=api_type,

@@ -55,4 +55,4 @@ def get_current_timestamp() -> float:
     Returns:
         float: The current timestamp.
     """
-    return float(time.time())
+    return time.time()
