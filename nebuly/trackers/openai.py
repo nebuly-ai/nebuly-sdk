@@ -412,4 +412,4 @@ class OpenAITracker:
             api_type=api_type,
             timestamp=get_current_timestamp(),
         )
-        self._nebuly_queue.put(queue_object)
+        self._nebuly_queue.put(queue_object, timeout=0)
