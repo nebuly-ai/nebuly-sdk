@@ -1,8 +1,5 @@
-import nebuly.core.apis
-import nebuly.core.schemas
+from nebuly.core.apis import init, tracker  # noqa 401
+from nebuly.core.schemas import DevelopmentPhase, Task  # noqa 401
+import os
 
-init = nebuly.core.apis.init
-tracker = nebuly.core.apis.tracker
-api_key = None
-DevelopmentPhase = nebuly.core.schemas.DevelopmentPhase
-Task = nebuly.core.schemas.Task
+api_key = os.getenv("NEBULY_API_KEY")
