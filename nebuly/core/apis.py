@@ -8,7 +8,6 @@ from nebuly.core.clients import NebulyTrackingDataThread, NebulyClient
 from nebuly.core.queues import NebulyQueue
 
 _nebuly_queue: Optional[NebulyQueue] = None
-api_key = None
 
 
 def init(
@@ -35,8 +34,6 @@ def init(
 
     global _nebuly_queue
 
-    from nebuly import api_key
-
     _nebuly_queue = NebulyQueue()
     tag_data = TagData(
         project=project,
@@ -44,6 +41,8 @@ def init(
         task=task,
     )
     _nebuly_queue.patch_tag_data(tag_data)
+
+    from nebuly import api_key
 
     nebuly_tracking_thread = NebulyTrackingDataThread(
         queue=_nebuly_queue, nebuly_client=NebulyClient(api_key=api_key)
