@@ -12,7 +12,7 @@ from nebuly.core.schemas import (
 from nebuly.core.services import TaskDetector
 
 
-QUEUE_MAX_SIZE = 1000
+QUEUE_MAX_SIZE = 10000
 
 
 class DataPackageConverter(ABC):
