@@ -61,13 +61,7 @@ class NebulyClient:
             stop_after_delay(RETRY_STOP_TIME) | stop_after_attempt(RETRY_STOP_ATTEMPTS)
         ),
         retry=retry_if_exception_type(
-            (
-                Timeout
-                | RequestException
-                | ConnectTimeout
-                | ReadTimeout
-                | ConnectionError
-            )
+            (Timeout, RequestException, ConnectTimeout, ReadTimeout, ConnectionError)
         ),
     )
     def _post_nebuly_event_ingestion_endpoint(
