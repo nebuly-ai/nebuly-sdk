@@ -97,13 +97,16 @@ class NebulyTrackingDataThread(Thread):
         self.thread_running = True
 
     def run(self):
-        while self.thread_running:
+        while self.thread_running and self._queue.empty() is False:
             try:
                 queue_object = self._queue.get()
             except Empty:
                 continue
             except KeyboardInterrupt:
-                return
+                nebuly_logger.warning(
+                    "Keyboard interrupt detected. "
+                    "Sending all the remaining data to Nebuly server."
+                )
 
             request_data = queue_object.as_data_package()
             request_params = queue_object.as_request_params()
