@@ -8,6 +8,7 @@ from nebuly.core.schemas import (
     Task,
     TagData,
     NebulyDataPackage,
+    NebulyRequestParams,
 )
 from nebuly.core.services import TaskDetector
 
@@ -45,28 +46,19 @@ class DataPackageConverter(ABC):
         """
         pass
 
+    @abstractmethod
+    def get_request_params(self) -> NebulyRequestParams:
+        """Returns the request params.
 
-class QueueObject:
+        Returns:
+            NebulyRequestParams: The request params.
+        """
+
+
+class QueueObject(ABC):
     def __init__(
         self,
-        data_package_converter: DataPackageConverter,
-        request_kwargs: Dict,
-        request_response: Dict,
-        api_type: str,
-        timestamp: float,
     ):
-        # TODO: request here can be replaced with a more generic noun for the queue
-        # initialization? the same goes for api_type.
-        # could it be:
-        # api_type -> kind ("api_type" for api trackers and "method_type" for
-        #               Pytorch and similar)
-        # request -> tracked_kwargs
-        # request_response -> tracked_response
-        self._data_package_converter = data_package_converter
-        self._request_kwargs = request_kwargs
-        self._request_response = request_response
-        self._api_type = api_type
-        self._timestamp = timestamp
         self._tag_data = TagData(
             project=None,
             phase=None,
@@ -90,19 +82,23 @@ class QueueObject:
 
         self._tag_data = self._clone(tag_data)
 
+    @abstractmethod
     def as_data_package(self) -> NebulyDataPackage:
         """Converts the queue object to a data package.
 
         Returns:
             NebulyDataPackage: The data package.
         """
-        return self._data_package_converter.get_data_package(
-            tag_data=self._tag_data,
-            request_kwargs=self._request_kwargs,
-            request_response=self._request_response,
-            api_type=self._api_type,
-            timestamp=self._timestamp,
-        )
+        pass
+
+    @abstractmethod
+    def as_request_params(self) -> NebulyRequestParams:
+        """Returns the request params.
+
+        Returns:
+            NebulyRequestParams: The request params.
+        """
+        pass
 
     @staticmethod
     def _clone(item):
@@ -160,17 +156,3 @@ class NebulyQueue(Queue):
         """
         queue_object = super().get(block=block, timeout=timeout)
         return queue_object
-
-    def save_current_status(self):
-        # Not implemented yet.
-        # save the current status of the queue to disk
-        # required when the program is interrupted and must resume
-        # without losing data
-        pass
-
-    def load_previous_status(self):
-        # Not implemented yet.
-        # load the previous status of the queue from disk
-        # required when the program is interrupted and must resume
-        # without losing data
-        pass

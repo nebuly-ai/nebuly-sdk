@@ -1,7 +1,7 @@
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
 
-from nebuly.core.schemas import TagData
+from nebuly.core.schemas import NebulyDataPackage, NebulyRequestParams, TagData
 from nebuly.core.queues import NebulyQueue, QueueObject
 
 
@@ -49,6 +49,14 @@ class TestNebulyQueue(TestCase):
         queue_object_mocked.tag.assert_called_once()
 
 
+class ImplementedQueueObject(QueueObject):
+    def as_data_package(self) -> NebulyDataPackage:
+        return MagicMock()
+
+    def as_request_params(self) -> NebulyRequestParams:
+        return MagicMock()
+
+
 class TestQueueObject(TestCase):
     mocked_request_kwargs = {
         "url": "url",
@@ -62,14 +70,7 @@ class TestQueueObject(TestCase):
     mocked_timestamp = 1234567890.1234567890
 
     def test_tag__is_updating_all_the_fields(self):
-        data_package_converter_mocked = MagicMock()
-        queue_object = QueueObject(
-            data_package_converter=data_package_converter_mocked,
-            request_kwargs=self.mocked_request_kwargs,
-            request_response=self.mocked_request_response,
-            api_type=self.mocked_api_type,
-            timestamp=self.mocked_timestamp,
-        )
+        queue_object = ImplementedQueueObject()
 
         tag_data = TagData(project="project", phase="phase", task="task")
 
@@ -79,15 +80,16 @@ class TestQueueObject(TestCase):
         self.assertEqual(queue_object._tag_data.phase, "phase")
         self.assertEqual(queue_object._tag_data.task, "task")
 
+    def test_tag__is_not_linking_dirctly_the_tag_data(self):
+        queue_object = ImplementedQueueObject()
+        tag_data = TagData(project="project", phase="phase", task="task")
+
+        queue_object.tag(tag_data)
+
+        self.assertNotEqual(id(queue_object._tag_data), id(tag_data))
+
     def test_tag__is_raising_value_error_for_none_project(self):
-        data_package_converter_mocked = MagicMock()
-        queue_object = QueueObject(
-            data_package_converter=data_package_converter_mocked,
-            request_kwargs=self.mocked_request_kwargs,
-            request_response=self.mocked_request_response,
-            api_type=self.mocked_api_type,
-            timestamp=self.mocked_timestamp,
-        )
+        queue_object = ImplementedQueueObject()
 
         tag_data = TagData(project=None, phase="phase", task="task")
 
@@ -97,14 +99,7 @@ class TestQueueObject(TestCase):
         self.assertTrue("Project" in str(context.exception))
 
     def test_tag__is_raising_value_error_for_none_phase(self):
-        data_package_converter_mocked = MagicMock()
-        queue_object = QueueObject(
-            data_package_converter=data_package_converter_mocked,
-            request_kwargs=self.mocked_request_kwargs,
-            request_response=self.mocked_request_response,
-            api_type=self.mocked_api_type,
-            timestamp=self.mocked_timestamp,
-        )
+        queue_object = ImplementedQueueObject()
 
         tag_data = TagData(project="project", phase=None, task="task")
 
@@ -113,26 +108,3 @@ class TestQueueObject(TestCase):
 
         print(str(context.exception))
         self.assertTrue("Development phase" in str(context.exception))
-
-    def test_as_data_package__is_setting_data_into_the_data_package(self):
-        data_package_converter_mocked = MagicMock()
-        data_package_converter_mocked.set_tag_data.return_value = MagicMock()
-        data_package_converter_mocked.get_data_package.return_value = MagicMock()
-        queue_object = QueueObject(
-            data_package_converter=data_package_converter_mocked,
-            request_kwargs=self.mocked_request_kwargs,
-            request_response=self.mocked_request_response,
-            api_type=self.mocked_api_type,
-            timestamp=self.mocked_timestamp,
-        )
-        tag_data = TagData(project="project", phase="phase", task="task")
-        queue_object.tag(tag_data)
-        queue_object.as_data_package()
-
-        data_package_converter_mocked.get_data_package.assert_called_once_with(
-            tag_data=tag_data,
-            request_kwargs=self.mocked_request_kwargs,
-            request_response=self.mocked_request_response,
-            api_type=self.mocked_api_type,
-            timestamp=self.mocked_timestamp,
-        )

@@ -1,28 +1,92 @@
 from queue import Empty
+import requests
 from threading import Thread
+from typing import Dict
+from urllib3.exceptions import (
+    TimeoutError,
+)
 
 from nebuly.core.queues import NebulyQueue
-from nebuly.core.schemas import NebulyDataPackage
+from nebuly.core.schemas import NebulyDataPackage, NebulyRequestParams
 from nebuly.utils.logger import nebuly_logger
+
+from tenacity import (
+    retry,
+    wait_fixed,
+    retry_if_exception,
+    stop_after_attempt,
+    stop_after_delay,
+)
+
+
+RETRY_WAIT_TIME = 1
+RETRY_STOP_TIME = 10
+RETRY_STOP_ATTEMPTS = 10
 
 
 class NebulyClient:
-    def send_request_to_nebuly_server(self, request_data: NebulyDataPackage):
-        nebuly_logger.info(f"\n\nDetected Data:\n {request_data.json()}")
+    def __init__(self, api_key: str):
+        self._api_key = api_key
+        self._nebuly_event_ingestion_url = "http://event_ingestion/api/v1/record"
+
+    @retry(
+        wait=wait_fixed(RETRY_WAIT_TIME),
+        retry=retry_if_exception(
+            (
+                requests.exceptions.Timeout,
+                requests.exceptions.RequestException,
+                TimeoutError,
+            )
+        ),
+        stop=(
+            stop_after_delay(RETRY_STOP_TIME) | stop_after_attempt(RETRY_STOP_ATTEMPTS)
+        ),
+    )
+    def send_request_to_nebuly_server(
+        self,
+        request_data: NebulyDataPackage,
+        request_params: NebulyRequestParams,
+    ):
+        headers = self._get_header()
+        self._post_nebuly_event_ingestion_endpoint(
+            headers,
+            request_data,
+            request_params,
+        )
+
+    def _get_header(self) -> Dict:
+        headers = {"authorization": f"Bearer {self._api_key}"}
+        return headers
+
+    def _post_nebuly_event_ingestion_endpoint(
+        self,
+        headers: Dict,
+        request_data: NebulyDataPackage,
+        request_params: NebulyRequestParams,
+    ):
+        try:
+            response = requests.post(
+                url=self._nebuly_event_ingestion_url,
+                headers=headers,
+                data=request_data.json(),
+                params=request_params.json(),
+            )
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as errh:
+            nebuly_logger.error(f"Http Error: {errh}")
+        except requests.exceptions.ConnectionError as errc:
+            nebuly_logger.error(f"Error Connecting: {errc}")
+        except requests.exceptions.Timeout as errt:
+            nebuly_logger.error(f"Timeout Error: {errt}")
+        except requests.exceptions.RequestException as err:
+            nebuly_logger.error(f"Error Performing the request: {err}")
 
 
 class NebulyTrackingDataThread(Thread):
-    # TODO: add a way to stop the thread.
-    # If i define the thread as deamon it will stop when the main thread stops
-    # and this can create unexpected behaviour.
-    # i.e. if i am processing an audio track what happens is:
-    # the main finish the execution before the audio track is processed
-    # and the thread gets killed before issuing the request to the server
-
     def __init__(
         self,
         queue: NebulyQueue,
-        nebuly_client: NebulyClient = NebulyClient(),
+        nebuly_client: NebulyClient,
         *args,
         **kwargs,
     ):
@@ -39,11 +103,11 @@ class NebulyTrackingDataThread(Thread):
             except Empty:
                 continue
             except KeyboardInterrupt:
-                # what happens if there is a keyboard interrupt?
-                # I need to save the status of the queue and load it
-                # back when it is started again
                 return
 
             request_data = queue_object.as_data_package()
-            self._nebuly_client.send_request_to_nebuly_server(request_data)
+            request_params = queue_object.as_request_params()
+            self._nebuly_client.send_request_to_nebuly_server(
+                request_data, request_params
+            )
             self._queue.task_done()

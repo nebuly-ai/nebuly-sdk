@@ -4,13 +4,10 @@ import copy
 from typing import Optional
 
 from nebuly.core.schemas import Task, DevelopmentPhase, TagData
-from nebuly.core.clients import NebulyQueue, NebulyTrackingDataThread
-
+from nebuly.core.clients import NebulyTrackingDataThread, NebulyClient
+from nebuly.core.queues import NebulyQueue
 
 _nebuly_queue: Optional[NebulyQueue] = None
-# TODO: Add the structure to check if the API key is set
-# and it is valid.
-api_key = None
 
 
 def init(
@@ -36,6 +33,9 @@ def init(
     _check_init_input_types(project, phase, task)
 
     global _nebuly_queue
+
+    api_key = None
+
     _nebuly_queue = NebulyQueue()
     tag_data = TagData(
         project=project,
@@ -43,10 +43,9 @@ def init(
         task=task,
     )
     _nebuly_queue.patch_tag_data(tag_data)
-    _nebuly_queue.load_previous_status()
 
     nebuly_tracking_thread = NebulyTrackingDataThread(
-        queue=_nebuly_queue,
+        queue=_nebuly_queue, nebuly_client=NebulyClient(api_key=api_key)
     )
     nebuly_tracking_thread.daemon = True
     atexit.register(_stop_thread_when_main_ends, nebuly_tracking_thread)

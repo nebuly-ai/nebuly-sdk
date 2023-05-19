@@ -50,7 +50,6 @@ class NebulyDataPackage(BaseModel):
     task: Task
     timestamp: float
 
-    provider: Optional[Provider] = None
     api_type: Optional[str] = None
 
     model: Optional[str] = None
@@ -63,3 +62,8 @@ class NebulyDataPackage(BaseModel):
     audio_duration_seconds: Optional[int] = None
 
     training_file_id: Optional[str] = None
+    training_id: Optional[str] = None
+
+
+class NebulyRequestParams(BaseModel):
+    kind: Provider

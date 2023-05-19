@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 
 from nebuly.core.schemas import (
     NebulyDataPackage,
+    NebulyRequestParams,
     DevelopmentPhase,
     Task,
     TagData,
@@ -11,6 +12,7 @@ from nebuly.core.schemas import (
 from nebuly.trackers.openai import (
     OpenAITracker,
     OpenAIDataPackageConverter,
+    OpenAIQueueObject,
     OpenAIAPIType,
 )
 
@@ -165,7 +167,6 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
             task=Task.UNDETECTED,
         )
         data_converter = OpenAIDataPackageConverter()
-        data_converter.tag_data = tag_data
         request_data = data_converter.get_data_package(
             tag_data=tag_data,
             request_kwargs=self.text_request_kwargs,
@@ -175,6 +176,38 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
         )
 
         self.assertIsInstance(request_data, NebulyDataPackage)
+
+    @patch("nebuly.trackers.openai.openai")
+    def test_get_request_params__is_returning_and_instance_of_nebuly_request_params(
+        self,
+        mocked_openai,
+    ):
+        mocked_openai.api_type = "open_ai"
+        data_converter = OpenAIDataPackageConverter()
+        request_params = data_converter.get_request_params()
+
+        self.assertIsInstance(request_params, NebulyRequestParams)
+
+    @patch("nebuly.trackers.openai.openai")
+    def test_get_request_params__is_returning_the_rigth_request_params(
+        self,
+        mocked_openai,
+    ):
+        mocked_openai.api_type = "open_ai"
+        expected_request_params = {
+            "kind": Provider.OPENAI,
+        }
+        data_converter = OpenAIDataPackageConverter()
+        request_params = data_converter.get_request_params()
+        self.assertEqual(request_params, expected_request_params)
+
+        mocked_openai.api_type = "azure"
+        expected_request_params = {
+            "kind": Provider.AZURE_OPENAI,
+        }
+        data_converter = OpenAIDataPackageConverter()
+        request_params = data_converter.get_request_params()
+        self.assertEqual(request_params, expected_request_params)
 
     @patch("nebuly.trackers.openai.openai")
     def test_as_data_package__is_returning_the_correct_data_for_text_api(
@@ -201,7 +234,6 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
             project="unknown_project",
             phase="unknown",
             task=Task.TEXT_GENERATION,
-            provider="openai",
             api_type=OpenAIAPIType.TEXT_COMPLETION.value,
             timestamp=self.mocked_timestamp,
             model="text-davinci-003",
@@ -280,7 +312,6 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
             project="unknown_project",
             phase="unknown",
             task=Task.AUDIO_TRANSCRIPTION,
-            provider="openai",
             api_type=OpenAIAPIType.AUDIO_TRANSCRIBE.value,
             timestamp=self.mocked_timestamp,
             model="whisper-1",
@@ -331,7 +362,6 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
             project="unknown_project",
             phase="unknown",
             task=Task.IMAGE_GENERATION,
-            provider="openai",
             api_type=OpenAIAPIType.IMAGE_CREATE.value,
             timestamp=self.mocked_timestamp,
             model=None,
@@ -395,7 +425,6 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
             project="unknown_project",
             phase="unknown",
             task=Task.FINETUNING,
-            provider="openai",
             api_type=OpenAIAPIType.FINETUNE.value,
             timestamp=self.mocked_timestamp,
             model="curie",
@@ -433,7 +462,6 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
             project="unknown_project",
             phase="unknown",
             task=Task.TEXT_MODERATION,
-            provider="openai",
             api_type=OpenAIAPIType.MODERATION.value,
             timestamp=self.mocked_timestamp,
             model="text-moderation-001",
@@ -446,6 +474,51 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
         )
 
         self.assertEqual(request_data, expected_response)
+
+
+class TestOpenAIQueueObject(unittest.TestCase):
+    def test_as_data_package__is_calling_the_get_data_package_method_of_the_converter(
+        self,
+    ):
+        mocked_converter = MagicMock()
+        tag_data = TagData(
+            project="unknown_project",
+            phase=DevelopmentPhase.UNKNOWN,
+            task=Task.UNDETECTED,
+        )
+        mocked_converter.get_data_package.return_value = "data_package"
+        mocked_openai_queue_object = OpenAIQueueObject(
+            data_package_converter=mocked_converter,
+            request_kwargs="request_kwargs",
+            request_response="request_response",
+            api_type="api_type",
+            timestamp="timestamp",
+        )
+        mocked_openai_queue_object.tag(tag_data=tag_data)
+        mocked_openai_queue_object.as_data_package()
+
+        mocked_converter.get_data_package.assert_called_once_with(
+            tag_data=tag_data,
+            request_kwargs="request_kwargs",
+            request_response="request_response",
+            api_type="api_type",
+            timestamp="timestamp",
+        )
+
+    def test_as_request_params__is_calling_the_get_request_params_method_of_the_converter(  # noqa E501
+        self,
+    ):
+        mocked_converter = MagicMock()
+        mocked_converter.get_request_params.return_value = "request_params"
+        mocked_openai_queue_object = OpenAIQueueObject(
+            data_package_converter=mocked_converter,
+            request_kwargs="request_kwargs",
+            request_response="request_response",
+            api_type="api_type",
+            timestamp="timestamp",
+        )
+        mocked_openai_queue_object.as_request_params()
+        mocked_converter.get_request_params.assert_called_once()
 
 
 class TestOpenAITracker(unittest.TestCase):

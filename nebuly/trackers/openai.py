@@ -3,7 +3,13 @@ from functools import partial
 from typing import Dict, Tuple, Optional
 
 from nebuly.core.queues import NebulyQueue, DataPackageConverter, QueueObject
-from nebuly.core.schemas import Provider, Task, NebulyDataPackage, TagData
+from nebuly.core.schemas import (
+    Provider,
+    Task,
+    NebulyDataPackage,
+    TagData,
+    NebulyRequestParams,
+)
 from nebuly.utils.functions import (
     transform_args_to_kwargs,
     get_media_file_length_in_seconds,
@@ -85,6 +91,7 @@ class OpenAIDataPackageConverter(DataPackageConverter):
         n_output_images = None
         audio_duration_seconds = None
         training_file_id = None
+        training_id = None
 
         detected_task = self._get_task(tag_data, api_type, request_kwargs)
 
@@ -116,10 +123,9 @@ class OpenAIDataPackageConverter(DataPackageConverter):
                 audio_duration_seconds,
             ) = self._get_voice_request_data(request_kwargs)
         elif api_type == OpenAIAPIType.FINETUNE:
-            (
-                model,
-                training_file_id,
-            ) = self._get_finetune_request_data(request_kwargs)
+            (model, training_file_id, training_id) = self._get_finetune_request_data(
+                request_kwargs, request_response
+            )
         elif api_type == OpenAIAPIType.MODERATION:
             model = self._get_moderation_request_data(request_response)
         else:
@@ -130,7 +136,6 @@ class OpenAIDataPackageConverter(DataPackageConverter):
             phase=tag_data.phase,
             task=detected_task,
             api_type=api_type.value,
-            provider=self._provider,
             timestamp=timestamp,
             model=model,
             n_prompt_tokens=n_input_tokens,
@@ -139,6 +144,12 @@ class OpenAIDataPackageConverter(DataPackageConverter):
             image_size=n_output_images,
             audio_duration_seconds=audio_duration_seconds,
             training_file_id=training_file_id,
+            training_id=training_id,
+        )
+
+    def get_request_params(self):
+        return NebulyRequestParams(
+            kind=self._provider,
         )
 
     def _get_task(
@@ -209,7 +220,8 @@ class OpenAIDataPackageConverter(DataPackageConverter):
     def _get_finetune_request_data(
         self,
         request_kwargs: Dict,
-    ) -> Tuple[Optional[str], Optional[str]]:
+        request_response: Dict,
+    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         model = None
         if "model" in request_kwargs.keys():
             model = request_kwargs["model"]
@@ -218,15 +230,48 @@ class OpenAIDataPackageConverter(DataPackageConverter):
         if "training_file" in request_kwargs.keys():
             training_file_id = request_kwargs["training_file"]
 
-        return model, training_file_id
+        training_id = None
+        if "training_id" in request_response.keys():
+            training_id = request_response["training_id"]
+
+        return model, training_file_id, training_id
 
     def _get_moderation_request_data(self, request_response: Dict) -> Optional[str]:
         model = None
         if "model" in request_response.keys():
             model = request_response["model"]
-        # TODO: price for this API is not clear yet, since for now this API is in beta,
-        # and delivered for free.
+        # is free now 19/05/2023: I don't have usage data
         return model
+
+
+class OpenAIQueueObject(QueueObject):
+    def __init__(
+        self,
+        data_package_converter: DataPackageConverter,
+        request_kwargs: Dict,
+        request_response: Dict,
+        api_type: str,
+        timestamp: float,
+    ):
+        super().__init__()
+
+        self._data_package_converter = data_package_converter
+        self._request_kwargs = request_kwargs
+        self._request_response = request_response
+        self._api_type = api_type
+        self._timestamp = timestamp
+
+    def as_data_package(self) -> NebulyDataPackage:
+        return self._data_package_converter.get_data_package(
+            tag_data=self._tag_data,
+            request_kwargs=self._request_kwargs,
+            request_response=self._request_response,
+            api_type=self._api_type,
+            timestamp=self._timestamp,
+        )
+
+    def as_request_params(self) -> NebulyRequestParams:
+        return self._data_package_converter.get_request_params()
 
 
 class OpenAITracker:
@@ -320,7 +365,6 @@ class OpenAITracker:
     def _track_method(
         self, original_method: callable, *request_args, **request_kwargs
     ) -> Dict:
-        # TODO: still missing the case of the request failing.
         request_response = original_method(*request_args, **request_kwargs)
         request_kwargs = transform_args_to_kwargs(
             original_method, request_args, request_kwargs
@@ -361,7 +405,7 @@ class OpenAITracker:
         request_response: Dict,
         api_type: OpenAIAPIType,
     ):
-        queue_object = QueueObject(
+        queue_object = OpenAIQueueObject(
             data_package_converter=OpenAIDataPackageConverter(),
             request_kwargs=request_kwargs,
             request_response=request_response,
