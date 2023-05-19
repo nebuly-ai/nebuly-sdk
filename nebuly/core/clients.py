@@ -32,7 +32,7 @@ RETRY_STOP_ATTEMPTS = 10
 class NebulyClient:
     def __init__(self, api_key: str):
         self._api_key = api_key
-        self._nebuly_event_ingestion_url = "http://event_ingestion/api/v1/record"
+        self._nebuly_event_ingestion_url = "https://event_ingestion/api/v1/record"
 
     def send_request_to_nebuly_server(
         self,
