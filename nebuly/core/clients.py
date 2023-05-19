@@ -97,7 +97,7 @@ class NebulyTrackingDataThread(Thread):
         self.thread_running = True
 
     def run(self):
-        while self.thread_running and self._queue.empty() is False:
+        while self.thread_running or self._queue.empty() is False:
             try:
                 queue_object = self._queue.get()
             except Empty:
