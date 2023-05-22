@@ -35,6 +35,8 @@ class DataPackageConverter(ABC):
         request_kwargs: Dict[str, Any],
         request_response: Dict[str, Any],
         api_type: str,
+        api_key: Optional[str],
+        api_provider: str,
         timestamp: float,
         timestamp_end: float,
     ) -> NebulyDataPackage:
@@ -45,6 +47,8 @@ class DataPackageConverter(ABC):
             request_kwargs (Dict): The request kwargs.
             request_response (Dict): The request response.
             api_type (str): The api type.
+            api_key (str): The api key.
+            api_provider (str): The api provider.
             timestamp (float): The timestamp captured at the beginning of the request.
             timestamp_end (float): The timestamp captured at the end of the request.
 

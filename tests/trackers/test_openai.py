@@ -20,6 +20,8 @@ from nebuly.trackers.openai import (
 class TestOpenAIDataPackageConverter(unittest.TestCase):
     mocked_timestamp = 1614807352
     mocked_timestamp_end = 1614807353
+    mocked_api_key = "test_api_key"
+    mocked_api_provider = "open_ai"
     text_request_kwargs = {
         "model": "text-davinci-003",
         "prompt": "Say this is a test",
@@ -142,24 +144,9 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
         ],
     }
 
-    @patch("nebuly.trackers.openai.openai")
-    def test_init__is_detecting_the_openai_provider(
-        self,
-        mocked_openai: MagicMock,
-    ) -> None:
-        mocked_openai.api_type = "open_ai"
-        data_converter = OpenAIDataPackageConverter()
-        self.assertEqual(first=data_converter._provider, second=Provider.OPENAI)
-        mocked_openai.api_type = "azure"
-        data_converter = OpenAIDataPackageConverter()
-        self.assertEqual(first=data_converter._provider, second=Provider.AZURE_OPENAI)
-
-    @patch("nebuly.trackers.openai.openai")
     def test_get_data_package__is_returning_an_instance_of_nebuly_data_package(
         self,
-        mocked_openai: MagicMock,
     ) -> None:
-        mocked_openai.api_type = "open_ai"
         mocked_api_type = OpenAIAPIType.TEXT_COMPLETION.value
         tag_data = TagData()
         data_converter = OpenAIDataPackageConverter()
@@ -168,18 +155,48 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
             request_kwargs=self.text_request_kwargs,
             request_response=self.text_request_response,
             api_type=mocked_api_type,
+            api_key=self.mocked_api_key,
+            api_provider=self.mocked_api_provider,
             timestamp=self.mocked_timestamp,
             timestamp_end=self.mocked_timestamp_end,
         )
 
         self.assertIsInstance(obj=request_data, cls=NebulyDataPackage)
 
-    @patch("nebuly.trackers.openai.openai")
+    def test_get_data_package__is_returning_the_right_api_provider(
+        self,
+    ) -> None:
+        mocked_api_type = OpenAIAPIType.TEXT_COMPLETION.value
+        tag_data = TagData()
+        data_converter = OpenAIDataPackageConverter()
+        request_data: NebulyDataPackage = data_converter.get_data_package(
+            tag_data=tag_data,
+            request_kwargs=self.text_request_kwargs,
+            request_response=self.text_request_response,
+            api_type=mocked_api_type,
+            api_key=self.mocked_api_key,
+            api_provider="open_ai",
+            timestamp=self.mocked_timestamp,
+            timestamp_end=self.mocked_timestamp_end,
+        )
+
+        self.assertEqual(first=request_data.kind, second=Provider.OPENAI)
+
+        request_data: NebulyDataPackage = data_converter.get_data_package(
+            tag_data=tag_data,
+            request_kwargs=self.text_request_kwargs,
+            request_response=self.text_request_response,
+            api_type=mocked_api_type,
+            api_key=self.mocked_api_key,
+            api_provider="azure",
+            timestamp=self.mocked_timestamp,
+            timestamp_end=self.mocked_timestamp_end,
+        )
+        self.assertEqual(first=request_data.kind, second=Provider.AZURE_OPENAI)
+
     def test_as_data_package__is_returning_the_correct_data_for_text_api(
         self,
-        mocked_openai: MagicMock,
     ) -> None:
-        mocked_openai.api_type = "open_ai"
         api_type = OpenAIAPIType.TEXT_COMPLETION
         tag_data = TagData()
         data_converter = OpenAIDataPackageConverter()
@@ -189,6 +206,8 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
             request_kwargs=self.text_request_kwargs,
             request_response=self.text_request_response,
             api_type=api_type.value,
+            api_key=self.mocked_api_key,
+            api_provider=self.mocked_api_provider,
             timestamp=self.mocked_timestamp,
             timestamp_end=self.mocked_timestamp_end,
         )
@@ -198,6 +217,7 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
             phase=DevelopmentPhase.UNKNOWN,
             task=Task.TEXT_GENERATION,
             api_type=OpenAIAPIType.TEXT_COMPLETION.value,
+            api_key=self.mocked_api_key,
             timestamp=self.mocked_timestamp,
             timestamp_end=self.mocked_timestamp_end,
             timestamp_openai=1589478378,
@@ -224,6 +244,8 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
             request_kwargs=self.text_request_kwargs,
             request_response=self.text_request_response,
             api_type=api_type.value,
+            api_key=self.mocked_api_key,
+            api_provider=self.mocked_api_provider,
             timestamp=self.mocked_timestamp,
             timestamp_end=self.mocked_timestamp_end,
         )
@@ -238,6 +260,8 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
             request_kwargs=self.text_request_kwargs,
             request_response=self.text_request_response,
             api_type=api_type.value,
+            api_key=self.mocked_api_key,
+            api_provider=self.mocked_api_provider,
             timestamp=self.mocked_timestamp,
             timestamp_end=self.mocked_timestamp_end,
         )
@@ -252,6 +276,8 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
             request_kwargs=self.text_request_kwargs,
             request_response=self.text_request_response,
             api_type=api_type.value,
+            api_key=self.mocked_api_key,
+            api_provider=self.mocked_api_provider,
             timestamp=self.mocked_timestamp,
             timestamp_end=self.mocked_timestamp_end,
         )
@@ -277,6 +303,8 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
             request_kwargs=self.audio_request_kwargs,
             request_response=self.audio_request_response,
             api_type=api_type.value,
+            api_key=self.mocked_api_key,
+            api_provider=self.mocked_api_provider,
             timestamp=self.mocked_timestamp,
             timestamp_end=self.mocked_timestamp_end,
         )
@@ -286,6 +314,7 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
             phase=DevelopmentPhase.UNKNOWN,
             task=Task.AUDIO_TRANSCRIPTION,
             api_type=OpenAIAPIType.AUDIO_TRANSCRIBE.value,
+            api_key=self.mocked_api_key,
             timestamp=self.mocked_timestamp,
             timestamp_end=self.mocked_timestamp_end,
             timestamp_openai=None,
@@ -312,6 +341,8 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
             request_kwargs=self.audio_request_kwargs,
             request_response=self.audio_request_response,
             api_type=api_type.value,
+            api_key=self.mocked_api_key,
+            api_provider=self.mocked_api_provider,
             timestamp=self.mocked_timestamp,
             timestamp_end=self.mocked_timestamp_end,
         )
@@ -334,6 +365,8 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
             request_kwargs=self.image_request_kwargs,
             request_response=self.image_request_response,
             api_type=api_type.value,
+            api_key=self.mocked_api_key,
+            api_provider=self.mocked_api_provider,
             timestamp=self.mocked_timestamp,
             timestamp_end=self.mocked_timestamp_end,
         )
@@ -343,6 +376,7 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
             phase=DevelopmentPhase.UNKNOWN,
             task=Task.IMAGE_GENERATION,
             api_type=OpenAIAPIType.IMAGE_CREATE.value,
+            api_key=self.mocked_api_key,
             timestamp=self.mocked_timestamp,
             timestamp_end=self.mocked_timestamp_end,
             timestamp_openai=1589478378,
@@ -369,6 +403,8 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
             request_kwargs=self.image_request_kwargs,
             request_response=self.image_request_response,
             api_type=api_type.value,
+            api_key=self.mocked_api_key,
+            api_provider=self.mocked_api_provider,
             timestamp=self.mocked_timestamp,
             timestamp_end=self.mocked_timestamp_end,
         )
@@ -383,6 +419,8 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
             request_kwargs=self.image_request_kwargs,
             request_response=self.image_request_response,
             api_type=api_type.value,
+            api_key=self.mocked_api_key,
+            api_provider=self.mocked_api_provider,
             timestamp=self.mocked_timestamp,
             timestamp_end=self.mocked_timestamp_end,
         )
@@ -404,6 +442,8 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
             request_kwargs=self.finetune_request_kwargs,
             request_response=self.finetune_request_response,
             api_type=api_type.value,
+            api_key=self.mocked_api_key,
+            api_provider=self.mocked_api_provider,
             timestamp=self.mocked_timestamp,
             timestamp_end=self.mocked_timestamp_end,
         )
@@ -413,6 +453,7 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
             phase=DevelopmentPhase.UNKNOWN,
             task=Task.FINETUNING,
             api_type=OpenAIAPIType.FINETUNE.value,
+            api_key=self.mocked_api_key,
             timestamp=self.mocked_timestamp,
             timestamp_end=self.mocked_timestamp_end,
             timestamp_openai=1614807352,
@@ -447,6 +488,8 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
             request_kwargs=self.moderation_request_kwargs,
             request_response=self.moderation_request_response,
             api_type=api_type.value,
+            api_key=self.mocked_api_key,
+            api_provider=self.mocked_api_provider,
             timestamp=self.mocked_timestamp,
             timestamp_end=self.mocked_timestamp_end,
         )
@@ -456,6 +499,7 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
             phase=DevelopmentPhase.UNKNOWN,
             task=Task.TEXT_MODERATION,
             api_type=OpenAIAPIType.MODERATION.value,
+            api_key=self.mocked_api_key,
             timestamp=self.mocked_timestamp,
             timestamp_end=self.mocked_timestamp_end,
             timestamp_openai=None,
@@ -489,6 +533,8 @@ class TestOpenAIQueueObject(unittest.TestCase):
             request_kwargs={"request_kwargs": "request_kwargs"},
             request_response={"request_response": "request_response"},
             api_type="api_type",
+            api_key="test_api_key",
+            api_provider="open_ai",
             timestamp=2.3,
             timestamp_end=2.4,
         )
@@ -499,6 +545,8 @@ class TestOpenAIQueueObject(unittest.TestCase):
             request_kwargs={"request_kwargs": "request_kwargs"},
             request_response={"request_response": "request_response"},
             api_type="api_type",
+            api_key="test_api_key",
+            api_provider="open_ai",
             timestamp=2.3,
             timestamp_end=2.4,
         )

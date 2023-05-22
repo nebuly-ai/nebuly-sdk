@@ -58,6 +58,7 @@ OPENAI_PROVIDER_DICT: Dict[str, Provider] = {
 
 class OpenAIAttributes(GenericProviderAttributes):
     api_type: str
+    api_key: Optional[str]
     timestamp_openai: Optional[int] = None
 
     model: Optional[str] = None
@@ -78,7 +79,6 @@ class OpenAIDataPackageConverter(DataPackageConverter):
         self,
     ) -> None:
         super().__init__()
-        self._provider: Provider = OPENAI_PROVIDER_DICT[openai.api_type]
 
     def get_data_package(
         self,
@@ -86,6 +86,8 @@ class OpenAIDataPackageConverter(DataPackageConverter):
         request_kwargs: Dict[str, Any],
         request_response: Dict[str, Any],
         api_type: str,
+        api_key: Optional[str],
+        api_provider: str,
         timestamp: float,
         timestamp_end: float,
     ) -> NebulyDataPackage:
@@ -100,6 +102,8 @@ class OpenAIDataPackageConverter(DataPackageConverter):
                 OpenAI API request
             request_response (Dict[str, Any]): The response from the OpenAI API
             api_type (str): The type of OpenAI API request
+            api_key (str): The OpenAI API key
+            api_provider (Optional[str]): The OpenAI API provider
             timestamp (float): The SDK timestamp captured just before the issuing the
                 request to OpenAI.
             timestamp_end (float): The SDK timestamp captured just after the issuing the
@@ -125,6 +129,7 @@ class OpenAIDataPackageConverter(DataPackageConverter):
             api_type=OpenAIAPIType(value=api_type),
             request_kwargs=request_kwargs,
         )
+        self._provider: Provider = OPENAI_PROVIDER_DICT[api_provider]
 
         if (
             (api_type == OpenAIAPIType.TEXT_COMPLETION.value)
@@ -178,6 +183,7 @@ class OpenAIDataPackageConverter(DataPackageConverter):
             phase=tag_data.phase,
             task=detected_task,
             api_type=api_type,
+            api_key=api_key,
             timestamp=timestamp,
             timestamp_end=timestamp_end,
             timestamp_openai=timestamp_openai,
@@ -311,6 +317,8 @@ class OpenAIQueueObject(QueueObject):
         request_kwargs: Dict[str, Any],
         request_response: Dict[str, Any],
         api_type: str,
+        api_key: Optional[str],
+        api_provider: str,
         timestamp: float,
         timestamp_end: float,
     ) -> None:
@@ -322,6 +330,8 @@ class OpenAIQueueObject(QueueObject):
         self._request_response: Dict[str, Any] = request_response
         self._timestamp: float = timestamp
         self._timestamp_end: float = timestamp_end
+        self._api_key: Optional[str] = api_key
+        self._api_provider: str = api_provider
 
     def as_data_package(self) -> NebulyDataPackage:
         return self._data_package_converter.get_data_package(
@@ -329,6 +339,8 @@ class OpenAIQueueObject(QueueObject):
             request_kwargs=self._request_kwargs,
             request_response=self._request_response,
             api_type=self._api_type,
+            api_key=self._api_key,
+            api_provider=self._api_provider,
             timestamp=self._timestamp,
             timestamp_end=self._timestamp_end,
         )
@@ -459,10 +471,14 @@ class OpenAITracker(Tracker):
             func=original_method, func_args=request_args, func_kwargs=request_kwargs
         )
         api_type: OpenAIAPIType = self._assign_api_type(original_method=original_method)
+        api_provider: str = openai.api_type
+        api_key: Optional[str] = openai.api_key
         self._track_openai_api(
             request_kwargs=request_kwargs,
             request_response=request_response,
             api_type=api_type,
+            api_key=api_key,
+            api_provider=api_provider,
             timestamp=timestamp,
             timestamp_end=timestamp_end,
         )
@@ -499,6 +515,8 @@ class OpenAITracker(Tracker):
         request_kwargs: Dict[str, Any],
         request_response: Dict[str, Any],
         api_type: OpenAIAPIType,
+        api_key: Optional[str],
+        api_provider: str,
         timestamp: float,
         timestamp_end: float,
     ) -> None:
@@ -507,6 +525,8 @@ class OpenAITracker(Tracker):
             request_kwargs=request_kwargs,
             request_response=request_response,
             api_type=api_type.value,
+            api_key=api_key,
+            api_provider=api_provider,
             timestamp=timestamp,
             timestamp_end=timestamp_end,
         )

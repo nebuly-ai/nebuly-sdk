@@ -43,7 +43,7 @@ def init(
         )
         return
 
-    tag_data = TagData(
+    tag_data: TagData = TagData(
         project=project,
         phase=phase,
         task=task,
