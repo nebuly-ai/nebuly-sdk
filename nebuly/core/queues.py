@@ -91,7 +91,7 @@ class QueueObject(ABC):
         return copy.deepcopy(x=item)
 
 
-class NebulyQueue(Queue[QueueObject]):
+class NebulyQueue(Queue):
     def __init__(
         self,
         tag_data: TagData,
