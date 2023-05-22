@@ -110,15 +110,15 @@ class OpenAIDataPackageConverter(DataPackageConverter):
                 Server.
         """
 
-        model: str | None = None
-        n_input_tokens: int | None = None
-        n_completion_tokens: int | None = None
-        image_size: str | None = None
-        n_output_images: int | None = None
-        audio_duration_seconds: int | None = None
-        training_file_id: str | None = None
-        training_id: str | None = None
-        timestamp_openai: int | None = None
+        model: Optional[str] = None
+        n_input_tokens: Optional[int] = None
+        n_completion_tokens: Optional[int] = None
+        image_size: Optional[str] = None
+        n_output_images: Optional[int] = None
+        audio_duration_seconds: Optional[int] = None
+        training_file_id: Optional[str] = None
+        training_id: Optional[str] = None
+        timestamp_openai: Optional[int] = None
 
         detected_task: Task = self._get_task(
             tag_data=tag_data,
@@ -216,23 +216,23 @@ class OpenAIDataPackageConverter(DataPackageConverter):
     def _get_text_api_data(
         self, request_kwargs: Dict[str, Any], request_response: Dict[str, Any]
     ) -> Tuple[Optional[str], Optional[int], Optional[int], Optional[int]]:
-        model: str | None = None
+        model: Optional[str] = None
         if "model" in request_kwargs.keys():
             model = request_kwargs["model"]
 
-        n_prompt_tokens: int | None = None
+        n_prompt_tokens: Optional[int] = None
         if "usage" in request_response.keys():
             if "prompt_tokens" in request_response["usage"].keys():
                 n_prompt_tokens = int(request_response["usage"]["prompt_tokens"])
 
-        n_completion_tokens: int | None = None
+        n_completion_tokens: Optional[int] = None
         if "usage" in request_response.keys():
             if "prompt_tokens" in request_response["usage"].keys():
                 n_completion_tokens = int(
                     request_response["usage"]["completion_tokens"]
                 )  # noqa 501
 
-        timestamp_openai: int | None = None
+        timestamp_openai: Optional[int] = None
         if "created" in request_response.keys():
             timestamp_openai = int(request_response["created"])
 
@@ -241,15 +241,15 @@ class OpenAIDataPackageConverter(DataPackageConverter):
     def _get_image_api_data(
         self, request_kwargs: Dict[str, Any], request_response: Dict[str, Any]
     ) -> Tuple[Optional[int], Optional[str], Optional[int]]:
-        number_of_images: int | None = None
+        number_of_images: Optional[int] = None
         if "n" in request_kwargs.keys():
             number_of_images = int(request_kwargs["n"])
 
-        image_size: str | None = None
+        image_size: Optional[str] = None
         if "size" in request_kwargs.keys():
             image_size = request_kwargs["size"]
 
-        timestamp_openai: int | None = None
+        timestamp_openai: Optional[int] = None
         if "created" in request_response.keys():
             timestamp_openai = int(request_response["created"])
         return number_of_images, image_size, timestamp_openai
@@ -258,11 +258,11 @@ class OpenAIDataPackageConverter(DataPackageConverter):
         self,
         request_kwargs: Dict[str, Any],
     ) -> Tuple[Optional[str], Optional[int]]:
-        model: str | None = None
+        model: Optional[str] = None
         if "model" in request_kwargs.keys():
             model = request_kwargs["model"]
 
-        audio_duration_seconds: int | None = None
+        audio_duration_seconds: Optional[int] = None
         if "file" in request_kwargs.keys():
             file_name: str = request_kwargs["file"].name
             audio_duration_seconds = get_media_file_length_in_seconds(
@@ -276,19 +276,19 @@ class OpenAIDataPackageConverter(DataPackageConverter):
         request_kwargs: Dict[str, Any],
         request_response: Dict[str, Any],
     ) -> Tuple[Optional[str], Optional[str], Optional[str], Optional[int]]:
-        model: str | None = None
+        model: Optional[str] = None
         if "model" in request_kwargs.keys():
             model = request_kwargs["model"]
 
-        training_file_id: str | None = None
+        training_file_id: Optional[str] = None
         if "training_file" in request_kwargs.keys():
             training_file_id = request_kwargs["training_file"]
 
-        training_id: str | None = None
+        training_id: Optional[str] = None
         if "id" in request_response.keys():
             training_id = request_response["id"]
 
-        timestamp_openai: int | None = None
+        timestamp_openai: Optional[int] = None
         if "created_at" in request_response.keys():
             timestamp_openai = int(request_response["created_at"])
 
@@ -297,7 +297,7 @@ class OpenAIDataPackageConverter(DataPackageConverter):
     def _get_moderation_request_data(
         self, request_response: Dict[str, Any]
     ) -> Optional[str]:
-        model: str | None = None
+        model: Optional[str] = None
         if "model" in request_response.keys():
             model = request_response["model"]
         # is free now 19/05/2023: I don't have usage data

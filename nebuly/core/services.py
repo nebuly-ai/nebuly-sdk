@@ -99,7 +99,9 @@ class TaskDetector:
             prompt.task = Task.TEXT_GENERATION
 
     def _get_prompt_from_prompt_list(self, prompt: PromptInfo) -> PromptInfo:
-        matching_prompt: PromptInfo | None = self._get_matching_prompt_from_prompt_list(
+        matching_prompt: Optional[
+            PromptInfo
+        ] = self._get_matching_prompt_from_prompt_list(  # noqa: E501
             prompt=prompt
         )
         if matching_prompt is not None:
