@@ -52,6 +52,11 @@ class NebulyClient:
         except HTTPError as errh:
             nebuly_logger.error(msg=f"Nebuly Request, Http Error: {errh}")
         except BaseException as e:
+            # Here is possible to add more specific exceptions,
+            # but even importing all the exception imported in the base request module
+            # there are still some exceptions that are not being caught.
+            # since the user-code should never fail for our fault,
+            # here i am catching all the exceptions and logging them.
             nebuly_logger.error(msg=f"Nebuly Request, Error: {e}")
 
     def _get_header(self) -> Dict[str, str]:
