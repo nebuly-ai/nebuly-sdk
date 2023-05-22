@@ -1,5 +1,5 @@
 import inspect
-import time
+from datetime import datetime
 from inspect import Signature, BoundArguments
 from typing import Dict, Optional, Tuple, Any
 
@@ -54,6 +54,6 @@ def get_current_timestamp() -> float:
     """Gets the current timestamp.
 
     Returns:
-        float: The current timestamp.
+        float: The current timestamp using UTC as timezone.
     """
-    return time.time()
+    return datetime.utcnow().timestamp()
