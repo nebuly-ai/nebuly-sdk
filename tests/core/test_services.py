@@ -10,73 +10,73 @@ class TestTaskDetector(unittest.TestCase):
 
     def test_detect_task_from_text__is_adding_prompts_when_prompt_list_is_empty(
         self,
-    ):
+    ) -> None:
         task_detector = TaskDetector()
-        task_detector.detect_task_from_text(self.mocked_prompt1)
+        task_detector.detect_task_from_text(text=self.mocked_prompt1)
 
         self.assertEqual(
-            task_detector._prompt_list[0].text,
-            self.mocked_prompt1,
+            first=task_detector._prompt_list[0].text,
+            second=self.mocked_prompt1,
         )
 
     def test_detect_task_from_text__is_adding_prompts_when_prompt_list_is_not_empty(
         self,
-    ):
+    ) -> None:
         task_detector = TaskDetector()
-        task_detector.detect_task_from_text(self.mocked_prompt1)
-        task_detector.detect_task_from_text(self.mocked_prompt2)
+        task_detector.detect_task_from_text(text=self.mocked_prompt1)
+        task_detector.detect_task_from_text(text=self.mocked_prompt2)
 
         self.assertEqual(
-            task_detector._prompt_list[0].text,
-            self.mocked_prompt1,
+            first=task_detector._prompt_list[0].text,
+            second=self.mocked_prompt1,
         )
         self.assertEqual(
-            task_detector._prompt_list[1].text,
-            self.mocked_prompt2,
+            first=task_detector._prompt_list[1].text,
+            second=self.mocked_prompt2,
         )
-        self.assertEqual(len(task_detector._prompt_list), 2)
+        self.assertEqual(first=len(task_detector._prompt_list), second=2)
 
-    def test_detect_task_from_text__is_detecting_identical_prompts_as_one(self):
+    def test_detect_task_from_text__is_detecting_identical_prompts_as_one(self) -> None:
         task_detector = TaskDetector()
-        task_detector.detect_task_from_text(self.mocked_prompt1)
-        task_detector.detect_task_from_text(self.mocked_prompt1)
+        task_detector.detect_task_from_text(text=self.mocked_prompt1)
+        task_detector.detect_task_from_text(text=self.mocked_prompt1)
 
         self.assertEqual(
-            task_detector._prompt_list[0].text,
-            self.mocked_prompt1,
+            first=task_detector._prompt_list[0].text,
+            second=self.mocked_prompt1,
         )
-        self.assertEqual(len(task_detector._prompt_list), 1)
+        self.assertEqual(first=len(task_detector._prompt_list), second=1)
 
-    def test_detect_task_from_text__is_detecting_only_the_common_text(self):
+    def test_detect_task_from_text__is_detecting_only_the_common_text(self) -> None:
         task_detector = TaskDetector()
         task_detector.detect_task_from_text(
-            (
+            text=(
                 "write the summary of the following text: "
                 "The quick brown fox jumps over the lazy dog"
             )
         )
         task_detector.detect_task_from_text(
-            (
+            text=(
                 "write the summary of the following text: "
                 "A car was stolen from the parking lot"
             )
         )
 
         self.assertEqual(
-            "write the summary of the following text:",
-            task_detector._prompt_list[0].text,
+            first="write the summary of the following text:",
+            second=task_detector._prompt_list[0].text,
         )
-        self.assertEqual(len(task_detector._prompt_list), 1)
+        self.assertEqual(first=len(task_detector._prompt_list), second=1)
 
-    def test_detect_task_from_text__is_detecting_the_task_from_keywords(self):
+    def test_detect_task_from_text__is_detecting_the_task_from_keywords(self) -> None:
         prompt_detector = TaskDetector()
-        task = prompt_detector.detect_task_from_text(
-            (
+        task: Task = prompt_detector.detect_task_from_text(
+            text=(
                 "write the summary of the following text: "
                 "A car was stolen from the parking lot"
             )
         )
         self.assertEqual(
-            Task.TEXT_SUMMARIZATION.value,
-            task.value,
+            first=Task.TEXT_SUMMARIZATION.value,
+            second=task.value,
         )

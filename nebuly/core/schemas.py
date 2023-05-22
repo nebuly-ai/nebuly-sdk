@@ -1,12 +1,11 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel
 
 
 class Task(Enum):
-    UNDETECTED = "undetected"
+    UNKNOWN = "undetected"
     TEXT_GENERATION = "text_generation"
     TEXT_SUMMARIZATION = "text_summarization"
     TEXT_CLASSIFICATION = "text_classification"
@@ -19,7 +18,7 @@ class Task(Enum):
     IMAGE_VARIATION = "image_variation"
     AUDIO_TRANSCRIPTION = "audio_transcription"
     AUDIO_TRANSLATION = "audio_translation"
-    FINETUNING = "finetuning"
+    FINETUNING = "fine-tuning"
 
 
 class DevelopmentPhase(Enum):
@@ -39,31 +38,19 @@ class Provider(Enum):
 
 @dataclass
 class TagData:
-    project: Optional[str] = None
-    phase: Optional[DevelopmentPhase] = None
-    task: Optional[Task] = None
+    project: str = "unknown"
+    phase: DevelopmentPhase = DevelopmentPhase.UNKNOWN
+    task: Task = Task.UNKNOWN
 
 
-class NebulyDataPackage(BaseModel):
+class GenericProviderAttributes(BaseModel):
     project: str
     phase: DevelopmentPhase
     task: Task
     timestamp: float
-
-    api_type: Optional[str] = None
-
-    model: Optional[str] = None
-    n_prompt_tokens: Optional[int] = None
-    n_output_tokens: Optional[int] = None
-
-    n_output_images: Optional[int] = None
-    image_size: Optional[str] = None
-
-    audio_duration_seconds: Optional[int] = None
-
-    training_file_id: Optional[str] = None
-    training_id: Optional[str] = None
+    timestamp_end: float
 
 
-class NebulyRequestParams(BaseModel):
+class NebulyDataPackage(BaseModel):
     kind: Provider
+    body: GenericProviderAttributes

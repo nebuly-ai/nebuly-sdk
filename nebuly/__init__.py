@@ -1,5 +1,5 @@
-from nebuly.core.apis import init, tracker  # noqa 401
-from nebuly.core.schemas import DevelopmentPhase, Task  # noqa 401
+from nebuly.core.apis import init, tracker  # type: ignore  # noqa 401
+from nebuly.core.schemas import DevelopmentPhase, Task  # type: ignore  # noqa 401
 import os
 
-api_key = os.getenv("NEBULY_API_KEY")
+api_key: str | None = os.getenv(key="NEBULY_API_KEY")

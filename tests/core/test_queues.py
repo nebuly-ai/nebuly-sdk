@@ -1,50 +1,55 @@
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
 
-from nebuly.core.schemas import NebulyDataPackage, NebulyRequestParams, TagData
+from nebuly.core.schemas import (
+    NebulyDataPackage,
+    TagData,
+    DevelopmentPhase,
+    Task,
+)
 from nebuly.core.queues import NebulyQueue, QueueObject
 
 
 class TestNebulyQueue(TestCase):
-    def test_patch_tag_data__is_updating_all_the_fields(self):
-        nebuly_queue = NebulyQueue()
-        mocked_tag_data = MagicMock()
-        mocked_tag_data.project = "project"
-        mocked_tag_data.phase = "phase"
-        mocked_tag_data.task = "task"
+    default_tag_data: TagData = TagData(
+        project="project",
+        phase=DevelopmentPhase.PRODUCTION,
+        task=Task.TEXT_CLASSIFICATION,
+    )
 
-        nebuly_queue.patch_tag_data(mocked_tag_data)
+    def test_patch_tag_data__is_updating_all_the_fields(self) -> None:
+        nebuly_queue = NebulyQueue(tag_data=self.default_tag_data)
+        new_tag_data: TagData = TagData(
+            project="new_project",
+            phase=DevelopmentPhase.EXPERIMENTATION,
+            task=Task.TEXT_EDITING,
+        )
 
-        self.assertEqual(nebuly_queue.tag_data.project, "project")
-        self.assertEqual(nebuly_queue.tag_data.phase, "phase")
-        self.assertEqual(nebuly_queue.tag_data.task, "task")
+        nebuly_queue.patch_tag_data(tag_data=new_tag_data)
 
-    def test_patch_tag_data__is_discarding_none_objects(self):
-        nebuly_queue = NebulyQueue()
-        mocked_tag_data = MagicMock()
-        mocked_tag_data.project = None
-        mocked_tag_data.phase = None
-        mocked_tag_data.task = None
+        self.assertEqual(first=nebuly_queue.tag_data, second=new_tag_data)
 
-        nebuly_queue.patch_tag_data(mocked_tag_data)
+    def test_patch_tag_data__is_discarding_unkown_attributes(self) -> None:
+        nebuly_queue = NebulyQueue(tag_data=self.default_tag_data)
+        undefined_tag_data = TagData()
 
-        self.assertEqual(nebuly_queue.tag_data.project, "unknown_project")
-        self.assertEqual(nebuly_queue.tag_data.phase.value, "unknown")
-        self.assertEqual(nebuly_queue.tag_data.task.value, "undetected")
+        nebuly_queue.patch_tag_data(tag_data=undefined_tag_data)
 
-    def test_put__is_calling_the_super_put(self):
-        with patch.object(NebulyQueue, "put") as mocked_put:
-            nebuly_queue = NebulyQueue()
+        self.assertEqual(first=nebuly_queue.tag_data, second=self.default_tag_data)
+
+    def test_put__is_calling_the_super_put(self) -> None:
+        with patch.object(target=NebulyQueue, attribute="put") as mocked_put:
+            nebuly_queue = NebulyQueue(tag_data=self.default_tag_data)
             queue_object_mocked = MagicMock()
-            nebuly_queue.put(queue_object_mocked)
+            nebuly_queue.put(item=queue_object_mocked)
 
-        mocked_put.assert_called_once_with(queue_object_mocked)
+        mocked_put.assert_called_once_with(item=queue_object_mocked)
 
-    def test_put__is_tagging_the_queue_object(self):
-        nebuly_queue = NebulyQueue()
+    def test_put__is_tagging_the_queue_object(self) -> None:
+        nebuly_queue = NebulyQueue(tag_data=self.default_tag_data)
         queue_object_mocked = MagicMock()
-        queue_object_mocked.tag.return_value = MagicMock()
-        nebuly_queue.put(queue_object_mocked)
+
+        nebuly_queue.put(item=queue_object_mocked)
 
         queue_object_mocked.tag.assert_called_once()
 
@@ -53,58 +58,59 @@ class ImplementedQueueObject(QueueObject):
     def as_data_package(self) -> NebulyDataPackage:
         return MagicMock()
 
-    def as_request_params(self) -> NebulyRequestParams:
-        return MagicMock()
-
 
 class TestQueueObject(TestCase):
-    mocked_request_kwargs = {
+    mocked_request_kwargs: dict[str, str] = {
         "url": "url",
         "method": "method",
     }
-    mocked_request_response = {
+    mocked_request_response: dict[str, int | str] = {
         "status_code": 200,
         "content": "content",
     }
     mocked_api_type = "api_type"
     mocked_timestamp = 1234567890.1234567890
 
-    def test_tag__is_updating_all_the_fields(self):
+    def test_tag__is_updating_all_the_fields(self) -> None:
+        queue_object = ImplementedQueueObject()
+        tag_data = TagData(
+            project="project",
+            phase=DevelopmentPhase.PRODUCTION,
+            task=Task.TEXT_CLASSIFICATION,
+        )
+
+        queue_object.tag(tag_data=tag_data)
+
+        self.assertEqual(first=queue_object._tag_data, second=tag_data)
+
+    def test_tag__is_not_linking_dirctly_the_tag_data(self) -> None:
+        queue_object = ImplementedQueueObject()
+        tag_data = TagData(
+            project="project",
+            phase=DevelopmentPhase.PRODUCTION,
+            task=Task.TEXT_CLASSIFICATION,
+        )
+
+        queue_object.tag(tag_data=tag_data)
+
+        self.assertNotEqual(first=id(queue_object._tag_data), second=id(tag_data))
+
+    def test_tag__is_raising_value_error_for_unspecified_project(self) -> None:
         queue_object = ImplementedQueueObject()
 
-        tag_data = TagData(project="project", phase="phase", task="task")
+        tag_data = TagData(phase=DevelopmentPhase.PRODUCTION)
 
-        queue_object.tag(tag_data)
+        with self.assertRaises(expected_exception=ValueError) as context:
+            queue_object.tag(tag_data=tag_data)
 
-        self.assertEqual(queue_object._tag_data.project, "project")
-        self.assertEqual(queue_object._tag_data.phase, "phase")
-        self.assertEqual(queue_object._tag_data.task, "task")
+        self.assertTrue(expr="Project" in str(object=context.exception))
 
-    def test_tag__is_not_linking_dirctly_the_tag_data(self):
-        queue_object = ImplementedQueueObject()
-        tag_data = TagData(project="project", phase="phase", task="task")
-
-        queue_object.tag(tag_data)
-
-        self.assertNotEqual(id(queue_object._tag_data), id(tag_data))
-
-    def test_tag__is_raising_value_error_for_none_project(self):
+    def test_tag__is_raising_value_error_for_unspecified_phase(self) -> None:
         queue_object = ImplementedQueueObject()
 
-        tag_data = TagData(project=None, phase="phase", task="task")
+        tag_data = TagData(project="my_project")
 
-        with self.assertRaises(ValueError) as context:
-            queue_object.tag(tag_data)
+        with self.assertRaises(expected_exception=ValueError) as context:
+            queue_object.tag(tag_data=tag_data)
 
-        self.assertTrue("Project" in str(context.exception))
-
-    def test_tag__is_raising_value_error_for_none_phase(self):
-        queue_object = ImplementedQueueObject()
-
-        tag_data = TagData(project="project", phase=None, task="task")
-
-        with self.assertRaises(ValueError) as context:
-            queue_object.tag(tag_data)
-
-        print(str(context.exception))
-        self.assertTrue("Development phase" in str(context.exception))
+        self.assertTrue(expr="Development phase" in str(object=context.exception))

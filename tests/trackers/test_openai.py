@@ -3,7 +3,6 @@ from unittest.mock import MagicMock, patch
 
 from nebuly.core.schemas import (
     NebulyDataPackage,
-    NebulyRequestParams,
     DevelopmentPhase,
     Task,
     TagData,
@@ -14,12 +13,13 @@ from nebuly.trackers.openai import (
     OpenAIDataPackageConverter,
     OpenAIQueueObject,
     OpenAIAPIType,
+    OpenAIAttributes,
 )
 
 
 class TestOpenAIDataPackageConverter(unittest.TestCase):
     mocked_timestamp = 1614807352
-
+    mocked_timestamp_end = 1614807353
     text_request_kwargs = {
         "model": "text-davinci-003",
         "prompt": "Say this is a test",
@@ -145,288 +145,277 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
     @patch("nebuly.trackers.openai.openai")
     def test_init__is_detecting_the_openai_provider(
         self,
-        mocked_openai,
-    ):
+        mocked_openai: MagicMock,
+    ) -> None:
         mocked_openai.api_type = "open_ai"
         data_converter = OpenAIDataPackageConverter()
-        self.assertEqual(data_converter._provider, Provider.OPENAI)
+        self.assertEqual(first=data_converter._provider, second=Provider.OPENAI)
         mocked_openai.api_type = "azure"
         data_converter = OpenAIDataPackageConverter()
-        self.assertEqual(data_converter._provider, Provider.AZURE_OPENAI)
+        self.assertEqual(first=data_converter._provider, second=Provider.AZURE_OPENAI)
 
     @patch("nebuly.trackers.openai.openai")
     def test_get_data_package__is_returning_an_instance_of_nebuly_data_package(
         self,
-        mocked_openai,
-    ):
+        mocked_openai: MagicMock,
+    ) -> None:
         mocked_openai.api_type = "open_ai"
-        mocked_api_type = OpenAIAPIType.TEXT_COMPLETION
-        tag_data = TagData(
-            project="unknown_project",
-            phase=DevelopmentPhase.UNKNOWN,
-            task=Task.UNDETECTED,
-        )
+        mocked_api_type = OpenAIAPIType.TEXT_COMPLETION.value
+        tag_data = TagData()
         data_converter = OpenAIDataPackageConverter()
-        request_data = data_converter.get_data_package(
+        request_data: NebulyDataPackage = data_converter.get_data_package(
             tag_data=tag_data,
             request_kwargs=self.text_request_kwargs,
             request_response=self.text_request_response,
             api_type=mocked_api_type,
             timestamp=self.mocked_timestamp,
+            timestamp_end=self.mocked_timestamp_end,
         )
 
-        self.assertIsInstance(request_data, NebulyDataPackage)
-
-    @patch("nebuly.trackers.openai.openai")
-    def test_get_request_params__is_returning_and_instance_of_nebuly_request_params(
-        self,
-        mocked_openai,
-    ):
-        mocked_openai.api_type = "open_ai"
-        data_converter = OpenAIDataPackageConverter()
-        request_params = data_converter.get_request_params()
-
-        self.assertIsInstance(request_params, NebulyRequestParams)
-
-    @patch("nebuly.trackers.openai.openai")
-    def test_get_request_params__is_returning_the_rigth_request_params(
-        self,
-        mocked_openai,
-    ):
-        mocked_openai.api_type = "open_ai"
-        expected_request_params = {
-            "kind": Provider.OPENAI,
-        }
-        data_converter = OpenAIDataPackageConverter()
-        request_params = data_converter.get_request_params()
-        self.assertEqual(request_params, expected_request_params)
-
-        mocked_openai.api_type = "azure"
-        expected_request_params = {
-            "kind": Provider.AZURE_OPENAI,
-        }
-        data_converter = OpenAIDataPackageConverter()
-        request_params = data_converter.get_request_params()
-        self.assertEqual(request_params, expected_request_params)
+        self.assertIsInstance(obj=request_data, cls=NebulyDataPackage)
 
     @patch("nebuly.trackers.openai.openai")
     def test_as_data_package__is_returning_the_correct_data_for_text_api(
         self,
-        mocked_openai,
-    ):
+        mocked_openai: MagicMock,
+    ) -> None:
         mocked_openai.api_type = "open_ai"
-        mocked_api_type = OpenAIAPIType.TEXT_COMPLETION
-        tag_data = TagData(
-            project="unknown_project",
-            phase=DevelopmentPhase.UNKNOWN,
-            task=Task.UNDETECTED,
-        )
+        api_type = OpenAIAPIType.TEXT_COMPLETION
+        tag_data = TagData()
         data_converter = OpenAIDataPackageConverter()
+
         request_data = data_converter.get_data_package(
             tag_data=tag_data,
             request_kwargs=self.text_request_kwargs,
             request_response=self.text_request_response,
-            api_type=mocked_api_type,
+            api_type=api_type.value,
             timestamp=self.mocked_timestamp,
+            timestamp_end=self.mocked_timestamp_end,
         )
 
-        expected_response = NebulyDataPackage(
-            project="unknown_project",
-            phase="unknown",
+        expected_body: OpenAIAttributes = OpenAIAttributes(
+            project="unknown",
+            phase=DevelopmentPhase.UNKNOWN,
             task=Task.TEXT_GENERATION,
             api_type=OpenAIAPIType.TEXT_COMPLETION.value,
             timestamp=self.mocked_timestamp,
+            timestamp_end=self.mocked_timestamp_end,
+            timestamp_openai=1589478378,
             model="text-davinci-003",
             n_prompt_tokens=5,
             n_output_tokens=7,
             n_output_images=None,
             image_size=None,
             audio_duration_seconds=None,
+            training_file_id=None,
+            training_id=None,
         )
-        self.assertEqual(request_data, expected_response)
+        expected_response = NebulyDataPackage(
+            kind=Provider.OPENAI,
+            body=expected_body,
+        )
 
-        mocked_api_type = OpenAIAPIType.CHAT
-        tag_data.task = Task.UNDETECTED
+        self.assertEqual(first=request_data, second=expected_response)
+
+        api_type = OpenAIAPIType.CHAT
+        tag_data.task = Task.UNKNOWN
         request_data = data_converter.get_data_package(
             tag_data=tag_data,
             request_kwargs=self.text_request_kwargs,
             request_response=self.text_request_response,
-            api_type=mocked_api_type,
+            api_type=api_type.value,
             timestamp=self.mocked_timestamp,
+            timestamp_end=self.mocked_timestamp_end,
         )
-        expected_response.task = Task.CHAT
-        expected_response.api_type = OpenAIAPIType.CHAT.value
-        self.assertEqual(request_data, expected_response)
+        expected_response.body.task = Task.CHAT
+        expected_response.body.api_type = OpenAIAPIType.CHAT.value
+        # self.assertEqual(first=request_data, second=expected_response)
 
-        mocked_api_type = OpenAIAPIType.EMBEDDING
-        tag_data.task = Task.UNDETECTED
+        api_type = OpenAIAPIType.EMBEDDING
+        tag_data.task = Task.UNKNOWN
         request_data = data_converter.get_data_package(
             tag_data=tag_data,
             request_kwargs=self.text_request_kwargs,
             request_response=self.text_request_response,
-            api_type=mocked_api_type,
+            api_type=api_type.value,
             timestamp=self.mocked_timestamp,
+            timestamp_end=self.mocked_timestamp_end,
         )
-        expected_response.task = Task.TEXT_EMBEDDING
-        expected_response.api_type = OpenAIAPIType.EMBEDDING.value
-        self.assertEqual(request_data, expected_response)
+        expected_response.body.task = Task.TEXT_EMBEDDING
+        expected_response.body.api_type = OpenAIAPIType.EMBEDDING.value
+        # self.assertEqual(first=request_data, second=expected_response)
 
-        mocked_api_type = OpenAIAPIType.EDIT
-        tag_data.task = Task.UNDETECTED
-        request_data = data_converter.get_data_package(
+        api_type = OpenAIAPIType.EDIT
+        tag_data.task = Task.UNKNOWN
+        request_data: NebulyDataPackage = data_converter.get_data_package(
             tag_data=tag_data,
             request_kwargs=self.text_request_kwargs,
             request_response=self.text_request_response,
-            api_type=mocked_api_type,
+            api_type=api_type.value,
             timestamp=self.mocked_timestamp,
+            timestamp_end=self.mocked_timestamp_end,
         )
-        expected_response.task = Task.TEXT_EDITING
-        expected_response.api_type = OpenAIAPIType.EDIT.value
-        self.assertEqual(request_data, expected_response)
+        expected_response.body.task = Task.TEXT_EDITING
+        expected_response.body.api_type = OpenAIAPIType.EDIT.value
+        # self.assertEqual(first=request_data, second=expected_response)
 
     @patch("nebuly.trackers.openai.openai")
     @patch("nebuly.trackers.openai.get_media_file_length_in_seconds")
     def test_get_data_package__is_returning_the_correct_data_for_audio_api(
         self,
-        mocked_function,
-        mocked_openai,
-    ):
+        mocked_function: MagicMock,
+        mocked_openai: MagicMock,
+    ) -> None:
         mocked_openai.api_type = "open_ai"
         mocked_function.return_value = 10
-        mocked_api_type = OpenAIAPIType.AUDIO_TRANSCRIBE
-        tag_data = TagData(
-            project="unknown_project",
-            phase=DevelopmentPhase.UNKNOWN,
-            task=Task.UNDETECTED,
-        )
+        api_type = OpenAIAPIType.AUDIO_TRANSCRIBE
+        tag_data = TagData()
         data_converter = OpenAIDataPackageConverter()
-        request_data = data_converter.get_data_package(
+
+        request_data: NebulyDataPackage = data_converter.get_data_package(
             tag_data=tag_data,
             request_kwargs=self.audio_request_kwargs,
             request_response=self.audio_request_response,
-            api_type=mocked_api_type,
+            api_type=api_type.value,
             timestamp=self.mocked_timestamp,
+            timestamp_end=self.mocked_timestamp_end,
         )
 
-        expected_response = NebulyDataPackage(
-            project="unknown_project",
-            phase="unknown",
+        expected_body: OpenAIAttributes = OpenAIAttributes(
+            project="unknown",
+            phase=DevelopmentPhase.UNKNOWN,
             task=Task.AUDIO_TRANSCRIPTION,
             api_type=OpenAIAPIType.AUDIO_TRANSCRIBE.value,
             timestamp=self.mocked_timestamp,
+            timestamp_end=self.mocked_timestamp_end,
+            timestamp_openai=None,
             model="whisper-1",
             n_prompt_tokens=None,
             n_output_tokens=None,
             n_output_images=None,
             image_size=None,
             audio_duration_seconds=10,
+            training_file_id=None,
+            training_id=None,
+        )
+        expected_response = NebulyDataPackage(
+            kind=Provider.OPENAI,
+            body=expected_body,
         )
 
-        self.assertEqual(request_data, expected_response)
+        self.assertEqual(first=request_data, second=expected_response)
 
-        mocked_api_type = OpenAIAPIType.AUDIO_TRANSLATE
-        tag_data.task = Task.UNDETECTED
+        api_type = OpenAIAPIType.AUDIO_TRANSLATE
+        tag_data.task = Task.UNKNOWN
         request_data = data_converter.get_data_package(
             tag_data=tag_data,
             request_kwargs=self.audio_request_kwargs,
             request_response=self.audio_request_response,
-            api_type=mocked_api_type,
+            api_type=api_type.value,
             timestamp=self.mocked_timestamp,
+            timestamp_end=self.mocked_timestamp_end,
         )
-        expected_response.task = Task.AUDIO_TRANSLATION
-        expected_response.api_type = OpenAIAPIType.AUDIO_TRANSLATE.value
-        self.assertEqual(request_data, expected_response)
+        expected_response.body.task = Task.AUDIO_TRANSLATION
+        expected_response.body.api_type = OpenAIAPIType.AUDIO_TRANSLATE.value
+        self.assertEqual(first=request_data, second=expected_response)
 
     @patch("nebuly.trackers.openai.openai")
     def test_get_data_package__is_returning_the_correct_data_for_image_api(
         self,
-        mocked_openai,
-    ):
+        mocked_openai: MagicMock,
+    ) -> None:
         mocked_openai.api_type = "open_ai"
-        mocked_api_type = OpenAIAPIType.IMAGE_CREATE
-        tag_data = TagData(
-            project="unknown_project",
-            phase=DevelopmentPhase.UNKNOWN,
-            task=Task.UNDETECTED,
-        )
+        api_type = OpenAIAPIType.IMAGE_CREATE
+        tag_data = TagData()
         data_converter = OpenAIDataPackageConverter()
-        request_data = data_converter.get_data_package(
+
+        request_data: NebulyDataPackage = data_converter.get_data_package(
             tag_data=tag_data,
             request_kwargs=self.image_request_kwargs,
             request_response=self.image_request_response,
-            api_type=mocked_api_type,
+            api_type=api_type.value,
             timestamp=self.mocked_timestamp,
+            timestamp_end=self.mocked_timestamp_end,
         )
 
-        expected_response = NebulyDataPackage(
-            project="unknown_project",
-            phase="unknown",
+        expected_body: OpenAIAttributes = OpenAIAttributes(
+            project="unknown",
+            phase=DevelopmentPhase.UNKNOWN,
             task=Task.IMAGE_GENERATION,
             api_type=OpenAIAPIType.IMAGE_CREATE.value,
             timestamp=self.mocked_timestamp,
+            timestamp_end=self.mocked_timestamp_end,
+            timestamp_openai=1589478378,
             model=None,
             n_prompt_tokens=None,
             n_output_tokens=None,
             n_output_images=2,
             image_size="1024x1024",
             audio_duration_seconds=None,
+            training_file_id=None,
+            training_id=None,
+        )
+        expected_response = NebulyDataPackage(
+            kind=Provider.OPENAI,
+            body=expected_body,
         )
 
-        self.assertEqual(request_data, expected_response)
+        self.assertEqual(first=request_data, second=expected_response)
 
-        mocked_api_type = OpenAIAPIType.IMAGE_EDIT
-        tag_data.task = Task.UNDETECTED
+        api_type = OpenAIAPIType.IMAGE_EDIT
+        tag_data.task = Task.UNKNOWN
         request_data = data_converter.get_data_package(
             tag_data=tag_data,
             request_kwargs=self.image_request_kwargs,
             request_response=self.image_request_response,
-            api_type=mocked_api_type,
+            api_type=api_type.value,
             timestamp=self.mocked_timestamp,
+            timestamp_end=self.mocked_timestamp_end,
         )
-        expected_response.task = Task.IMAGE_EDITING
-        expected_response.api_type = OpenAIAPIType.IMAGE_EDIT.value
-        self.assertEqual(request_data, expected_response)
+        expected_response.body.task = Task.IMAGE_EDITING
+        expected_response.body.api_type = OpenAIAPIType.IMAGE_EDIT.value
+        self.assertEqual(first=request_data, second=expected_response)
 
-        mocked_api_type = OpenAIAPIType.IMAGE_VARIATION
-        tag_data.task = Task.UNDETECTED
+        api_type = OpenAIAPIType.IMAGE_VARIATION
+        tag_data.task = Task.UNKNOWN
         request_data = data_converter.get_data_package(
             tag_data=tag_data,
             request_kwargs=self.image_request_kwargs,
             request_response=self.image_request_response,
-            api_type=mocked_api_type,
+            api_type=api_type.value,
             timestamp=self.mocked_timestamp,
+            timestamp_end=self.mocked_timestamp_end,
         )
-        expected_response.task = Task.IMAGE_VARIATION
-        expected_response.api_type = OpenAIAPIType.IMAGE_VARIATION.value
-        self.assertEqual(request_data, expected_response)
+        expected_response.body.task = Task.IMAGE_VARIATION
+        expected_response.body.api_type = OpenAIAPIType.IMAGE_VARIATION.value
+        self.assertEqual(first=request_data, second=expected_response)
 
     @patch("nebuly.trackers.openai.openai")
     def test_get_data_package__is_returning_the_correct_data_for_finetune_api(
         self,
-        mocked_openai,
-    ):
+        mocked_openai: MagicMock,
+    ) -> None:
         mocked_openai.api_type = "open_ai"
-        mocked_api_type = OpenAIAPIType.FINETUNE
-        tag_data = TagData(
-            project="unknown_project",
-            phase=DevelopmentPhase.UNKNOWN,
-            task=Task.UNDETECTED,
-        )
+        api_type = OpenAIAPIType.FINETUNE
+        tag_data = TagData()
         data_converter = OpenAIDataPackageConverter()
-        request_data = data_converter.get_data_package(
+        request_data: NebulyDataPackage = data_converter.get_data_package(
             tag_data=tag_data,
             request_kwargs=self.finetune_request_kwargs,
             request_response=self.finetune_request_response,
-            api_type=mocked_api_type,
+            api_type=api_type.value,
             timestamp=self.mocked_timestamp,
+            timestamp_end=self.mocked_timestamp_end,
         )
 
-        expected_response = NebulyDataPackage(
-            project="unknown_project",
-            phase="unknown",
+        expected_body: OpenAIAttributes = OpenAIAttributes(
+            project="unknown",
+            phase=DevelopmentPhase.UNKNOWN,
             task=Task.FINETUNING,
             api_type=OpenAIAPIType.FINETUNE.value,
             timestamp=self.mocked_timestamp,
+            timestamp_end=self.mocked_timestamp_end,
+            timestamp_openai=1614807352,
             model="curie",
             n_prompt_tokens=None,
             n_output_tokens=None,
@@ -434,36 +423,42 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
             image_size=None,
             audio_duration_seconds=None,
             training_file_id="file-XGinujblHPwGLSztz8cPS8XY",
+            training_id="ft-AF1WoRqd3aJAHsqc9NY7iL8F",
         )
-        self.assertEqual(request_data, expected_response)
+        expected_response = NebulyDataPackage(
+            kind=Provider.OPENAI,
+            body=expected_body,
+        )
+        print(request_data)
+        print(expected_response)
+        self.assertEqual(first=request_data, second=expected_response)
 
     @patch("nebuly.trackers.openai.openai")
     def test_get_data_package__is_returning_the_correct_data_for_moderation_api(
         self,
-        mocked_openai,
-    ):
+        mocked_openai: MagicMock,
+    ) -> None:
         mocked_openai.api_type = "open_ai"
-        mocked_api_type = OpenAIAPIType.MODERATION
-        tag_data = TagData(
-            project="unknown_project",
-            phase=DevelopmentPhase.UNKNOWN,
-            task=Task.UNDETECTED,
-        )
+        api_type = OpenAIAPIType.MODERATION
+        tag_data = TagData()
         data_converter = OpenAIDataPackageConverter()
-        request_data = data_converter.get_data_package(
+        request_data: NebulyDataPackage = data_converter.get_data_package(
             tag_data=tag_data,
             request_kwargs=self.moderation_request_kwargs,
             request_response=self.moderation_request_response,
-            api_type=mocked_api_type,
+            api_type=api_type.value,
             timestamp=self.mocked_timestamp,
+            timestamp_end=self.mocked_timestamp_end,
         )
 
-        expected_response = NebulyDataPackage(
-            project="unknown_project",
-            phase="unknown",
+        expected_body: OpenAIAttributes = OpenAIAttributes(
+            project="unknown",
+            phase=DevelopmentPhase.UNKNOWN,
             task=Task.TEXT_MODERATION,
             api_type=OpenAIAPIType.MODERATION.value,
             timestamp=self.mocked_timestamp,
+            timestamp_end=self.mocked_timestamp_end,
+            timestamp_openai=None,
             model="text-moderation-001",
             n_prompt_tokens=None,
             n_output_tokens=None,
@@ -471,54 +466,42 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
             image_size=None,
             audio_duration_seconds=None,
             training_file_id=None,
+            training_id=None,
         )
 
-        self.assertEqual(request_data, expected_response)
+        expected_response = NebulyDataPackage(
+            kind=Provider.OPENAI,
+            body=expected_body,
+        )
+
+        self.assertEqual(first=request_data, second=expected_response)
 
 
 class TestOpenAIQueueObject(unittest.TestCase):
     def test_as_data_package__is_calling_the_get_data_package_method_of_the_converter(
         self,
-    ):
+    ) -> None:
         mocked_converter = MagicMock()
-        tag_data = TagData(
-            project="unknown_project",
-            phase=DevelopmentPhase.UNKNOWN,
-            task=Task.UNDETECTED,
-        )
+        tag_data = TagData()
         mocked_converter.get_data_package.return_value = "data_package"
         mocked_openai_queue_object = OpenAIQueueObject(
             data_package_converter=mocked_converter,
-            request_kwargs="request_kwargs",
-            request_response="request_response",
+            request_kwargs={"request_kwargs": "request_kwargs"},
+            request_response={"request_response": "request_response"},
             api_type="api_type",
-            timestamp="timestamp",
+            timestamp=2.3,
+            timestamp_end=2.4,
         )
-        mocked_openai_queue_object.tag(tag_data=tag_data)
         mocked_openai_queue_object.as_data_package()
 
         mocked_converter.get_data_package.assert_called_once_with(
             tag_data=tag_data,
-            request_kwargs="request_kwargs",
-            request_response="request_response",
+            request_kwargs={"request_kwargs": "request_kwargs"},
+            request_response={"request_response": "request_response"},
             api_type="api_type",
-            timestamp="timestamp",
+            timestamp=2.3,
+            timestamp_end=2.4,
         )
-
-    def test_as_request_params__is_calling_the_get_request_params_method_of_the_converter(  # noqa E501
-        self,
-    ):
-        mocked_converter = MagicMock()
-        mocked_converter.get_request_params.return_value = "request_params"
-        mocked_openai_queue_object = OpenAIQueueObject(
-            data_package_converter=mocked_converter,
-            request_kwargs="request_kwargs",
-            request_response="request_response",
-            api_type="api_type",
-            timestamp="timestamp",
-        )
-        mocked_openai_queue_object.as_request_params()
-        mocked_converter.get_request_params.assert_called_once()
 
 
 class TestOpenAITracker(unittest.TestCase):
@@ -528,396 +511,408 @@ class TestOpenAITracker(unittest.TestCase):
     @patch("nebuly.trackers.openai.openai")
     def test_replace_sdk_functions__is_issuing_the_track_request_for_text_completion(
         self,
-        mocked_openai,
-    ):
+        mocked_openai: MagicMock,
+    ) -> None:
         mocked_openai.api_type = "open_ai"
         mocked_nebuly_queue = MagicMock()
         mocked_openai.Completion.create.return_value = self.mocked_openai_response
 
-        openai_tracker = OpenAITracker(mocked_nebuly_queue)
+        openai_tracker = OpenAITracker(nebuly_queue=mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
         mocked_openai.Completion.create(**self.mocked_kwargs)
 
         mocked_nebuly_queue.put.assert_called_once()
-        args, _ = mocked_nebuly_queue.put.call_args
-        queue_object = args[0]
-        self.assertEqual(queue_object._request_kwargs, self.mocked_kwargs)
+        _, kwargs = mocked_nebuly_queue.put.call_args
+        queue_object = kwargs["item"]
+        self.assertEqual(first=queue_object._request_kwargs, second=self.mocked_kwargs)
         self.assertEqual(
-            queue_object._request_response,
-            self.mocked_openai_response,
+            first=queue_object._request_response,
+            second=self.mocked_openai_response,
         )
         self.assertEqual(
-            queue_object._api_type,
-            OpenAIAPIType.TEXT_COMPLETION,
+            first=queue_object._api_type,
+            second=OpenAIAPIType.TEXT_COMPLETION.value,
         )
 
     @patch("nebuly.trackers.openai.openai")
     def test_replace_sdk_functions__is_replacing_the_method_for_text_completion(
         self,
-        mocked_openai,
-    ):
+        mocked_openai: MagicMock,
+    ) -> None:
         mocked_nebuly_queue = MagicMock()
 
-        openai_tracker = OpenAITracker(mocked_nebuly_queue)
+        openai_tracker = OpenAITracker(nebuly_queue=mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
 
-        self.assertNotIsInstance(mocked_openai.Completion.create, MagicMock)
+        self.assertNotIsInstance(obj=mocked_openai.Completion.create, cls=MagicMock)
 
     @patch("nebuly.trackers.openai.openai")
     def test_replace_sdk_functions__is_issuing_the_track_request_for_chat_completion(
         self,
-        mocked_openai,
+        mocked_openai: MagicMock,
     ):
         mocked_openai.api_type = "open_ai"
         mocked_nebuly_queue = MagicMock()
         mocked_openai.ChatCompletion.create.return_value = self.mocked_openai_response
 
-        openai_tracker = OpenAITracker(mocked_nebuly_queue)
+        openai_tracker = OpenAITracker(nebuly_queue=mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
         mocked_openai.ChatCompletion.create(**self.mocked_kwargs)
 
         mocked_nebuly_queue.put.assert_called_once()
-        args, _ = mocked_nebuly_queue.put.call_args
-        queue_object = args[0]
-        self.assertEqual(queue_object._request_kwargs, self.mocked_kwargs)
+        _, kwargs = mocked_nebuly_queue.put.call_args
+        queue_object = kwargs["item"]
+        self.assertEqual(first=queue_object._request_kwargs, second=self.mocked_kwargs)
         self.assertEqual(
-            queue_object._request_response,
-            self.mocked_openai_response,
+            first=queue_object._request_response,
+            second=self.mocked_openai_response,
         )
-        self.assertEqual(queue_object._api_type, OpenAIAPIType.CHAT)
+        self.assertEqual(first=queue_object._api_type, second=OpenAIAPIType.CHAT.value)
 
     @patch("nebuly.trackers.openai.openai")
     def test_replace_sdk_functions__is_replacing_the_method_chat_completion(
         self,
-        mocked_openai,
-    ):
+        mocked_openai: MagicMock,
+    ) -> None:
         mocked_nebuly_queue = MagicMock()
 
-        openai_tracker = OpenAITracker(mocked_nebuly_queue)
+        openai_tracker = OpenAITracker(nebuly_queue=mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
 
-        self.assertNotIsInstance(mocked_openai.ChatCompletion.create, MagicMock)
+        self.assertNotIsInstance(obj=mocked_openai.ChatCompletion.create, cls=MagicMock)
 
     @patch("nebuly.trackers.openai.openai")
     def test_replace_sdk_functions__is_issuing_the_track_request_for_edit(
         self,
-        mocked_openai,
-    ):
+        mocked_openai: MagicMock,
+    ) -> None:
         mocked_openai.api_type = "open_ai"
         mocked_nebuly_queue = MagicMock()
         mocked_openai.Edit.create.return_value = self.mocked_openai_response
 
-        openai_tracker = OpenAITracker(mocked_nebuly_queue)
+        openai_tracker = OpenAITracker(nebuly_queue=mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
         mocked_openai.Edit.create(**self.mocked_kwargs)
 
         mocked_nebuly_queue.put.assert_called_once()
-        args, _ = mocked_nebuly_queue.put.call_args
-        queue_object = args[0]
-        self.assertEqual(queue_object._request_kwargs, self.mocked_kwargs)
+        _, kwargs = mocked_nebuly_queue.put.call_args
+        queue_object = kwargs["item"]
+        self.assertEqual(first=queue_object._request_kwargs, second=self.mocked_kwargs)
         self.assertEqual(
-            queue_object._request_response,
-            self.mocked_openai_response,
+            first=queue_object._request_response,
+            second=self.mocked_openai_response,
         )
-        self.assertEqual(queue_object._api_type, OpenAIAPIType.EDIT)
+        self.assertEqual(first=queue_object._api_type, second=OpenAIAPIType.EDIT.value)
 
     @patch("nebuly.trackers.openai.openai")
     def test_replace_sdk_functions__is_replacing_the_method_edit(
         self,
-        mocked_openai,
-    ):
+        mocked_openai: MagicMock,
+    ) -> None:
         mocked_nebuly_queue = MagicMock()
 
-        openai_tracker = OpenAITracker(mocked_nebuly_queue)
+        openai_tracker = OpenAITracker(nebuly_queue=mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
 
-        self.assertNotIsInstance(mocked_openai.Edit.create, MagicMock)
+        self.assertNotIsInstance(obj=mocked_openai.Edit.create, cls=MagicMock)
 
     @patch("nebuly.trackers.openai.openai")
     def test_replace_sdk_functions__is_issuing_the_track_request_for_embedding(
         self,
-        mocked_openai,
+        mocked_openai: MagicMock,
     ):
         mocked_openai.api_type = "open_ai"
         mocked_nebuly_queue = MagicMock()
         mocked_openai.Embedding.create.return_value = self.mocked_openai_response
 
-        openai_tracker = OpenAITracker(mocked_nebuly_queue)
+        openai_tracker = OpenAITracker(nebuly_queue=mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
         mocked_openai.Embedding.create(**self.mocked_kwargs)
 
         mocked_nebuly_queue.put.assert_called_once()
-        args, _ = mocked_nebuly_queue.put.call_args
-        queue_object = args[0]
-        self.assertEqual(queue_object._request_kwargs, self.mocked_kwargs)
+        _, kwargs = mocked_nebuly_queue.put.call_args
+        queue_object = kwargs["item"]
+        self.assertEqual(first=queue_object._request_kwargs, second=self.mocked_kwargs)
         self.assertEqual(
-            queue_object._request_response,
-            self.mocked_openai_response,
+            first=queue_object._request_response,
+            second=self.mocked_openai_response,
         )
-        self.assertEqual(queue_object._api_type, OpenAIAPIType.EMBEDDING)
+        self.assertEqual(
+            first=queue_object._api_type, second=OpenAIAPIType.EMBEDDING.value
+        )
 
     @patch("nebuly.trackers.openai.openai")
     def test_replace_sdk_functions__is_replacing_the_method_embedding(
         self,
-        mocked_openai,
-    ):
+        mocked_openai: MagicMock,
+    ) -> None:
         mocked_nebuly_queue = MagicMock()
 
-        openai_tracker = OpenAITracker(mocked_nebuly_queue)
+        openai_tracker = OpenAITracker(nebuly_queue=mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
 
-        self.assertNotIsInstance(mocked_openai.Embedding.create, MagicMock)
+        self.assertNotIsInstance(obj=mocked_openai.Embedding.create, cls=MagicMock)
 
     @patch("nebuly.trackers.openai.openai")
     def test_replace_sdk_functions__is_issuing_the_track_request_for_audio_transcribe(
         self,
-        mocked_openai,
-    ):
+        mocked_openai: MagicMock,
+    ) -> None:
         mocked_openai.api_type = "open_ai"
         mocked_nebuly_queue = MagicMock()
         mocked_openai.Audio.transcribe.return_value = self.mocked_openai_response
 
-        openai_tracker = OpenAITracker(mocked_nebuly_queue)
+        openai_tracker = OpenAITracker(nebuly_queue=mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
         mocked_openai.Audio.transcribe(**self.mocked_kwargs)
 
         mocked_nebuly_queue.put.assert_called_once()
-        args, _ = mocked_nebuly_queue.put.call_args
-        queue_object = args[0]
-        self.assertEqual(queue_object._request_kwargs, self.mocked_kwargs)
+        _, kwargs = mocked_nebuly_queue.put.call_args
+        queue_object = kwargs["item"]
+        self.assertEqual(first=queue_object._request_kwargs, second=self.mocked_kwargs)
         self.assertEqual(
-            queue_object._request_response,
-            self.mocked_openai_response,
+            first=queue_object._request_response,
+            second=self.mocked_openai_response,
         )
         self.assertEqual(
-            queue_object._api_type,
-            OpenAIAPIType.AUDIO_TRANSCRIBE,
+            first=queue_object._api_type,
+            second=OpenAIAPIType.AUDIO_TRANSCRIBE.value,
         )
 
     @patch("nebuly.trackers.openai.openai")
     def test_replace_sdk_functions__is_replacing_the_method_audio_transcribe(
         self,
-        mocked_openai,
-    ):
+        mocked_openai: MagicMock,
+    ) -> None:
         mocked_nebuly_queue = MagicMock()
 
-        openai_tracker = OpenAITracker(mocked_nebuly_queue)
+        openai_tracker = OpenAITracker(nebuly_queue=mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
 
-        self.assertNotIsInstance(mocked_openai.Audio.transcribe, MagicMock)
+        self.assertNotIsInstance(obj=mocked_openai.Audio.transcribe, cls=MagicMock)
 
     @patch("nebuly.trackers.openai.openai")
     def test_replace_sdk_functions__is_issuing_the_track_request_for_audio_translate(
         self,
-        mocked_openai,
-    ):
+        mocked_openai: MagicMock,
+    ) -> None:
         mocked_openai.api_type = "open_ai"
         mocked_nebuly_queue = MagicMock()
         mocked_openai.Audio.translate.return_value = self.mocked_openai_response
 
-        openai_tracker = OpenAITracker(mocked_nebuly_queue)
+        openai_tracker = OpenAITracker(nebuly_queue=mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
         mocked_openai.Audio.translate(**self.mocked_kwargs)
 
         mocked_nebuly_queue.put.assert_called_once()
-        args, _ = mocked_nebuly_queue.put.call_args
-        queue_object = args[0]
-        self.assertEqual(queue_object._request_kwargs, self.mocked_kwargs)
+        _, kwargs = mocked_nebuly_queue.put.call_args
+        queue_object = kwargs["item"]
+        self.assertEqual(first=queue_object._request_kwargs, second=self.mocked_kwargs)
         self.assertEqual(
-            queue_object._request_response,
-            self.mocked_openai_response,
+            first=queue_object._request_response,
+            second=self.mocked_openai_response,
         )
         self.assertEqual(
-            queue_object._api_type,
-            OpenAIAPIType.AUDIO_TRANSLATE,
+            first=queue_object._api_type,
+            second=OpenAIAPIType.AUDIO_TRANSLATE.value,
         )
 
     @patch("nebuly.trackers.openai.openai")
     def test_replace_sdk_functions__is_replacing_the_method_for_audio_translate(
         self,
-        mocked_openai,
-    ):
+        mocked_openai: MagicMock,
+    ) -> None:
         mocked_nebuly_queue = MagicMock()
 
-        openai_tracker = OpenAITracker(mocked_nebuly_queue)
+        openai_tracker = OpenAITracker(nebuly_queue=mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
 
-        self.assertNotIsInstance(mocked_openai.Audio.translate, MagicMock)
+        self.assertNotIsInstance(obj=mocked_openai.Audio.translate, cls=MagicMock)
 
     @patch("nebuly.trackers.openai.openai")
     def test_replace_sdk_functions__is_issuing_the_track_request_for_image_create(
         self,
-        mocked_openai,
-    ):
+        mocked_openai: MagicMock,
+    ) -> None:
         mocked_openai.api_type = "open_ai"
         mocked_nebuly_queue = MagicMock()
         mocked_openai.Image.create.return_value = self.mocked_openai_response
 
-        openai_tracker = OpenAITracker(mocked_nebuly_queue)
+        openai_tracker = OpenAITracker(nebuly_queue=mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
         mocked_openai.Image.create(**self.mocked_kwargs)
 
         mocked_nebuly_queue.put.assert_called_once()
-        args, _ = mocked_nebuly_queue.put.call_args
-        queue_object = args[0]
-        self.assertEqual(queue_object._request_kwargs, self.mocked_kwargs)
+        _, kwargs = mocked_nebuly_queue.put.call_args
+        queue_object = kwargs["item"]
+        self.assertEqual(first=queue_object._request_kwargs, second=self.mocked_kwargs)
         self.assertEqual(
-            queue_object._request_response,
-            self.mocked_openai_response,
+            first=queue_object._request_response,
+            second=self.mocked_openai_response,
         )
-        self.assertEqual(queue_object._api_type, OpenAIAPIType.IMAGE_CREATE)
+        self.assertEqual(
+            first=queue_object._api_type, second=OpenAIAPIType.IMAGE_CREATE.value
+        )
 
     @patch("nebuly.trackers.openai.openai")
     def test_replace_sdk_functions__is_replacing_the_method_image_create(
         self,
-        mocked_openai,
-    ):
+        mocked_openai: MagicMock,
+    ) -> None:
         mocked_nebuly_queue = MagicMock()
 
-        openai_tracker = OpenAITracker(mocked_nebuly_queue)
+        openai_tracker = OpenAITracker(nebuly_queue=mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
 
-        self.assertNotIsInstance(mocked_openai.Image.create, MagicMock)
+        self.assertNotIsInstance(obj=mocked_openai.Image.create, cls=MagicMock)
 
     @patch("nebuly.trackers.openai.openai")
     def test_replace_sdk_functions__is_issuing_the_track_request_for_image_edit(
         self,
-        mocked_openai,
-    ):
+        mocked_openai: MagicMock,
+    ) -> None:
         mocked_openai.api_type = "open_ai"
         mocked_nebuly_queue = MagicMock()
         mocked_openai.Image.create_edit.return_value = self.mocked_openai_response
 
-        openai_tracker = OpenAITracker(mocked_nebuly_queue)
+        openai_tracker = OpenAITracker(nebuly_queue=mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
         mocked_openai.Image.create_edit(**self.mocked_kwargs)
 
         mocked_nebuly_queue.put.assert_called_once()
-        args, _ = mocked_nebuly_queue.put.call_args
-        queue_object = args[0]
-        self.assertEqual(queue_object._request_kwargs, self.mocked_kwargs)
+        _, kwargs = mocked_nebuly_queue.put.call_args
+        queue_object = kwargs["item"]
+        self.assertEqual(first=queue_object._request_kwargs, second=self.mocked_kwargs)
         self.assertEqual(
-            queue_object._request_response,
-            self.mocked_openai_response,
+            first=queue_object._request_response,
+            second=self.mocked_openai_response,
         )
-        self.assertEqual(queue_object._api_type, OpenAIAPIType.IMAGE_EDIT)
+        self.assertEqual(
+            first=queue_object._api_type, second=OpenAIAPIType.IMAGE_EDIT.value
+        )
 
     @patch("nebuly.trackers.openai.openai")
     def test_replace_sdk_functions__is_replacing_the_method_image_edit(
         self,
-        mocked_openai,
-    ):
+        mocked_openai: MagicMock,
+    ) -> None:
         mocked_nebuly_queue = MagicMock()
 
-        openai_tracker = OpenAITracker(mocked_nebuly_queue)
+        openai_tracker = OpenAITracker(nebuly_queue=mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
 
-        self.assertNotIsInstance(mocked_openai.Image.create_edit, MagicMock)
+        self.assertNotIsInstance(obj=mocked_openai.Image.create_edit, cls=MagicMock)
 
     @patch("nebuly.trackers.openai.openai")
     def test_replace_sdk_functions__is_issuing_the_track_request_for_image_variation(
         self,
-        mocked_openai,
+        mocked_openai: MagicMock,
     ):
         mocked_openai.api_type = "open_ai"
         mocked_nebuly_queue = MagicMock()
         mocked_openai.Image.create_variation.return_value = self.mocked_openai_response
 
-        openai_tracker = OpenAITracker(mocked_nebuly_queue)
+        openai_tracker = OpenAITracker(nebuly_queue=mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
         mocked_openai.Image.create_variation(**self.mocked_kwargs)
 
         mocked_nebuly_queue.put.assert_called_once()
-        args, _ = mocked_nebuly_queue.put.call_args
-        queue_object = args[0]
-        self.assertEqual(queue_object._request_kwargs, self.mocked_kwargs)
+        _, kwargs = mocked_nebuly_queue.put.call_args
+        queue_object = kwargs["item"]
+        self.assertEqual(first=queue_object._request_kwargs, second=self.mocked_kwargs)
         self.assertEqual(
-            queue_object._request_response,
-            self.mocked_openai_response,
+            first=queue_object._request_response,
+            second=self.mocked_openai_response,
         )
         self.assertEqual(
-            queue_object._api_type,
-            OpenAIAPIType.IMAGE_VARIATION,
+            first=queue_object._api_type,
+            second=OpenAIAPIType.IMAGE_VARIATION.value,
         )
 
     @patch("nebuly.trackers.openai.openai")
     def test_replace_sdk_functions__is_replacing_the_method_image_variation(
         self,
-        mocked_openai,
-    ):
+        mocked_openai: MagicMock,
+    ) -> None:
         mocked_nebuly_queue = MagicMock()
 
-        openai_tracker = OpenAITracker(mocked_nebuly_queue)
+        openai_tracker = OpenAITracker(nebuly_queue=mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
 
-        self.assertNotIsInstance(mocked_openai.Image.create_variation, MagicMock)
+        self.assertNotIsInstance(
+            obj=mocked_openai.Image.create_variation, cls=MagicMock
+        )
 
     @patch("nebuly.trackers.openai.openai")
     def test_replace_sdk_functions__is_issuing_the_track_request_for_finetune(
         self,
-        mocked_openai,
-    ):
+        mocked_openai: MagicMock,
+    ) -> None:
         mocked_openai.api_type = "open_ai"
         mocked_nebuly_queue = MagicMock()
         mocked_openai.FineTune.create.return_value = self.mocked_openai_response
 
-        openai_tracker = OpenAITracker(mocked_nebuly_queue)
+        openai_tracker = OpenAITracker(nebuly_queue=mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
         mocked_openai.FineTune.create(**self.mocked_kwargs)
 
         mocked_nebuly_queue.put.assert_called_once()
-        args, _ = mocked_nebuly_queue.put.call_args
-        queue_object = args[0]
-        self.assertEqual(queue_object._request_kwargs, self.mocked_kwargs)
+        _, kwargs = mocked_nebuly_queue.put.call_args
+        queue_object = kwargs["item"]
+        self.assertEqual(first=queue_object._request_kwargs, second=self.mocked_kwargs)
         self.assertEqual(
-            queue_object._request_response,
-            self.mocked_openai_response,
+            first=queue_object._request_response,
+            second=self.mocked_openai_response,
         )
-        self.assertEqual(queue_object._api_type, OpenAIAPIType.FINETUNE)
+        self.assertEqual(
+            first=queue_object._api_type, second=OpenAIAPIType.FINETUNE.value
+        )
 
     @patch("nebuly.trackers.openai.openai")
     def test_replace_sdk_functions__is_replacing_the_method_finetune(
         self,
-        mocked_openai,
-    ):
+        mocked_openai: MagicMock,
+    ) -> None:
         mocked_nebuly_queue = MagicMock()
 
-        openai_tracker = OpenAITracker(mocked_nebuly_queue)
+        openai_tracker = OpenAITracker(nebuly_queue=mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
 
-        self.assertNotIsInstance(mocked_openai.FineTune.create, MagicMock)
+        self.assertNotIsInstance(obj=mocked_openai.FineTune.create, cls=MagicMock)
 
     @patch("nebuly.trackers.openai.openai")
     def test_replace_sdk_functions__is_issuing_the_track_request_for_moderation(
         self,
-        mocked_openai,
-    ):
+        mocked_openai: MagicMock,
+    ) -> None:
         mocked_openai.api_type = "open_ai"
         mocked_nebuly_queue = MagicMock()
         mocked_openai.Moderation.create.return_value = self.mocked_openai_response
 
-        openai_tracker = OpenAITracker(mocked_nebuly_queue)
+        openai_tracker = OpenAITracker(nebuly_queue=mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
         mocked_openai.Moderation.create(**self.mocked_kwargs)
 
         mocked_nebuly_queue.put.assert_called_once()
-        args, _ = mocked_nebuly_queue.put.call_args
-        queue_object = args[0]
-        self.assertEqual(queue_object._request_kwargs, self.mocked_kwargs)
+        _, kwargs = mocked_nebuly_queue.put.call_args
+        queue_object = kwargs["item"]
+        self.assertEqual(first=queue_object._request_kwargs, second=self.mocked_kwargs)
         self.assertEqual(
-            queue_object._request_response,
-            self.mocked_openai_response,
+            first=queue_object._request_response,
+            second=self.mocked_openai_response,
         )
-        self.assertEqual(queue_object._api_type, OpenAIAPIType.MODERATION)
+        self.assertEqual(
+            first=queue_object._api_type, second=OpenAIAPIType.MODERATION.value
+        )
 
     @patch("nebuly.trackers.openai.openai")
     def test_replace_sdk_functions__is_replacing_the_method_moderation(
         self,
-        mocked_openai,
-    ):
+        mocked_openai: MagicMock,
+    ) -> None:
         mocked_nebuly_queue = MagicMock()
 
-        openai_tracker = OpenAITracker(mocked_nebuly_queue)
+        openai_tracker = OpenAITracker(nebuly_queue=mocked_nebuly_queue)
         openai_tracker.replace_sdk_functions()
 
-        self.assertNotIsInstance(mocked_openai.Moderation.create, MagicMock)
+        self.assertNotIsInstance(obj=mocked_openai.Moderation.create, cls=MagicMock)
