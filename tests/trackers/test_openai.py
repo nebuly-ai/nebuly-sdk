@@ -229,7 +229,7 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
         )
         expected_response.body.task = Task.CHAT
         expected_response.body.api_type = OpenAIAPIType.CHAT.value
-        # self.assertEqual(first=request_data, second=expected_response)
+        self.assertEqual(first=request_data, second=expected_response)
 
         api_type = OpenAIAPIType.EMBEDDING
         tag_data.task = Task.UNKNOWN
@@ -243,7 +243,7 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
         )
         expected_response.body.task = Task.TEXT_EMBEDDING
         expected_response.body.api_type = OpenAIAPIType.EMBEDDING.value
-        # self.assertEqual(first=request_data, second=expected_response)
+        self.assertEqual(first=request_data, second=expected_response)
 
         api_type = OpenAIAPIType.EDIT
         tag_data.task = Task.UNKNOWN
@@ -257,7 +257,7 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
         )
         expected_response.body.task = Task.TEXT_EDITING
         expected_response.body.api_type = OpenAIAPIType.EDIT.value
-        # self.assertEqual(first=request_data, second=expected_response)
+        self.assertEqual(first=request_data, second=expected_response)
 
     @patch("nebuly.trackers.openai.openai")
     @patch("nebuly.trackers.openai.get_media_file_length_in_seconds")
