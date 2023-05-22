@@ -35,7 +35,7 @@ class OpenAIAPIType(Enum):
     UNKNOWN = None
 
 
-APITYPE_TO_TASK_DICT: dict[OpenAIAPIType, Task] = {
+APITYPE_TO_TASK_DICT: Dict[OpenAIAPIType, Task] = {
     OpenAIAPIType.CHAT: Task.CHAT,
     OpenAIAPIType.EDIT: Task.TEXT_EDITING,
     OpenAIAPIType.IMAGE_CREATE: Task.IMAGE_GENERATION,
@@ -50,7 +50,7 @@ APITYPE_TO_TASK_DICT: dict[OpenAIAPIType, Task] = {
 }
 
 
-OPENAI_PROVIDER_DICT: dict[str, Provider] = {
+OPENAI_PROVIDER_DICT: Dict[str, Provider] = {
     "azure": Provider.AZURE_OPENAI,
     "open_ai": Provider.OPENAI,
 }

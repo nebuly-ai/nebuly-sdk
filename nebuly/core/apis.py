@@ -58,7 +58,7 @@ def init(
     atexit.register(_stop_thread_when_main_ends, nebuly_tracking_thread)
     nebuly_tracking_thread.start()
 
-    tracker_list: list[Tracker] = _instantiate_trackers(nebuly_queue=_nebuly_queue)
+    tracker_list: List[Tracker] = _instantiate_trackers(nebuly_queue=_nebuly_queue)
     for tracker in tracker_list:
         tracker.replace_sdk_functions()
 

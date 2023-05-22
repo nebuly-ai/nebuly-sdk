@@ -1,5 +1,7 @@
+from typing import Dict
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
+
 
 from nebuly.core.schemas import (
     NebulyDataPackage,
@@ -60,11 +62,11 @@ class ImplementedQueueObject(QueueObject):
 
 
 class TestQueueObject(TestCase):
-    mocked_request_kwargs: dict[str, str] = {
+    mocked_request_kwargs: Dict[str, str] = {
         "url": "url",
         "method": "method",
     }
-    mocked_request_response: dict[str, int | str] = {
+    mocked_request_response: Dict[str, int | str] = {
         "status_code": 200,
         "content": "content",
     }

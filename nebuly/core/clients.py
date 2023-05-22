@@ -55,7 +55,7 @@ class NebulyClient:
             nebuly_logger.error(msg=f"Nebuly Request, Error: {e}")
 
     def _get_header(self) -> Dict[str, str]:
-        headers: dict[str, str] = {"authorization": f"Bearer {self._api_key}"}
+        headers: Dict[str, str] = {"authorization": f"Bearer {self._api_key}"}
         return headers
 
     @retry(

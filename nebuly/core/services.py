@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Dict, List
 
 from nebuly.core.schemas import Task
 
@@ -27,8 +27,8 @@ class PromptInfo:
             bool: Whether the prompt is matching or not accordingly to the
                 required number of matching words.
         """
-        first_prompt_words: list[str] = self.text.split(sep=" ")
-        second_prompt_words: list[str] = prompt.text.split(sep=" ")
+        first_prompt_words: List[str] = self.text.split(sep=" ")
+        second_prompt_words: List[str] = prompt.text.split(sep=" ")
 
         if len(first_prompt_words) < required_matching_words:
             return False
@@ -50,8 +50,8 @@ class PromptInfo:
         Returns:
             str: The common text between the two prompts.
         """
-        first_prompt_words: list[str] = self.text.split(sep=" ")
-        second_prompt_words: list[str] = prompt.text.split(sep=" ")
+        first_prompt_words: List[str] = self.text.split(sep=" ")
+        second_prompt_words: List[str] = prompt.text.split(sep=" ")
         number_of_words: int = min(len(first_prompt_words), len(second_prompt_words))
 
         for i in range(number_of_words):
@@ -64,9 +64,9 @@ class PromptInfo:
 class TaskDetector:
     def __init__(self) -> None:
         # TODO: Add check for memory usage: i.e. if i am saving too many prompts
-        self._prompt_list: list[PromptInfo] = []
+        self._prompt_list: List[PromptInfo] = []
 
-        self._keywords_dict: dict[str, list[str]] = {
+        self._keywords_dict: Dict[str, List[str]] = {
             "TEXT_SUMMARIZATION": ["summarize", "summary", "summarization"],
             "TEXT_CLASSIFICATION": ["classify", "classification"],
             "CHAT": ["chat", "chatbot", "assistant"],
