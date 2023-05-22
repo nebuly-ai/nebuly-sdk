@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Union
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
 
@@ -66,7 +66,7 @@ class TestQueueObject(TestCase):
         "url": "url",
         "method": "method",
     }
-    mocked_request_response: Dict[str, int | str] = {
+    mocked_request_response: Dict[str, Union[int, str]] = {
         "status_code": 200,
         "content": "content",
     }
