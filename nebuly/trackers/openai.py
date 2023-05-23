@@ -233,7 +233,7 @@ class OpenAIDataPackageConverter(DataPackageConverter):
 
         n_completion_tokens: Optional[int] = None
         if "usage" in request_response.keys():
-            if "prompt_tokens" in request_response["usage"].keys():
+            if "completion_tokens" in request_response["usage"].keys():
                 n_completion_tokens = int(
                     request_response["usage"]["completion_tokens"]
                 )  # noqa 501
