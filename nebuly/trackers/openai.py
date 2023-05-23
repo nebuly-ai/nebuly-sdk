@@ -247,9 +247,9 @@ class OpenAIDataPackageConverter(DataPackageConverter):
     def _get_image_api_data(
         self, request_kwargs: Dict[str, Any], request_response: Dict[str, Any]
     ) -> Tuple[Optional[int], Optional[str], Optional[int]]:
-        number_of_images: Optional[int] = None
+        n_output_images: Optional[int] = None
         if "n" in request_kwargs.keys():
-            number_of_images = int(request_kwargs["n"])
+            n_output_images = int(request_kwargs["n"])
 
         image_size: Optional[str] = None
         if "size" in request_kwargs.keys():
@@ -258,7 +258,7 @@ class OpenAIDataPackageConverter(DataPackageConverter):
         timestamp_openai: Optional[int] = None
         if "created" in request_response.keys():
             timestamp_openai = int(request_response["created"])
-        return number_of_images, image_size, timestamp_openai
+        return n_output_images, image_size, timestamp_openai
 
     def _get_voice_request_data(
         self,
@@ -468,7 +468,10 @@ class OpenAITracker(Tracker):
         timestamp_end: float = get_current_timestamp()
 
         request_kwargs = transform_args_to_kwargs(
-            func=original_method, func_args=request_args, func_kwargs=request_kwargs
+            func=original_method,
+            func_args=request_args,
+            func_kwargs=request_kwargs,
+            specific_keyword="params",
         )
         api_type: OpenAIAPIType = self._assign_api_type(original_method=original_method)
         api_provider: str = openai.api_type

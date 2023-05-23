@@ -7,7 +7,10 @@ import mutagen
 
 
 def transform_args_to_kwargs(
-    func: Any, func_args: Tuple[Any], func_kwargs: Dict[str, Any]
+    func: Any,
+    func_args: Tuple[Any],
+    func_kwargs: Dict[str, Any],
+    specific_keyword: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Transforms the function args and kwargs to only a kwargs dict.
 
@@ -15,6 +18,8 @@ def transform_args_to_kwargs(
         func (Callable): The function whose args and kwargs should be transformed.
         func_args (Tuple): The function args.
         func_kwargs (Dict): The function kwargs.
+        specific_keyword (str): The specific keyword to be used as a key additionally
+            to kwargs.
 
     Returns:
         Dict: The kwargs dict.
@@ -23,13 +28,16 @@ def transform_args_to_kwargs(
     bound_args: BoundArguments = sig.bind(*func_args, **func_kwargs)
     complete_kwargs = dict(bound_args.arguments)
 
-    # if signature presents only **kwargs or **params i need to unpack it
-    # but it may introduce some bugs or unexpected behaviour.
-    # suggestions?
-    if (len(complete_kwargs) == 1) and (
-        isinstance(list(complete_kwargs.values())[0], dict)
-    ):
-        complete_kwargs: Dict[str, Any] = list(complete_kwargs.values())[0]
+    # if there is the kwargs dictonary in the args, we need to merge it with the
+    # complete kwargs dict
+    if "kwargs" in complete_kwargs:
+        complete_kwargs = {**complete_kwargs, **complete_kwargs["kwargs"]}
+        del complete_kwargs["kwargs"]
+
+    if specific_keyword is not None:
+        if specific_keyword in complete_kwargs:
+            complete_kwargs = {**complete_kwargs, **complete_kwargs[specific_keyword]}
+            del complete_kwargs[specific_keyword]
 
     return complete_kwargs
 
