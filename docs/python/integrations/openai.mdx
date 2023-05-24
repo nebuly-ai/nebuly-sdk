@@ -1,0 +1,114 @@
+---
+title: OpenAI
+description: ''
+---
+
+## Technical Overview
+The SDK seamlessly tracks the calls made to the openai library in Python by encapsulating its methods. When an OpenAI method is invoked, the response is returned as usual. However, during this process, pertinent information is captured and sent asynchronously to nebuly, ensuring your code's performance remains unaffected. In this section, you will find a comprehensive list of the tracked methods, along with the corresponding data collected for each API call. Our goal is to provide clarity while maintaining the efficiency of your code execution.
+
+## Tracked API List
+
+List of all the tracked methods from openai python SDK. 
+
+| API method                    |
+| -----------                   |
+| openai.Completion.create      |
+| openai.ChatCompletion.create  |
+| openai.Edit.create            |
+| openai.Embedding.create       |
+| openai.Image.create           |
+| openai.Image.create_edit      |
+| openai.Image.create_variation |
+| openai.Audio.translate        |
+| openai.Audio.transcribe       |
+| openai.FineTune.create        |
+| openai.Moderation.create      | 
+
+
+## Shared Data Collected Across API Types
+
+List of data collected for any kind of request.
+
+| Tracked Data        |  Type   | Example                  |  
+| ------------        | -----   | -----------              |
+| model               |  str    |  "text-davinci-003"      |
+| timestamp_openai    |  int    |  1684850962              |
+| timestamp           |  float  |  1684843762.143411       |
+| timestamp_end       |  float  |  1684843764.616534       |
+| api_type            |  str    |  "text_completion"       |
+| task                |  str    |  "text_summarization"    |
+| provider            |  str    |  "openai"                |
+| api_key             |  str    |  "sk-wBlJ4CSA1gQKugcxJKL4T3BprsFJBL5tNBEqQ7opi47BYuyh" |
+
+
+## API Specific Data
+
+Request specific data collected for each openai method. 
+
+### openai.Completion.create 
+
+| Tracked Data        |  Type   | Example                  |  
+| ------------        | -----   | -----------              |
+| n_prompt_tokens     |  int    |  200                     |
+| n_completion_tokens |  int    |  400                     |
+
+### openai.ChatCompletion.create 
+
+| Tracked Data        |  Type   | Example                  |  
+| ------------        | -----   | -----------              |
+| n_prompt_tokens     |  int    |  200                     |
+| n_completion_tokens |  int    |  400                     |
+
+### openai.Edit.create 
+
+| Tracked Data        |  Type   | Example                  |  
+| ------------        | -----   | -----------              |
+| n_prompt_tokens     |  int    |  200                     |
+| n_completion_tokens |  int    |  400                     |
+
+### openai.Embedding.create 
+
+| Tracked Data        |  Type   | Example                   |  
+| ------------        | -----   | -----------               |
+| n_prompt_tokens     |  int    |  200                      |
+
+### openai.Image.create 
+
+| Tracked Data        |  Type   | Example                   |  
+| ------------        | -----   | -----------               |
+| n_output_images     |  int    |  2                        |
+| image_size          |  str    |  "512x512"                |
+
+### openai.Image.create_edit
+
+| Tracked Data        |  Type   | Example                   |  
+| ------------        | -----   | -----------               |
+| n_output_images     |  int    |  2                        |
+| image_size          |  str    |  "512x512"                |
+
+### openai.Image.create_variation
+
+| Tracked Data        |  Type   | Example                   |  
+| ------------        | -----   | -----------               |
+| n_output_images     |  int    |  2                        |
+| image_size          |  str    |  "512x512"                |
+
+### openai.Audio.transcribe
+
+| Tracked Data           |  Type   | Example                   |  
+| ------------           | -----   | -----------               |
+| audio_duration_seconds |   int   | 32                        |
+
+### openai.Audio.translate
+
+| Tracked Data           |  Type   | Example                   |  
+| ------------           | -----   | -----------               |
+| audio_duration_seconds |   int   | 32                        |
+
+### openai.FineTune.create
+
+| Tracked Data           |  Type   | Example                              |  
+| ------------           | -----   | -----------                          |
+| training_file_id       |  str    | "file-XGinujblHPwGLSrtq8cPS8XY"      |
+| training_id            |  str    | "ft-AF1WoRqd3aJAHspl9NY7iL8F"        |
+

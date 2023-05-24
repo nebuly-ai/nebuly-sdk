@@ -1,0 +1,49 @@
+---
+title: Quickstart
+description: 'Track your AI code in just two lines!'
+---
+
+## Why an SDK
+
+The SDK provides a way to monitor your costs with a high level of detail. Its purpose is to seamlessly integrate with your code, requiring only an initialization step to start tracking your costs. By calling the `init` method, Nebuly automatically handles all the tracking for you. However, if you prefer to customize the tracking process, you can manually tag specific sections of your code. To explore the extent of what we can track, please refer to the [Integrations Overview](./integrations/overview) page.
+
+## Installation
+
+```bash
+pip install nebuly
+```
+
+## Start Tracking your AI
+
+To get started, initialize nebuly in your main script by specifying the name of your project and the current development phase. Think of the project as a helpful 'tag' that associates the tracked records with your specific activity, making it easier to visualize and comprehend your data. The phase, on the other hand, acts as another 'tag' that connects different runs or stages of your project's development. By utilizing phases, you can effectively track and analyze the costs associated with each phase of your projects, enabling better cost management and project evaluation.
+
+```python
+import nebuly
+
+if __name__ == "__main__":
+    nebuly.api_key = os.getenv("NEBULY_API_KEY")
+    nebuly.init(
+        project="my_project_name"
+        phase=nebuly.DevelopmentPhase.EXPERIMENTATION
+    )
+    # Your code
+```
+
+That's it! Now the costs of your AI workloads are **automatically** tracked.
+
+<CardGroup cols={2}>
+  <Card
+    title="API Reference"
+    icon="code"
+    href="/nebuly-sdk/docs/python/api_reference"
+  >
+    Explore all the possibilities.
+  </Card>
+  <Card
+    title="Tutorials"
+    icon="palette"
+    href="/nebuly-sdk/docs/python/tutorials"
+  >
+    Find your use-case.
+  </Card>
+</CardGroup>
