@@ -1,7 +1,7 @@
-import inspect
 from datetime import datetime
 from inspect import Signature, BoundArguments
-from typing import Dict, Optional, Tuple, Any
+from typing import Any, Dict, Optional, Tuple
+import inspect
 
 import mutagen
 

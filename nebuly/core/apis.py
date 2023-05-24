@@ -1,11 +1,11 @@
+from typing import Generator, Optional, Any, List
 import atexit
 import contextlib
 import copy
-from typing import Generator, Optional, Any, List
 
-from nebuly.core.schemas import Task, DevelopmentPhase, TagData
-from nebuly.core.clients import NebulyTrackingDataThread, NebulyClient
+from nebuly.core.clients import NebulyClient, NebulyTrackingDataThread
 from nebuly.core.queues import NebulyQueue, Tracker
+from nebuly.core.schemas import DevelopmentPhase, TagData, Task
 from nebuly.utils.logger import nebuly_logger
 
 _nebuly_queue: Optional[NebulyQueue] = None

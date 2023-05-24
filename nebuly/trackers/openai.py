@@ -2,18 +2,18 @@ from enum import Enum
 from functools import partial
 from typing import Dict, Tuple, Optional, Any
 
-from nebuly.core.queues import NebulyQueue, DataPackageConverter, QueueObject, Tracker
+from nebuly.core.queues import DataPackageConverter, NebulyQueue, QueueObject, Tracker
 from nebuly.core.schemas import (
-    Provider,
-    Task,
-    NebulyDataPackage,
-    TagData,
     GenericProviderAttributes,
+    NebulyDataPackage,
+    Provider,
+    TagData,
+    Task,
 )
 from nebuly.utils.functions import (
-    transform_args_to_kwargs,
-    get_media_file_length_in_seconds,
     get_current_timestamp,
+    get_media_file_length_in_seconds,
+    transform_args_to_kwargs,
 )
 from nebuly.utils.logger import nebuly_logger
 

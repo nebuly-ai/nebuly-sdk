@@ -5,11 +5,11 @@ import time
 
 from nebuly.core.clients import NebulyTrackingDataThread, NebulyClient
 from nebuly.core.schemas import (
-    NebulyDataPackage,
     DevelopmentPhase,
-    Task,
     GenericProviderAttributes,
+    NebulyDataPackage,
     Provider,
+    Task,
 )
 
 

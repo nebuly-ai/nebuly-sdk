@@ -1,13 +1,13 @@
 from abc import ABC, abstractmethod
-import copy
 from queue import Queue
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+import copy
 
 from nebuly.core.schemas import (
     DevelopmentPhase,
+    NebulyDataPackage,
     Task,
     TagData,
-    NebulyDataPackage,
 )
 from nebuly.core.services import TaskDetector
 

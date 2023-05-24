@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, Dict, List
+from typing import Dict, List, Optional
 
 from nebuly.core.schemas import Task
 

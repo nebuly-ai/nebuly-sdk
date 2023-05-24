@@ -1,4 +1,3 @@
-import requests
 from queue import Empty
 from requests import (
     ConnectionError,
@@ -10,13 +9,14 @@ from requests import (
 )
 from threading import Thread
 from typing import Dict, Any
+import requests
 
 from tenacity import (
     retry,
-    wait_fixed,
     retry_if_exception_type,
     stop_after_attempt,
     stop_after_delay,
+    wait_fixed,
 )
 
 from nebuly.core.queues import NebulyQueue, QueueObject

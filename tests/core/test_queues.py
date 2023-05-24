@@ -1,15 +1,15 @@
 from typing import Dict, Union
 from unittest import TestCase
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 
+from nebuly.core.queues import NebulyQueue, QueueObject
 from nebuly.core.schemas import (
+    DevelopmentPhase,
     NebulyDataPackage,
     TagData,
-    DevelopmentPhase,
     Task,
 )
-from nebuly.core.queues import NebulyQueue, QueueObject
 
 
 class TestNebulyQueue(TestCase):

@@ -1,19 +1,19 @@
-import unittest
 from unittest.mock import MagicMock, patch
+import unittest
 
 from nebuly.core.schemas import (
     NebulyDataPackage,
     DevelopmentPhase,
-    Task,
-    TagData,
     Provider,
+    TagData,
+    Task,
 )
 from nebuly.trackers.openai import (
-    OpenAITracker,
-    OpenAIDataPackageConverter,
-    OpenAIQueueObject,
     OpenAIAPIType,
     OpenAIAttributes,
+    OpenAIDataPackageConverter,
+    OpenAIQueueObject,
+    OpenAITracker,
 )
 
 
