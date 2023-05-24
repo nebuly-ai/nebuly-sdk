@@ -380,7 +380,7 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
             timestamp=self.mocked_timestamp,
             timestamp_end=self.mocked_timestamp_end,
             timestamp_openai=1589478378,
-            model=None,
+            model="dall-e",
             n_prompt_tokens=None,
             n_output_tokens=None,
             n_output_images=2,
