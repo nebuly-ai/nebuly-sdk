@@ -34,10 +34,9 @@ def transform_args_to_kwargs(
         complete_kwargs = {**complete_kwargs, **complete_kwargs["kwargs"]}
         del complete_kwargs["kwargs"]
 
-    if specific_keyword is not None:
-        if specific_keyword in complete_kwargs:
-            complete_kwargs = {**complete_kwargs, **complete_kwargs[specific_keyword]}
-            del complete_kwargs[specific_keyword]
+    if specific_keyword is not None and specific_keyword in complete_kwargs:
+        complete_kwargs = {**complete_kwargs, **complete_kwargs[specific_keyword]}
+        del complete_kwargs[specific_keyword]
 
     return complete_kwargs
 
