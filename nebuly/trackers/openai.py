@@ -151,6 +151,7 @@ class OpenAIDataPackageConverter(DataPackageConverter):
             or (api_type == OpenAIAPIType.IMAGE_VARIATION.value)
         ):
             (
+                model,
                 n_output_images,
                 image_size,
                 timestamp_openai,
@@ -246,7 +247,9 @@ class OpenAIDataPackageConverter(DataPackageConverter):
 
     def _get_image_api_data(
         self, request_kwargs: Dict[str, Any], request_response: Dict[str, Any]
-    ) -> Tuple[Optional[int], Optional[str], Optional[int]]:
+    ) -> Tuple[str, Optional[int], Optional[str], Optional[int]]:
+        model = "dall-e"
+
         n_output_images: Optional[int] = None
         if "n" in request_kwargs.keys():
             n_output_images = int(request_kwargs["n"])
@@ -258,13 +261,14 @@ class OpenAIDataPackageConverter(DataPackageConverter):
         timestamp_openai: Optional[int] = None
         if "created" in request_response.keys():
             timestamp_openai = int(request_response["created"])
-        return n_output_images, image_size, timestamp_openai
+        return model, n_output_images, image_size, timestamp_openai
 
     def _get_voice_request_data(
         self,
         request_kwargs: Dict[str, Any],
     ) -> Tuple[Optional[str], Optional[int]]:
         model: Optional[str] = None
+
         if "model" in request_kwargs.keys():
             model = request_kwargs["model"]
 

@@ -52,7 +52,7 @@ def get_media_file_length_in_seconds(file_path: str) -> Optional[int]:
         Optional[int]: The length of the media file in seconds.
     """
     try:
-        audio_file: Any = mutagen.File(filething=file_path)  # type: ignore
+        audio_file: Any = mutagen.File(file_path)  # type: ignore
     except Exception:
         return None
     return int(audio_file.info.length)
