@@ -4,7 +4,9 @@ description: ""
 ---
 
 ## Adding Nebuly to your OpenAI project.
-Below is an example of a project that utilizes the Python openai library to generate an image from an audio file, employing three distinct openai APIs. The code initializes "nebuly" at the beginning while leaving the remaining code unchanged.
+Here is an example of a `langchain` chatbot that acts as a Linux terminal. 
+The chatbot is defined in the `chat()` method, and in the Python main, "nebuly" is initialized and tracks the calls made by the langchain chatbot to OpenAI.
+
 
 ```python
 import os
@@ -15,7 +17,7 @@ from langchain import OpenAI, LLMChain, PromptTemplate
 from langchain.memory import ConversationSummaryMemory
 
 
-def main() -> str:
+def chat() -> str:
     # define chatbot template
     template = """Assistant is a large language model trained by OpenAI.
 
@@ -87,7 +89,7 @@ if __name__ == "__main__":
     )
 
     # run your main
-    output: str = main()
+    output: str = chat()
     print(output)
 
 ```
