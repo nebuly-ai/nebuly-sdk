@@ -83,13 +83,13 @@ class OpenAIDataPackageConverter(DataPackageConverter):
     def get_data_package(
         self,
         tag_data: TagData,
+        timestamp: float,
+        timestamp_end: float,
         request_kwargs: Dict[str, Any],
         request_response: Dict[str, Any],
         api_type: str,
         api_key: Optional[str],
         api_provider: str,
-        timestamp: float,
-        timestamp_end: float,
     ) -> NebulyDataPackage:
         """Converts the QueueObject into a NebulyDataPackage object using the
         data from the OpenAI API response, the request kwargs, the api type,
@@ -98,16 +98,16 @@ class OpenAIDataPackageConverter(DataPackageConverter):
 
         Args:
             tag_data (TagData): The TagData object assigned to the QueueObject
+            timestamp (float): The SDK timestamp captured just before the issuing the
+                request to OpenAI.
+            timestamp_end (float): The SDK timestamp captured just after the issuing the
+                request to OpenAI.
             request_kwargs (Dict[str, Any]): The request kwargs used to make the
                 OpenAI API request
             request_response (Dict[str, Any]): The response from the OpenAI API
             api_type (str): The type of OpenAI API request
             api_key (str): The OpenAI API key
             api_provider (Optional[str]): The OpenAI API provider
-            timestamp (float): The SDK timestamp captured just before the issuing the
-                request to OpenAI.
-            timestamp_end (float): The SDK timestamp captured just after the issuing the
-                request to OpenAI.
 
         Returns:
             NebulyDataPackage: The NebulyDataPackage that can be sent to the Nebuly
@@ -317,7 +317,7 @@ class OpenAIDataPackageConverter(DataPackageConverter):
 class OpenAIQueueObject(QueueObject):
     def __init__(
         self,
-        data_package_converter: DataPackageConverter,
+        data_package_converter: OpenAIDataPackageConverter,
         request_kwargs: Dict[str, Any],
         request_response: Dict[str, Any],
         api_type: str,
@@ -329,7 +329,9 @@ class OpenAIQueueObject(QueueObject):
         super().__init__()
 
         self._api_type: str = api_type
-        self._data_package_converter: DataPackageConverter = data_package_converter
+        self._data_package_converter: OpenAIDataPackageConverter = (
+            data_package_converter  # noqa 501
+        )
         self._request_kwargs: Dict[str, Any] = request_kwargs
         self._request_response: Dict[str, Any] = request_response
         self._timestamp: float = timestamp
@@ -340,13 +342,13 @@ class OpenAIQueueObject(QueueObject):
     def as_data_package(self) -> NebulyDataPackage:
         return self._data_package_converter.get_data_package(
             tag_data=self._tag_data,
+            timestamp=self._timestamp,
+            timestamp_end=self._timestamp_end,
             request_kwargs=self._request_kwargs,
             request_response=self._request_response,
             api_type=self._api_type,
             api_key=self._api_key,
             api_provider=self._api_provider,
-            timestamp=self._timestamp,
-            timestamp_end=self._timestamp_end,
         )
 
 

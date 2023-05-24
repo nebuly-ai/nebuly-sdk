@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from queue import Queue
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 import copy
 
 from nebuly.core.schemas import (
@@ -32,11 +32,6 @@ class DataPackageConverter(ABC):
     def get_data_package(
         self,
         tag_data: TagData,
-        request_kwargs: Dict[str, Any],
-        request_response: Dict[str, Any],
-        api_type: str,
-        api_key: Optional[str],
-        api_provider: str,
         timestamp: float,
         timestamp_end: float,
     ) -> NebulyDataPackage:
@@ -44,11 +39,6 @@ class DataPackageConverter(ABC):
 
         Args:
             tag_data (TagData): The tagged data contained the user specified-tags.
-            request_kwargs (Dict): The request kwargs.
-            request_response (Dict): The request response.
-            api_type (str): The api type.
-            api_key (str): The api key.
-            api_provider (str): The api provider.
             timestamp (float): The timestamp captured at the beginning of the request.
             timestamp_end (float): The timestamp captured at the end of the request.
 
@@ -72,7 +62,7 @@ class QueueObject(ABC):
 
         Raises:
             ValueError: If project name is not set.
-            ValueError: If development phase is not set.
+            ValueError: If Development phase is not set.
         """
         if tag_data.project == "unknown":
             raise ValueError("Project name is not set.")
@@ -109,6 +99,8 @@ class NebulyQueue(Queue):
 
         Args:
             tag_data (TagData): The new tagged data.
+            maxsize (int, optional): The max size of the queue.
+                Defaults to QUEUE_MAX_SIZE.
         """
         if tag_data.project != "unknown":
             self.tag_data.project = tag_data.project

@@ -107,6 +107,11 @@ class NebulyTrackingDataThread(Thread):
         self.force_exit = False
 
     def run(self) -> None:
+        """Thread.run() that sends the data to Nebuly server.
+        It gets the data from the queue, uses the queue.as_data_package() method
+        to convert the queue object to a data package and then uses the nebuly_client
+        to send the data to the Nebuly server.
+        """
         while self.thread_running is True or self._queue.empty() is False:
             if self.force_exit is True:
                 break

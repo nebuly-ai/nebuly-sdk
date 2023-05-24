@@ -22,13 +22,13 @@ def init(
     Args:
         project (str): Name of the project
         phase (DevelopmentPhase): Development phase of the project
-        task (Optional[Enum], optional): Task being performed.
-            Defaults to Task.UNDETECTED.
+        task (Task, optional): Task being performed.
+            Defaults to Task.UNKNOWN.
 
     Raises:
         TypeError: If project is not of type str
         TypeError: If phase is not of type DevelopmentPhase
-        TypeError: If task is not of type Optional[Task]
+        TypeError: If task is not of type Task
     """
 
     _check_input_types(project=project, phase=phase, task=task)
@@ -70,20 +70,22 @@ def tracker(
     task: Task = Task.UNKNOWN,
 ) -> Generator[None, Any, None]:
     """Context manager to temporarily replace the tracker info.
-    This is useful when you want to track data for a different project, phase or task.
-    within the same main() function.
+    This is useful when you want to track data for a different project or phase within
+    the same code. Additionaly you can use this to manually set the
+    the Task being performed.
 
     Args:
-        project (Optional[str], optional): Name of the project.
-            Defaults to None.
-        phase (Optional[DevelopmentPhase], optional): Development phase of the project.
-            Defaults to None.
-        task (Optional[Task], optional): Task being performed.
+        project (str, optional): Name of the project.
+            Defaults to "unknown".
+        phase (DevelopmentPhase, optional): Development phase of the project.
+            Defaults to DevelopmentPhase.UNKNOWN.
+        task (Task, optional): Task being performed.
+            Defaults to Task.UNKNOWN.
 
     Raises:
-        TypeError: If project is not of type Optional[str]
-        TypeError: If phase is not of type Optional[DevelopmentPhase]
-        TypeError: If task is not of type Optional[Task]
+        TypeError: If project is not of type str
+        TypeError: If phase is not of type DevelopmentPhase
+        TypeError: If task is not of type Task
     """
     _check_input_types(project=project, phase=phase, task=task)
 
