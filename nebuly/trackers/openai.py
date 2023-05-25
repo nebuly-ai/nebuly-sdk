@@ -57,7 +57,7 @@ OPENAI_PROVIDER_DICT: Dict[str, Provider] = {
 
 
 class OpenAIAttributes(GenericProviderAttributes):
-    api_type: str
+    api_type: OpenAIAPIType
     api_key: Optional[str]
     timestamp_openai: Optional[int] = None
 
@@ -87,7 +87,7 @@ class OpenAIDataPackageConverter(DataPackageConverter):
         timestamp_end: float,
         request_kwargs: Dict[str, Any],
         request_response: Dict[str, Any],
-        api_type: str,
+        api_type: OpenAIAPIType,
         api_key: Optional[str],
         api_provider: str,
     ) -> NebulyDataPackage:
@@ -126,16 +126,16 @@ class OpenAIDataPackageConverter(DataPackageConverter):
 
         detected_task: Task = self._get_task(
             tag_data=tag_data,
-            api_type=OpenAIAPIType(value=api_type),
+            api_type=api_type,
             request_kwargs=request_kwargs,
         )
         self._provider: Provider = OPENAI_PROVIDER_DICT[api_provider]
 
         if (
-            (api_type == OpenAIAPIType.TEXT_COMPLETION.value)
-            or (api_type == OpenAIAPIType.CHAT.value)
-            or (api_type == OpenAIAPIType.EMBEDDING.value)
-            or (api_type == OpenAIAPIType.EDIT.value)
+            (api_type == OpenAIAPIType.TEXT_COMPLETION)
+            or (api_type == OpenAIAPIType.CHAT)
+            or (api_type == OpenAIAPIType.EMBEDDING)
+            or (api_type == OpenAIAPIType.EDIT)
         ):
             (
                 model,
@@ -146,9 +146,9 @@ class OpenAIDataPackageConverter(DataPackageConverter):
                 request_kwargs=request_kwargs, request_response=request_response
             )
         elif (
-            (api_type == OpenAIAPIType.IMAGE_CREATE.value)
-            or (api_type == OpenAIAPIType.IMAGE_EDIT.value)
-            or (api_type == OpenAIAPIType.IMAGE_VARIATION.value)
+            (api_type == OpenAIAPIType.IMAGE_CREATE)
+            or (api_type == OpenAIAPIType.IMAGE_EDIT)
+            or (api_type == OpenAIAPIType.IMAGE_VARIATION)
         ):
             (
                 model,
@@ -158,14 +158,14 @@ class OpenAIDataPackageConverter(DataPackageConverter):
             ) = self._get_image_api_data(
                 request_kwargs=request_kwargs, request_response=request_response
             )
-        elif (api_type == OpenAIAPIType.AUDIO_TRANSCRIBE.value) or (
-            api_type == OpenAIAPIType.AUDIO_TRANSLATE.value
+        elif (api_type == OpenAIAPIType.AUDIO_TRANSCRIBE) or (
+            api_type == OpenAIAPIType.AUDIO_TRANSLATE
         ):
             (
                 model,
                 audio_duration_seconds,
             ) = self._get_voice_request_data(request_kwargs=request_kwargs)
-        elif api_type == OpenAIAPIType.FINETUNE.value:
+        elif api_type == OpenAIAPIType.FINETUNE:
             (
                 model,
                 training_file_id,
@@ -174,7 +174,7 @@ class OpenAIDataPackageConverter(DataPackageConverter):
             ) = self._get_finetune_request_data(
                 request_kwargs=request_kwargs, request_response=request_response
             )
-        elif api_type == OpenAIAPIType.MODERATION.value:
+        elif api_type == OpenAIAPIType.MODERATION:
             model = self._get_moderation_request_data(request_response=request_response)
         else:
             nebuly_logger.error(msg=f"Unknown OpenAI API type: {api_type}")
@@ -237,7 +237,7 @@ class OpenAIDataPackageConverter(DataPackageConverter):
             if "completion_tokens" in request_response["usage"].keys():
                 n_completion_tokens = int(
                     request_response["usage"]["completion_tokens"]
-                )  # noqa 501
+                )
 
         timestamp_openai: Optional[int] = None
         if "created" in request_response.keys():
@@ -320,7 +320,7 @@ class OpenAIQueueObject(QueueObject):
         data_package_converter: OpenAIDataPackageConverter,
         request_kwargs: Dict[str, Any],
         request_response: Dict[str, Any],
-        api_type: str,
+        api_type: OpenAIAPIType,
         api_key: Optional[str],
         api_provider: str,
         timestamp: float,
@@ -328,9 +328,9 @@ class OpenAIQueueObject(QueueObject):
     ) -> None:
         super().__init__()
 
-        self._api_type: str = api_type
+        self._api_type: OpenAIAPIType = api_type
         self._data_package_converter: OpenAIDataPackageConverter = (
-            data_package_converter  # noqa 501
+            data_package_converter
         )
         self._request_kwargs: Dict[str, Any] = request_kwargs
         self._request_response: Dict[str, Any] = request_response
@@ -533,7 +533,7 @@ class OpenAITracker(Tracker):
             data_package_converter=OpenAIDataPackageConverter(),
             request_kwargs=request_kwargs,
             request_response=request_response,
-            api_type=api_type.value,
+            api_type=api_type,
             api_key=api_key,
             api_provider=api_provider,
             timestamp=timestamp,

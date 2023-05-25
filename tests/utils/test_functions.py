@@ -12,7 +12,7 @@ class TestFunctions(TestCase):
         def test_function(a, b, c, d=1, e=2) -> None:
             pass
 
-        args = [1, 2, 3]
+        args = (1, 2, 3)
         kwargs = {"d": 4, "e": 5}
         complete_kwargs = transform_args_to_kwargs(
             func=test_function, func_args=args, func_kwargs=kwargs
@@ -26,7 +26,7 @@ class TestFunctions(TestCase):
         def test_function(*args, **kwargs) -> None:
             pass
 
-        args = []
+        args = ()
         kwargs = {"a": 1}
         complete_kwargs = transform_args_to_kwargs(
             func=test_function, func_args=args, func_kwargs=kwargs

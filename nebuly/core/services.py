@@ -101,9 +101,7 @@ class TaskDetector:
     def _get_prompt_from_prompt_list(self, prompt: PromptInfo) -> PromptInfo:
         matching_prompt: Optional[
             PromptInfo
-        ] = self._get_matching_prompt_from_prompt_list(  # noqa: E501
-            prompt=prompt
-        )
+        ] = self._get_matching_prompt_from_prompt_list(prompt=prompt)
         if matching_prompt is not None:
             common_prompt: str = matching_prompt.get_common_text(prompt=prompt)
             matching_prompt.text = common_prompt
