@@ -129,7 +129,7 @@ class OpenAIDataPackageConverter(DataPackageConverter):
             api_type=api_type,
             request_kwargs=request_kwargs,
         )
-        self._provider: Provider = OPENAI_PROVIDER_DICT[api_provider]
+        provider: Provider = OPENAI_PROVIDER_DICT[api_provider]
 
         if (
             (api_type == OpenAIAPIType.TEXT_COMPLETION)
@@ -179,7 +179,7 @@ class OpenAIDataPackageConverter(DataPackageConverter):
         else:
             nebuly_logger.error(msg=f"Unknown OpenAI API type: {api_type}")
 
-        nebuly_body: OpenAIAttributes = OpenAIAttributes(
+        body: OpenAIAttributes = OpenAIAttributes(
             project=tag_data.project,
             phase=tag_data.phase,
             task=detected_task,
@@ -199,8 +199,8 @@ class OpenAIDataPackageConverter(DataPackageConverter):
         )
 
         return NebulyDataPackage(
-            kind=self._provider,
-            body=nebuly_body,
+            kind=provider,
+            body=body,
         )
 
     def _get_task(
@@ -220,8 +220,9 @@ class OpenAIDataPackageConverter(DataPackageConverter):
         else:
             return APITYPE_TO_TASK_DICT[api_type]
 
+    @staticmethod
     def _get_text_api_data(
-        self, request_kwargs: Dict[str, Any], request_response: Dict[str, Any]
+        request_kwargs: Dict[str, Any], request_response: Dict[str, Any]
     ) -> Tuple[Optional[str], Optional[int], Optional[int], Optional[int]]:
         model: Optional[str] = None
         if "model" in request_kwargs.keys():
@@ -245,8 +246,9 @@ class OpenAIDataPackageConverter(DataPackageConverter):
 
         return model, n_prompt_tokens, n_completion_tokens, timestamp_openai
 
+    @staticmethod
     def _get_image_api_data(
-        self, request_kwargs: Dict[str, Any], request_response: Dict[str, Any]
+        request_kwargs: Dict[str, Any], request_response: Dict[str, Any]
     ) -> Tuple[str, Optional[int], Optional[str], Optional[int]]:
         model = "dall-e"
 
@@ -263,8 +265,8 @@ class OpenAIDataPackageConverter(DataPackageConverter):
             timestamp_openai = int(request_response["created"])
         return model, n_output_images, image_size, timestamp_openai
 
+    @staticmethod
     def _get_voice_request_data(
-        self,
         request_kwargs: Dict[str, Any],
     ) -> Tuple[Optional[str], Optional[int]]:
         model: Optional[str] = None
@@ -281,8 +283,8 @@ class OpenAIDataPackageConverter(DataPackageConverter):
 
         return model, audio_duration_seconds
 
+    @staticmethod
     def _get_finetune_request_data(
-        self,
         request_kwargs: Dict[str, Any],
         request_response: Dict[str, Any],
     ) -> Tuple[Optional[str], Optional[str], Optional[str], Optional[int]]:
@@ -304,9 +306,8 @@ class OpenAIDataPackageConverter(DataPackageConverter):
 
         return model, training_file_id, training_id, timestamp_openai
 
-    def _get_moderation_request_data(
-        self, request_response: Dict[str, Any]
-    ) -> Optional[str]:
+    @staticmethod
+    def _get_moderation_request_data(request_response: Dict[str, Any]) -> Optional[str]:
         model: Optional[str] = None
         if "model" in request_response.keys():
             model = request_response["model"]
@@ -464,7 +465,7 @@ class OpenAITracker(Tracker):
     def _track_method(
         self,
         original_method: Any,
-        *request_args: Dict[str, Any],
+        *request_args: Tuple[Any, ...],
         **request_kwargs: Dict[str, Any],
     ) -> Dict[str, Any]:
         timestamp: float = get_current_timestamp()
@@ -479,7 +480,7 @@ class OpenAITracker(Tracker):
             func_kwargs=request_kwargs,
             specific_keyword="params",
         )
-        api_type: OpenAIAPIType = self._assign_api_type(original_method=original_method)
+        api_type: OpenAIAPIType = self._get_api_type(original_method=original_method)
         api_provider: str = openai.api_type
         api_key: Optional[str] = openai.api_key
         self._track_openai_api(
@@ -493,7 +494,7 @@ class OpenAITracker(Tracker):
         )
         return request_response
 
-    def _assign_api_type(self, original_method: Any) -> OpenAIAPIType:
+    def _get_api_type(self, original_method: Any) -> OpenAIAPIType:
         if original_method == self._original_completion_create:
             return OpenAIAPIType.TEXT_COMPLETION
         elif original_method == self._original_chat_completion_create:

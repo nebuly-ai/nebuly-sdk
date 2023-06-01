@@ -27,8 +27,8 @@ class PromptInfo:
             bool: Whether the prompt is matching or not accordingly to the
                 required number of matching words.
         """
-        first_prompt_words: List[str] = self.text.split(sep=" ")
-        second_prompt_words: List[str] = prompt.text.split(sep=" ")
+        first_prompt_words = self.text.split(sep=" ")
+        second_prompt_words = prompt.text.split(sep=" ")
 
         if len(first_prompt_words) < required_matching_words:
             return False
@@ -50,13 +50,13 @@ class PromptInfo:
         Returns:
             str: The common text between the two prompts.
         """
-        first_prompt_words: List[str] = self.text.split(sep=" ")
-        second_prompt_words: List[str] = prompt.text.split(sep=" ")
-        number_of_words: int = min(len(first_prompt_words), len(second_prompt_words))
+        first_prompt_words = self.text.split(sep=" ")
+        second_prompt_words = prompt.text.split(sep=" ")
+        number_of_words = min(len(first_prompt_words), len(second_prompt_words))
 
         for i in range(number_of_words):
             if first_prompt_words[i] != second_prompt_words[i]:
-                common_prompt: str = " ".join(first_prompt_words[:i])
+                common_prompt = " ".join(first_prompt_words[:i])
                 return common_prompt
         return " ".join(first_prompt_words[:number_of_words])
 
@@ -82,9 +82,7 @@ class TaskDetector:
             Task: The task detected from the text.
         """
         prompt_info = PromptInfo(text=text, task=Task.UNKNOWN)
-        current_prompt: PromptInfo = self._get_prompt_from_prompt_list(
-            prompt=prompt_info
-        )
+        current_prompt = self._get_prompt_from_prompt_list(prompt=prompt_info)
         self._assign_prompt_task(prompt=current_prompt)
         return current_prompt.task
 
@@ -99,11 +97,9 @@ class TaskDetector:
             prompt.task = Task.TEXT_GENERATION
 
     def _get_prompt_from_prompt_list(self, prompt: PromptInfo) -> PromptInfo:
-        matching_prompt: Optional[
-            PromptInfo
-        ] = self._get_matching_prompt_from_prompt_list(prompt=prompt)
+        matching_prompt = self._get_matching_prompt_from_prompt_list(prompt=prompt)
         if matching_prompt is not None:
-            common_prompt: str = matching_prompt.get_common_text(prompt=prompt)
+            common_prompt = matching_prompt.get_common_text(prompt=prompt)
             matching_prompt.text = common_prompt
             return matching_prompt
         else:

@@ -4,7 +4,6 @@ from requests import (
     ConnectTimeout,
     HTTPError,
     ReadTimeout,
-    RequestException,
     Timeout,
 )
 from threading import Thread
@@ -29,6 +28,13 @@ RETRY_STOP_TIME = 10
 RETRY_STOP_ATTEMPTS = 10
 
 
+class RetryHTTPException(Exception):
+    def __init__(self, status_code: int, error_message: str):
+        self.status_code = status_code
+        self.error_message = error_message
+        super().__init__(f"{status_code} {error_message}")
+
+
 class NebulyClient:
     def __init__(self, api_key: str) -> None:
         self._api_key: str = api_key
@@ -43,25 +49,31 @@ class NebulyClient:
         Args:
             request_data (NebulyDataPackage): The request data.
         """
-        headers: Dict[str, str] = self._get_header()
+        headers: Dict[str, str] = {"authorization": f"Bearer {self._api_key}"}
         try:
             self._post_nebuly_event_ingestion_endpoint(
                 headers=headers,
                 request_data=request_data,
             )
         except HTTPError as errh:
-            nebuly_logger.error(msg=f"Nebuly Request, Http Error: {errh}")
+            nebuly_logger.error(
+                msg=f"An error occurred while communicating with the Nebuly Server.\n"
+                f"HTTP Error: {errh}\n"
+                f"Please check your internet connection and try again.",
+                exc_info=True,
+            )
         except BaseException as e:
             # Here is possible to add more specific exceptions,
             # but even importing all the exception imported in the base request module
             # there are still some exceptions that are not being caught.
             # since the user-code should never fail for our fault,
             # here i am catching all the exceptions and logging them.
-            nebuly_logger.error(msg=f"Nebuly Request, Error: {e}")
-
-    def _get_header(self) -> Dict[str, str]:
-        headers: Dict[str, str] = {"authorization": f"Bearer {self._api_key}"}
-        return headers
+            nebuly_logger.error(
+                msg=f"An error occurred while communicating with the Nebuly Server.\n"
+                f"Generic Error: {e}\n"
+                f"Please check your internet connection and try again.",
+                exc_info=True,
+            )
 
     @retry(
         wait=wait_fixed(wait=RETRY_WAIT_TIME),
@@ -72,8 +84,8 @@ class NebulyClient:
         retry=retry_if_exception_type(
             exception_types=(
                 Timeout,
-                RequestException,
                 ConnectTimeout,
+                RetryHTTPException,
                 ReadTimeout,
                 ConnectionError,
             )
@@ -84,12 +96,20 @@ class NebulyClient:
         headers: Dict[str, str],
         request_data: NebulyDataPackage,
     ) -> None:
-        response: Any = requests.post(
-            url=self._nebuly_event_ingestion_url,
-            headers=headers,
-            data=request_data.json(),
-        )
-        response.raise_for_status()
+        try:
+            response: Any = requests.post(
+                url=self._nebuly_event_ingestion_url,
+                headers=headers,
+                data=request_data.json(),
+            )
+            response.raise_for_status()
+        except HTTPError as e:
+            if response.status_code == 503:
+                raise RetryHTTPException(503, e.msg) from e
+            elif response.status_code == 504:
+                raise RetryHTTPException(504, e.msg) from e
+            else:
+                raise e
 
 
 class NebulyTrackingDataThread(Thread):
@@ -107,10 +127,8 @@ class NebulyTrackingDataThread(Thread):
         self.force_exit = False
 
     def run(self) -> None:
-        """Thread.run() that sends the data to Nebuly server.
-        It gets the data from the queue, uses the queue.as_data_package() method
-        to convert the queue object to a data package and then uses the nebuly_client
-        to send the data to the Nebuly server.
+        """Continuously takes elements from the queue and sends them to the
+        Nebuly server.
         """
         while self.thread_running is True or self._queue.empty() is False:
             if self.force_exit is True:

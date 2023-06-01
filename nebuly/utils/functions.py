@@ -28,7 +28,7 @@ def transform_args_to_kwargs(
     bound_args: BoundArguments = sig.bind(*func_args, **func_kwargs)
     complete_kwargs = dict(bound_args.arguments)
 
-    # if there is the kwargs dictonary in the args, we need to merge it with the
+    # if there is the kwargs dictionary in the args, we need to merge it with the
     # complete kwargs dict
     if "kwargs" in complete_kwargs:
         complete_kwargs = {**complete_kwargs, **complete_kwargs["kwargs"]}

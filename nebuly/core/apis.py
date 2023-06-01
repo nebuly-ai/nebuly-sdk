@@ -59,8 +59,8 @@ def init(
     nebuly_tracking_thread.start()
 
     tracker_list: List[Tracker] = _instantiate_trackers(nebuly_queue=_nebuly_queue)
-    for tracker in tracker_list:
-        tracker.replace_sdk_functions()
+    for t in tracker_list:
+        t.replace_sdk_functions()
 
 
 @contextlib.contextmanager
@@ -71,7 +71,7 @@ def tracker(
 ) -> Generator[None, Any, None]:
     """Context manager to temporarily replace the tracker info.
     This is useful when you want to track data for a different project or phase within
-    the same code. Additionaly you can use this to manually set the
+    the same code. Additionally you can use this to manually set
     the Task being performed.
 
     Args:
@@ -135,6 +135,13 @@ def _stop_thread_when_main_ends(
         nebuly_thread_instance.join()
     except KeyboardInterrupt:
         if stop_attempts < 2:
+            nebuly_logger.warning(
+                msg=(
+                    "KeyboardInterrupt received.\n"
+                    "Waiting for Nebuly to finish sending tracked data.\n"
+                    "Press Ctrl+C again to force exit."
+                )
+            )
             stop_attempts += 1
             _stop_thread_when_main_ends(
                 nebuly_thread_instance=nebuly_thread_instance,
