@@ -22,14 +22,37 @@ Once nebuly is initialized your AI workloads are **automatically** tracked.
 The `nebuly.init` method is used to initialize the nebuly module. It takes the following parameters:
 <ParamField body="project" type="str" required>
   The name of your project. This serves as a tag to organize your data across different projects.
+
 </ParamField>
 
 <ParamField body="phase" type="DevelopmentPhase(Enum)" required>
   The current development phase of your project. It serves as a tag to organize your data based on the project's development stage.
+    | DevelopmentPhase Enum | 
+    | --------              | 
+    | EXPERIMENTATION       |  
+    | PREPROCESSING         |         
+    | FINETUNING            |
+    | TRAINING              | 
+    | PRODUCTION            | 
 </ParamField>
 
 <ParamField body="task" type="Task(Enum)" default="Task.UNKNOWN" optional>
    The task that your current code is performing. If you don't specify a task, it will be automatically detected for each tracked record. If you do specify a task, all the records captured in your code will be recorded with the specified task.
+    | Task Enum              |
+    | --------               | 
+    | TEXT_GENERATION        |
+    | TEXT_SUMMARIZATION     |
+    | TEXT_CLASSIFICATION    |
+    | TEXT_EMBEDDING         |
+    | TEXT_EDITING           |
+    | TEXT_MODERATION        |
+    | CHAT                   |
+    | IMAGE_GENERATION       |
+    | IMAGE_EDITING          |
+    | IMAGE_VARIATION        |
+    | AUDIO_TRANSCRIPTION    |
+    | AUDIO_TRANSLATION      |
+    |  FINETUNING            |
 </ParamField>
 
 
