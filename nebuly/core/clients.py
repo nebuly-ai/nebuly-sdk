@@ -49,7 +49,7 @@ class NebulyClient:
         Args:
             request_data (NebulyDataPackage): The request data.
         """
-        headers: Dict[str, str] = {"authorization": f"Bearer {self._api_key}"}
+        headers: Dict[str, str] = {"Authorization": f"Bearer {self._api_key}"}
         try:
             self._post_nebuly_event_ingestion_endpoint(
                 headers=headers,
