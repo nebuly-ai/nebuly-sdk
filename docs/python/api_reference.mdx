@@ -27,18 +27,28 @@ The `nebuly.init` method is used to initialize the nebuly module. It takes the f
 
 <ParamField body="phase" type="DevelopmentPhase(Enum)" required>
   The current development phase of your project. It serves as a tag to organize your data based on the project's development stage.
-    | DevelopmentPhase Enum | 
-    | --------              | 
-    | EXPERIMENTATION       |  
-    | PREPROCESSING         |         
-    | FINETUNING            |
-    | TRAINING              | 
-    | PRODUCTION            | 
 </ParamField>
 
 <ParamField body="task" type="Task(Enum)" default="Task.UNKNOWN" optional>
    The task that your current code is performing. If you don't specify a task, it will be automatically detected for each tracked record. If you do specify a task, all the records captured in your code will be recorded with the specified task.
-    | Task Enum              |
+</ParamField>
+
+## DevelopmentPhase and Task Enums
+
+List of all the possible Development Phases and Tasks.
+
+<Tabs>
+  <Tab title="DevelopmentPhase Names">
+    |                   | 
+    | --------          | 
+    | EXPERIMENTATION   |  
+    | PREPROCESSING     |         
+    | FINETUNING        |
+    | TRAINING          | 
+    | PRODUCTION        | 
+  </Tab>
+  <Tab title="Task Names">
+    |                        |
     | --------               | 
     | TEXT_GENERATION        |
     | TEXT_SUMMARIZATION     |
@@ -53,10 +63,14 @@ The `nebuly.init` method is used to initialize the nebuly module. It takes the f
     | AUDIO_TRANSCRIPTION    |
     | AUDIO_TRANSLATION      |
     |  FINETUNING            |
-</ParamField>
+  </Tab>
 
+</Tabs>
 
-## Track Specific Code Sections or Methods
+<br />
+
+<Accordion title="Advanced Option - Track Specific Code Sections or Methods">
+
 To selectively track specific code sections or methods, you can utilize the `nebuly` context manager. This feature enables you to associate multiple `project` or `phase` values within the same code, as well as manually assign a specific `task` to your code.
 
 <Warning> Ensure that nebuly.tracker() is used after initializing nebuly. </Warning>
@@ -95,38 +109,9 @@ The `nebuly.tracker` method is used to manually change the tags for specific cod
   The task that your current code is accomplishing. If specified overwrite the one that is automatically detected.
 </ParamField>
 
-## DevelopmentPhase and Task Enums
+</Accordion>
 
-List of all the possible Development Phases and Tasks.
-
-<Tabs>
-  <Tab title="DevelopmentPhase Names">
-    |                   | 
-    | --------          | 
-    | EXPERIMENTATION   |  
-    | PREPROCESSING     |         
-    | FINETUNING        |
-    | TRAINING          | 
-    | PRODUCTION        | 
-  </Tab>
-  <Tab title="Task Names">
-    |                        |
-    | --------               | 
-    | TEXT_GENERATION        |
-    | TEXT_SUMMARIZATION     |
-    | TEXT_CLASSIFICATION    |
-    | TEXT_EMBEDDING         |
-    | TEXT_EDITING           |
-    | TEXT_MODERATION        |
-    | CHAT                   |
-    | IMAGE_GENERATION       |
-    | IMAGE_EDITING          |
-    | IMAGE_VARIATION        |
-    | AUDIO_TRANSCRIPTION    |
-    | AUDIO_TRANSLATION      |
-    |  FINETUNING            |
-  </Tab>
-</Tabs>
+<br />
 
 <CardGroup cols={2}>
   <Card
