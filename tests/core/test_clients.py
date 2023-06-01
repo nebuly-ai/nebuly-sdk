@@ -37,7 +37,7 @@ class TestNebulyClient(TestCase):
             request_data=self.mocked_data_package,
         )
 
-        mocked_headers: Dict[str, str] = {"authorization": "Bearer test-key"}
+        mocked_headers: Dict[str, str] = {"Authorization": "Bearer test-key"}
 
         mocked_requests.post.assert_called_once_with(
             url=nebuly_client._nebuly_event_ingestion_url,
