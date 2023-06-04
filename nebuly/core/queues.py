@@ -1,7 +1,7 @@
+import copy
 from abc import ABC, abstractmethod
 from queue import Queue
 from typing import Any, Optional
-import copy
 
 from nebuly.core.schemas import (
     DevelopmentPhase,
@@ -10,7 +10,6 @@ from nebuly.core.schemas import (
     TagData,
 )
 from nebuly.core.services import TaskDetector
-
 
 QUEUE_MAX_SIZE = 10000
 
@@ -26,7 +25,7 @@ class DataPackageConverter(ABC):
         self,
         task_detector: TaskDetector = TaskDetector(),
     ) -> None:
-        self._task_detector: TaskDetector = task_detector
+        self._task_detector = task_detector
 
     @abstractmethod
     def get_data_package(
@@ -92,15 +91,13 @@ class NebulyQueue(Queue):
         maxsize: int = QUEUE_MAX_SIZE,
     ) -> None:
         super().__init__(maxsize=maxsize)
-        self.tag_data: TagData = tag_data
+        self.tag_data = tag_data
 
     def patch_tag_data(self, tag_data: TagData) -> None:
         """Patches the tagged data with the new tagged data.
 
         Args:
             tag_data (TagData): The new tagged data.
-            maxsize (int, optional): The max size of the queue.
-                Defaults to QUEUE_MAX_SIZE.
         """
         if tag_data.project != "unknown":
             self.tag_data.project = tag_data.project

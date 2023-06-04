@@ -1,12 +1,15 @@
-from typing import Generator, Optional, Any, List
 import atexit
 import contextlib
 import copy
+import logging
+from typing import Generator, Optional, Any, List
 
 from nebuly.core.clients import NebulyClient, NebulyTrackingDataThread
 from nebuly.core.queues import NebulyQueue, Tracker
 from nebuly.core.schemas import DevelopmentPhase, TagData, Task
-from nebuly.utils.logger import nebuly_logger
+
+nebuly_logger = logging.getLogger(name=__name__)
+nebuly_logger.setLevel(level=logging.INFO)
 
 _nebuly_queue: Optional[NebulyQueue] = None
 
@@ -43,7 +46,7 @@ def init(
         )
         return
 
-    tag_data: TagData = TagData(
+    tag_data = TagData(
         project=project,
         phase=phase,
         task=task,
@@ -55,10 +58,11 @@ def init(
         queue=_nebuly_queue, nebuly_client=NebulyClient(api_key=api_key)
     )
     nebuly_tracking_thread.daemon = True
-    atexit.register(_stop_thread_when_main_ends, nebuly_tracking_thread)
+    stop_attemps = 0
+    atexit.register(_stop_thread_when_main_ends, nebuly_tracking_thread, stop_attemps)
     nebuly_tracking_thread.start()
 
-    tracker_list: List[Tracker] = _instantiate_trackers(nebuly_queue=_nebuly_queue)
+    tracker_list = _instantiate_trackers(nebuly_queue=_nebuly_queue)
     for t in tracker_list:
         t.replace_sdk_functions()
 
@@ -71,7 +75,7 @@ def tracker(
 ) -> Generator[None, Any, None]:
     """Context manager to temporarily replace the tracker info.
     This is useful when you want to track data for a different project or phase within
-    the same code. Additionally you can use this to manually set
+    the same code. Additionally, you can use this to manually set
     the Task being performed.
 
     Args:
@@ -92,7 +96,7 @@ def tracker(
     if _nebuly_queue is None:
         raise RuntimeError("Please call nebuly.init() before using nebuly.tracker()")
 
-    old_tag_data: TagData = copy.deepcopy(x=_nebuly_queue.tag_data)
+    old_tag_data = copy.deepcopy(x=_nebuly_queue.tag_data)
     new_tag_data = TagData(
         project=project,
         phase=phase,
@@ -104,7 +108,7 @@ def tracker(
 
 
 def _instantiate_trackers(nebuly_queue: NebulyQueue) -> List[Tracker]:
-    tracker_list: List[Tracker] = []
+    tracker_list = []
     try:
         from nebuly.trackers.openai import OpenAITracker
 

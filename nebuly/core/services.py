@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Optional
 
 from nebuly.core.schemas import Task
 
@@ -64,9 +64,9 @@ class PromptInfo:
 class TaskDetector:
     def __init__(self) -> None:
         # TODO: Add check for memory usage: i.e. if i am saving too many prompts
-        self._prompt_list: List[PromptInfo] = []
+        self._prompt_list = []
 
-        self._keywords_dict: Dict[str, List[str]] = {
+        self._keywords_dict = {
             "TEXT_SUMMARIZATION": ["summarize", "summary", "summarization"],
             "TEXT_CLASSIFICATION": ["classify", "classification"],
             "CHAT": ["chat", "chatbot", "assistant"],

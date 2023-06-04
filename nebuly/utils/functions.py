@@ -1,14 +1,13 @@
-from datetime import datetime
-from inspect import Signature, BoundArguments
-from typing import Any, Dict, Optional, Tuple
 import inspect
+from datetime import datetime
+from typing import Any, Dict, Optional, Tuple
 
 import mutagen
 
 
 def transform_args_to_kwargs(
     func: Any,
-    func_args: Tuple[Any],
+    func_args: Tuple,
     func_kwargs: Dict[str, Any],
     specific_keyword: Optional[str] = None,
 ) -> Dict[str, Any]:
@@ -24,8 +23,8 @@ def transform_args_to_kwargs(
     Returns:
         Dict: The kwargs dict.
     """
-    sig: Signature = inspect.signature(obj=func)
-    bound_args: BoundArguments = sig.bind(*func_args, **func_kwargs)
+    sig = inspect.signature(obj=func)
+    bound_args = sig.bind(*func_args, **func_kwargs)
     complete_kwargs = dict(bound_args.arguments)
 
     # if there is the kwargs dictionary in the args, we need to merge it with the
@@ -51,7 +50,7 @@ def get_media_file_length_in_seconds(file_path: str) -> Optional[int]:
         Optional[int]: The length of the media file in seconds.
     """
     try:
-        audio_file: Any = mutagen.File(file_path)  # type: ignore
+        audio_file = mutagen.File(file_path)  # type: ignore
     except Exception:
         return None
     return int(audio_file.info.length)

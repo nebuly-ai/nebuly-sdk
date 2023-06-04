@@ -1,6 +1,9 @@
+import logging
 from enum import Enum
 from functools import partial
 from typing import Dict, Tuple, Optional, Any
+
+import openai
 
 from nebuly.core.queues import DataPackageConverter, NebulyQueue, QueueObject, Tracker
 from nebuly.core.schemas import (
@@ -15,9 +18,9 @@ from nebuly.utils.functions import (
     get_media_file_length_in_seconds,
     transform_args_to_kwargs,
 )
-from nebuly.utils.logger import nebuly_logger
 
-import openai
+nebuly_logger = logging.getLogger(name=__name__)
+nebuly_logger.setLevel(level=logging.INFO)
 
 
 class OpenAIAPIType(Enum):
@@ -48,7 +51,6 @@ APITYPE_TO_TASK_DICT: Dict[OpenAIAPIType, Task] = {
     OpenAIAPIType.MODERATION: Task.TEXT_MODERATION,
     OpenAIAPIType.TEXT_COMPLETION: Task.TEXT_GENERATION,
 }
-
 
 OPENAI_PROVIDER_DICT: Dict[str, Provider] = {
     "azure": Provider.AZURE_OPENAI,
@@ -114,22 +116,22 @@ class OpenAIDataPackageConverter(DataPackageConverter):
                 Server.
         """
 
-        model: Optional[str] = None
-        n_input_tokens: Optional[int] = None
-        n_completion_tokens: Optional[int] = None
-        image_size: Optional[str] = None
-        n_output_images: Optional[int] = None
-        audio_duration_seconds: Optional[int] = None
-        training_file_id: Optional[str] = None
-        training_id: Optional[str] = None
-        timestamp_openai: Optional[int] = None
+        model = None
+        n_input_tokens = None
+        n_completion_tokens = None
+        image_size = None
+        n_output_images = None
+        audio_duration_seconds = None
+        training_file_id = None
+        training_id = None
+        timestamp_openai = None
 
-        detected_task: Task = self._get_task(
+        detected_task = self._get_task(
             tag_data=tag_data,
             api_type=api_type,
             request_kwargs=request_kwargs,
         )
-        provider: Provider = OPENAI_PROVIDER_DICT[api_provider]
+        provider = OPENAI_PROVIDER_DICT[api_provider]
 
         if (
             (api_type == OpenAIAPIType.TEXT_COMPLETION)
@@ -179,7 +181,7 @@ class OpenAIDataPackageConverter(DataPackageConverter):
         else:
             nebuly_logger.error(msg=f"Unknown OpenAI API type: {api_type}")
 
-        body: OpenAIAttributes = OpenAIAttributes(
+        body = OpenAIAttributes(
             project=tag_data.project,
             phase=tag_data.phase,
             task=detected_task,
@@ -224,23 +226,21 @@ class OpenAIDataPackageConverter(DataPackageConverter):
     def _get_text_api_data(
         request_kwargs: Dict[str, Any], request_response: Dict[str, Any]
     ) -> Tuple[Optional[str], Optional[int], Optional[int], Optional[int]]:
-        model: Optional[str] = None
+        model = None
+        n_prompt_tokens = None
+        n_completion_tokens = None
+        timestamp_openai = None
+
         if "model" in request_kwargs.keys():
             model = request_kwargs["model"]
-
-        n_prompt_tokens: Optional[int] = None
         if "usage" in request_response.keys():
             if "prompt_tokens" in request_response["usage"].keys():
                 n_prompt_tokens = int(request_response["usage"]["prompt_tokens"])
-
-        n_completion_tokens: Optional[int] = None
         if "usage" in request_response.keys():
             if "completion_tokens" in request_response["usage"].keys():
                 n_completion_tokens = int(
                     request_response["usage"]["completion_tokens"]
                 )
-
-        timestamp_openai: Optional[int] = None
         if "created" in request_response.keys():
             timestamp_openai = int(request_response["created"])
 
@@ -251,18 +251,17 @@ class OpenAIDataPackageConverter(DataPackageConverter):
         request_kwargs: Dict[str, Any], request_response: Dict[str, Any]
     ) -> Tuple[str, Optional[int], Optional[str], Optional[int]]:
         model = "dall-e"
+        n_output_images = None
+        image_size = None
+        timestamp_openai = None
 
-        n_output_images: Optional[int] = None
         if "n" in request_kwargs.keys():
             n_output_images = int(request_kwargs["n"])
-
-        image_size: Optional[str] = None
         if "size" in request_kwargs.keys():
             image_size = request_kwargs["size"]
-
-        timestamp_openai: Optional[int] = None
         if "created" in request_response.keys():
             timestamp_openai = int(request_response["created"])
+
         return model, n_output_images, image_size, timestamp_openai
 
     @staticmethod
@@ -270,11 +269,10 @@ class OpenAIDataPackageConverter(DataPackageConverter):
         request_kwargs: Dict[str, Any],
     ) -> Tuple[Optional[str], Optional[int]]:
         model: Optional[str] = None
+        audio_duration_seconds: Optional[int] = None
 
         if "model" in request_kwargs.keys():
             model = request_kwargs["model"]
-
-        audio_duration_seconds: Optional[int] = None
         if "file" in request_kwargs.keys():
             file_name: str = request_kwargs["file"].name
             audio_duration_seconds = get_media_file_length_in_seconds(
@@ -288,19 +286,17 @@ class OpenAIDataPackageConverter(DataPackageConverter):
         request_kwargs: Dict[str, Any],
         request_response: Dict[str, Any],
     ) -> Tuple[Optional[str], Optional[str], Optional[str], Optional[int]]:
-        model: Optional[str] = None
+        model = None
+        training_file_id = None
+        training_id = None
+        timestamp_openai = None
+
         if "model" in request_kwargs.keys():
             model = request_kwargs["model"]
-
-        training_file_id: Optional[str] = None
         if "training_file" in request_kwargs.keys():
             training_file_id = request_kwargs["training_file"]
-
-        training_id: Optional[str] = None
         if "id" in request_response.keys():
             training_id = request_response["id"]
-
-        timestamp_openai: Optional[int] = None
         if "created_at" in request_response.keys():
             timestamp_openai = int(request_response["created_at"])
 
@@ -308,7 +304,7 @@ class OpenAIDataPackageConverter(DataPackageConverter):
 
     @staticmethod
     def _get_moderation_request_data(request_response: Dict[str, Any]) -> Optional[str]:
-        model: Optional[str] = None
+        model = None
         if "model" in request_response.keys():
             model = request_response["model"]
         # is free now 19/05/2023: I don't have usage data
@@ -329,16 +325,14 @@ class OpenAIQueueObject(QueueObject):
     ) -> None:
         super().__init__()
 
-        self._api_type: OpenAIAPIType = api_type
-        self._data_package_converter: OpenAIDataPackageConverter = (
-            data_package_converter
-        )
-        self._request_kwargs: Dict[str, Any] = request_kwargs
-        self._request_response: Dict[str, Any] = request_response
-        self._timestamp: float = timestamp
-        self._timestamp_end: float = timestamp_end
-        self._api_key: Optional[str] = api_key
-        self._api_provider: str = api_provider
+        self._api_type = api_type
+        self._data_package_converter = data_package_converter
+        self._request_kwargs = request_kwargs
+        self._request_response = request_response
+        self._timestamp = timestamp
+        self._timestamp_end = timestamp_end
+        self._api_key = api_key
+        self._api_provider = api_provider
 
     def as_data_package(self) -> NebulyDataPackage:
         return self._data_package_converter.get_data_package(
@@ -465,14 +459,12 @@ class OpenAITracker(Tracker):
     def _track_method(
         self,
         original_method: Any,
-        *request_args: Tuple[Any, ...],
+        *request_args: Tuple,
         **request_kwargs: Dict[str, Any],
     ) -> Dict[str, Any]:
-        timestamp: float = get_current_timestamp()
-        request_response: Dict[str, Any] = original_method(
-            *request_args, **request_kwargs
-        )
-        timestamp_end: float = get_current_timestamp()
+        timestamp = get_current_timestamp()
+        request_response = original_method(*request_args, **request_kwargs)
+        timestamp_end = get_current_timestamp()
 
         request_kwargs = transform_args_to_kwargs(
             func=original_method,
@@ -480,9 +472,9 @@ class OpenAITracker(Tracker):
             func_kwargs=request_kwargs,
             specific_keyword="params",
         )
-        api_type: OpenAIAPIType = self._get_api_type(original_method=original_method)
-        api_provider: str = openai.api_type
-        api_key: Optional[str] = openai.api_key
+        api_type = self._get_api_type(original_method=original_method)
+        api_provider = openai.api_type
+        api_key = openai.api_key
         self._track_openai_api(
             request_kwargs=request_kwargs,
             request_response=request_response,
