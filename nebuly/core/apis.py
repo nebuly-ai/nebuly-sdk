@@ -58,8 +58,8 @@ def init(
         queue=_nebuly_queue, nebuly_client=NebulyClient(api_key=api_key)
     )
     nebuly_tracking_thread.daemon = True
-    stop_attemps = 0
-    atexit.register(_stop_thread_when_main_ends, nebuly_tracking_thread, stop_attemps)
+    stop_attempts = 0
+    atexit.register(_stop_thread_when_main_ends, nebuly_tracking_thread, stop_attempts)
     nebuly_tracking_thread.start()
 
     tracker_list = _instantiate_trackers(nebuly_queue=_nebuly_queue)
