@@ -61,8 +61,7 @@ class NebulyClient:
         except HTTPError as errh:
             nebuly_logger.error(
                 msg=f"An error occurred while communicating with the Nebuly Server.\n"
-                f"HTTP Error: {errh}\n"
-                f"Please check your internet connection and try again.",
+                f"HTTP Error: {errh}\n",
                 exc_info=True,
             )
         except BaseException as e:
@@ -73,8 +72,7 @@ class NebulyClient:
             # here I am catching all the exceptions and logging them.
             nebuly_logger.error(
                 msg=f"An error occurred while communicating with the Nebuly Server.\n"
-                f"Generic Error: {e}\n"
-                f"Please check your internet connection and try again.",
+                f"Generic Error: {e}\n",
                 exc_info=True,
             )
 
