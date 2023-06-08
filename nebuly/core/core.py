@@ -1,13 +1,16 @@
 import copy
 from abc import ABC, abstractmethod
-from queue import Queue
-from typing import Any, Optional
+from queue import Queue, Empty
+from threading import Thread
+from typing import Any, Optional, Dict
 
+from nebuly.core.clients import NebulyClient
 from nebuly.core.schemas import (
     DevelopmentPhase,
     NebulyDataPackage,
     Task,
     TagData,
+    RawTrackedData,
 )
 from nebuly.core.services import TaskDetector
 
@@ -17,7 +20,10 @@ QUEUE_MAX_SIZE = 10000
 class Tracker(ABC):
     @abstractmethod
     def replace_sdk_functions(self) -> None:
-        pass
+        """Replaces the original functions of a provider
+        with the tracked ones from the SDK.
+        """
+        raise NotImplementedError
 
 
 class DataPackageConverter(ABC):
@@ -30,28 +36,27 @@ class DataPackageConverter(ABC):
     @abstractmethod
     def get_data_package(
         self,
-        tag_data: TagData,
-        timestamp: float,
-        timestamp_end: float,
+        raw_data: RawTrackedData,
     ) -> NebulyDataPackage:
         """Converts the queue object to a data package.
 
         Args:
-            tag_data (TagData): The tagged data contained the user specified-tags.
-            timestamp (float): The timestamp captured at the beginning of the request.
-            timestamp_end (float): The timestamp captured at the end of the request.
+            raw_data (RawTrackedData): The data package info used to
+                create the data package.
 
         Returns:
             NebulyDataPackage: The data package.
         """
-        pass
+        raise NotImplementedError
 
 
 class QueueObject(ABC):
     def __init__(
         self,
+        data_package_converter: DataPackageConverter,
     ) -> None:
         self._tag_data = TagData()
+        self._data_package_converter = data_package_converter
 
     def tag(self, tag_data: TagData) -> None:
         """Updates the tagged data.
@@ -75,9 +80,9 @@ class QueueObject(ABC):
         """Converts the queue object to a data package.
 
         Returns:
-            NebulyDataPackage: The data package.
+            NebulyDataPackage: The data package that is sent to Nebuly.
         """
-        pass
+        raise NotImplementedError
 
     @staticmethod
     def _clone(item: Any) -> Any:
@@ -133,3 +138,35 @@ class NebulyQueue(Queue):
         """
         queue_object: QueueObject = super().get(block=block, timeout=timeout)
         return queue_object
+
+
+class NebulyTrackingDataThread(Thread):
+    def __init__(
+        self,
+        queue: NebulyQueue,
+        nebuly_client: NebulyClient,
+        **kwargs: Dict[str, Any],
+    ) -> None:
+        super().__init__(**kwargs)
+
+        self._queue = queue
+        self._nebuly_client = nebuly_client
+        self.thread_running = True
+        self.force_exit = False
+
+    def run(self) -> None:
+        """Continuously takes elements from the queue and sends them to the
+        Nebuly server.
+        """
+        while self.thread_running is True or self._queue.empty() is False:
+            if self.force_exit is True:
+                break
+
+            try:
+                queue_object = self._queue.get(timeout=0)
+            except Empty:
+                continue
+
+            request_data = queue_object.as_data_package()
+            self._nebuly_client.send_request_to_nebuly_server(request_data=request_data)
+            self._queue.task_done()

@@ -1,17 +1,21 @@
 import logging
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from enum import Enum
 from functools import partial
-from typing import Dict, Tuple, Optional, Any
+from typing import Dict, Tuple, Optional, Any, Callable, Generator
 
 import openai
+import tiktoken as tiktoken
 
-from nebuly.core.queues import DataPackageConverter, NebulyQueue, QueueObject, Tracker
+from nebuly.core.core import DataPackageConverter, NebulyQueue, QueueObject, Tracker
 from nebuly.core.schemas import (
     GenericProviderAttributes,
     NebulyDataPackage,
     Provider,
     TagData,
     Task,
+    RawTrackedData,
 )
 from nebuly.utils.functions import (
     get_current_timestamp,
@@ -38,7 +42,212 @@ class OpenAIAPIType(Enum):
     UNKNOWN = None
 
 
-APITYPE_TO_TASK_DICT: Dict[OpenAIAPIType, Task] = {
+class OpenAIAttributes(GenericProviderAttributes):
+    api_type: OpenAIAPIType
+    api_key: str
+    timestamp_openai: Optional[int] = None
+
+    model: Optional[str] = None
+    n_prompt_tokens: Optional[int] = None
+    n_completion_tokens: Optional[int] = None
+
+    n_output_images: Optional[int] = None
+    image_size: Optional[str] = None
+
+    audio_duration_seconds: Optional[int] = None
+
+    training_file_id: Optional[str] = None
+    training_id: Optional[str] = None
+
+
+@dataclass
+class OpenAIRawTrackedData(RawTrackedData):
+    tag_data: TagData
+    timestamp: float
+    timestamp_end: float
+    request_kwargs: Dict[str, Any]
+    request_response: Dict[str, Any]
+    api_type: OpenAIAPIType
+    api_key: Optional[str]
+    api_provider: str
+
+
+class APITypeBodyFiller(ABC):
+    @staticmethod
+    @abstractmethod
+    def fill_body_with_request_data(
+        body: OpenAIAttributes,
+        request_kwargs: Dict[str, Any],
+        request_response: Dict[str, Any],
+    ):
+        raise NotImplementedError
+
+
+class TextAPIBodyFiller(APITypeBodyFiller):
+    @staticmethod
+    def fill_body_with_request_data(
+        body: OpenAIAttributes,
+        request_kwargs: Dict[str, Any],
+        request_response: Dict[str, Any],
+    ):
+        try:
+            model = request_kwargs["model"]
+            body.model = model
+        except KeyError:
+            model = None
+
+        # Standard API Call
+        try:
+            body.n_prompt_tokens = int(request_response["usage"]["prompt_tokens"])
+        except KeyError:
+            pass
+        try:
+            body.n_completion_tokens = int(
+                request_response["usage"]["completion_tokens"]
+            )
+        except KeyError:
+            pass
+        try:
+            body.timestamp_openai = int(request_response["created"])
+        except KeyError:
+            pass
+
+        # Stream API Call
+        try:
+            stream = request_kwargs["stream"]
+        except KeyError:
+            stream = False
+
+        if stream is True:
+            try:
+                print(request_kwargs)
+                if body.api_type == OpenAIAPIType.CHAT:
+                    input_text = request_kwargs["messages"][0]["content"]
+                elif body.api_type == OpenAIAPIType.TEXT_COMPLETION:
+                    input_text = request_kwargs["prompt"]
+                else:
+                    input_text = ""
+                body.n_prompt_tokens = TextAPIBodyFiller._num_tokens_from_string(
+                    string=input_text, encoding_name=model
+                )
+            except KeyError:
+                pass
+            try:
+                output_text = request_response["output_text"]
+                body.n_completion_tokens = TextAPIBodyFiller._num_tokens_from_string(
+                    string=output_text, encoding_name=model
+                )
+            except KeyError:
+                pass
+        return body
+
+    @staticmethod
+    def _num_tokens_from_string(string: str, encoding_name: str) -> int:
+        """Returns the number of tokens in a text string."""
+        encoding = tiktoken.encoding_for_model(encoding_name)
+        num_tokens = len(encoding.encode(string))
+        return num_tokens
+
+
+class ImageAPIBodyFiller(APITypeBodyFiller):
+    def fill_body_with_request_data(
+        self,
+        body: OpenAIAttributes,
+        request_kwargs: Dict[str, Any],
+        request_response: Dict[str, Any],
+    ):
+        try:
+            body.model = request_kwargs["model"]
+        except KeyError:
+            body.model = "dall-e"
+        try:
+            body.training_file_id = request_kwargs["training_file"]
+        except KeyError:
+            pass
+        try:
+            body.training_id = request_response["id"]
+        except KeyError:
+            pass
+        try:
+            body.timestamp_openai = int(request_response["created_at"])
+        except KeyError:
+            pass
+
+
+class AudioAPIBodyFiller(APITypeBodyFiller):
+    def fill_body_with_request_data(
+        self,
+        body: OpenAIAttributes,
+        request_kwargs: Dict[str, Any],
+        request_response: Dict[str, Any],
+    ):
+        try:
+            body.model = request_kwargs["model"]
+        except KeyError:
+            pass
+        try:
+            file_name: str = request_kwargs["file"].name
+            body.audio_duration_seconds = get_media_file_length_in_seconds(
+                file_path=file_name
+            )
+        except KeyError:
+            pass
+
+
+class FineTuneAPIBodyFiller(APITypeBodyFiller):
+    def fill_body_with_request_data(
+        self,
+        body: OpenAIAttributes,
+        request_kwargs: Dict[str, Any],
+        request_response: Dict[str, Any],
+    ):
+        try:
+            body.model = request_kwargs["model"]
+        except KeyError:
+            pass
+        try:
+            body.training_file_id = request_kwargs["training_file"]
+        except KeyError:
+            pass
+        try:
+            body.training_id = request_response["id"]
+        except KeyError:
+            pass
+        try:
+            body.timestamp_openai = int(request_response["created_at"])
+        except KeyError:
+            pass
+
+
+class ModerationAPIBodyFiller(APITypeBodyFiller):
+    def fill_body_with_request_data(
+        self,
+        body: OpenAIAttributes,
+        request_kwargs: Dict[str, Any],
+        request_response: Dict[str, Any],
+    ):
+        try:
+            body.model = request_response["model"]
+        except KeyError:
+            pass
+        # is free now 19/05/2023: I don't have usage data
+
+
+OPENAI_FILLER_REGISTRY = {
+    OpenAIAPIType.TEXT_COMPLETION: TextAPIBodyFiller(),
+    OpenAIAPIType.CHAT: TextAPIBodyFiller(),
+    OpenAIAPIType.EDIT: TextAPIBodyFiller(),
+    OpenAIAPIType.EMBEDDING: TextAPIBodyFiller(),
+    OpenAIAPIType.FINETUNE: FineTuneAPIBodyFiller(),
+    OpenAIAPIType.MODERATION: ModerationAPIBodyFiller(),
+    OpenAIAPIType.IMAGE_CREATE: ImageAPIBodyFiller(),
+    OpenAIAPIType.IMAGE_EDIT: ImageAPIBodyFiller(),
+    OpenAIAPIType.IMAGE_VARIATION: ImageAPIBodyFiller(),
+    OpenAIAPIType.AUDIO_TRANSCRIBE: AudioAPIBodyFiller(),
+    OpenAIAPIType.AUDIO_TRANSLATE: AudioAPIBodyFiller(),
+}
+
+OPENAI_TASK_REGISTRY = {
     OpenAIAPIType.CHAT: Task.CHAT,
     OpenAIAPIType.EDIT: Task.TEXT_EDITING,
     OpenAIAPIType.IMAGE_CREATE: Task.IMAGE_GENERATION,
@@ -52,158 +261,40 @@ APITYPE_TO_TASK_DICT: Dict[OpenAIAPIType, Task] = {
     OpenAIAPIType.TEXT_COMPLETION: Task.TEXT_GENERATION,
 }
 
-OPENAI_PROVIDER_DICT: Dict[str, Provider] = {
+OPENAI_PROVIDER_REGISTRY = {
     "azure": Provider.AZURE_OPENAI,
     "open_ai": Provider.OPENAI,
 }
 
 
-class OpenAIAttributes(GenericProviderAttributes):
-    api_type: OpenAIAPIType
-    api_key: Optional[str]
-    timestamp_openai: Optional[int] = None
-
-    model: Optional[str] = None
-    n_prompt_tokens: Optional[int] = None
-    n_output_tokens: Optional[int] = None
-
-    n_output_images: Optional[int] = None
-    image_size: Optional[str] = None
-
-    audio_duration_seconds: Optional[int] = None
-
-    training_file_id: Optional[str] = None
-    training_id: Optional[str] = None
-
-
 class OpenAIDataPackageConverter(DataPackageConverter):
-    def __init__(
-        self,
-    ) -> None:
-        super().__init__()
-
     def get_data_package(
         self,
-        tag_data: TagData,
-        timestamp: float,
-        timestamp_end: float,
-        request_kwargs: Dict[str, Any],
-        request_response: Dict[str, Any],
-        api_type: OpenAIAPIType,
-        api_key: Optional[str],
-        api_provider: str,
+        raw_data: OpenAIRawTrackedData,
     ) -> NebulyDataPackage:
-        """Converts the QueueObject into a NebulyDataPackage object using the
-        data from the OpenAI API response, the request kwargs, the api type,
-        and the TagData attributes assigned to the QueueObject by the
-        NebulyQueue.
-
-        Args:
-            tag_data (TagData): The TagData object assigned to the QueueObject
-            timestamp (float): The SDK timestamp captured just before the issuing the
-                request to OpenAI.
-            timestamp_end (float): The SDK timestamp captured just after the issuing the
-                request to OpenAI.
-            request_kwargs (Dict[str, Any]): The request kwargs used to make the
-                OpenAI API request
-            request_response (Dict[str, Any]): The response from the OpenAI API
-            api_type (str): The type of OpenAI API request
-            api_key (str): The OpenAI API key
-            api_provider (Optional[str]): The OpenAI API provider
-
-        Returns:
-            NebulyDataPackage: The NebulyDataPackage that can be sent to the Nebuly
-                Server.
-        """
-
-        model = None
-        n_input_tokens = None
-        n_completion_tokens = None
-        image_size = None
-        n_output_images = None
-        audio_duration_seconds = None
-        training_file_id = None
-        training_id = None
-        timestamp_openai = None
-
+        filler = OPENAI_FILLER_REGISTRY[raw_data.api_type]
+        provider = OPENAI_PROVIDER_REGISTRY[raw_data.api_provider]
         detected_task = self._get_task(
-            tag_data=tag_data,
-            api_type=api_type,
-            request_kwargs=request_kwargs,
+            raw_data.tag_data,
+            raw_data.api_type,
+            raw_data.request_kwargs,
         )
-        provider = OPENAI_PROVIDER_DICT[api_provider]
-
-        if (
-            (api_type == OpenAIAPIType.TEXT_COMPLETION)
-            or (api_type == OpenAIAPIType.CHAT)
-            or (api_type == OpenAIAPIType.EMBEDDING)
-            or (api_type == OpenAIAPIType.EDIT)
-        ):
-            (
-                model,
-                n_input_tokens,
-                n_completion_tokens,
-                timestamp_openai,
-            ) = self._get_text_api_data(
-                request_kwargs=request_kwargs, request_response=request_response
-            )
-        elif (
-            (api_type == OpenAIAPIType.IMAGE_CREATE)
-            or (api_type == OpenAIAPIType.IMAGE_EDIT)
-            or (api_type == OpenAIAPIType.IMAGE_VARIATION)
-        ):
-            (
-                model,
-                n_output_images,
-                image_size,
-                timestamp_openai,
-            ) = self._get_image_api_data(
-                request_kwargs=request_kwargs, request_response=request_response
-            )
-        elif (api_type == OpenAIAPIType.AUDIO_TRANSCRIBE) or (
-            api_type == OpenAIAPIType.AUDIO_TRANSLATE
-        ):
-            (
-                model,
-                audio_duration_seconds,
-            ) = self._get_voice_request_data(request_kwargs=request_kwargs)
-        elif api_type == OpenAIAPIType.FINETUNE:
-            (
-                model,
-                training_file_id,
-                training_id,
-                timestamp_openai,
-            ) = self._get_finetune_request_data(
-                request_kwargs=request_kwargs, request_response=request_response
-            )
-        elif api_type == OpenAIAPIType.MODERATION:
-            model = self._get_moderation_request_data(request_response=request_response)
-        else:
-            nebuly_logger.error(msg=f"Unknown OpenAI API type: {api_type}")
-
         body = OpenAIAttributes(
-            project=tag_data.project,
-            phase=tag_data.phase,
+            project=raw_data.tag_data.project,
+            phase=raw_data.tag_data.phase,
             task=detected_task,
-            api_type=api_type,
-            api_key=api_key,
-            timestamp=timestamp,
-            timestamp_end=timestamp_end,
-            timestamp_openai=timestamp_openai,
-            model=model,
-            n_prompt_tokens=n_input_tokens,
-            n_output_tokens=n_completion_tokens,
-            n_output_images=n_output_images,
-            image_size=image_size,
-            audio_duration_seconds=audio_duration_seconds,
-            training_file_id=training_file_id,
-            training_id=training_id,
+            api_type=raw_data.api_type,
+            api_provider=provider,
+            api_key=raw_data.api_key,
+            timestamp=raw_data.timestamp,
+            timestamp_end=raw_data.timestamp_end,
         )
-
-        return NebulyDataPackage(
-            kind=provider,
+        filler.fill_body_with_request_data(
             body=body,
+            request_kwargs=raw_data.request_kwargs,
+            request_response=raw_data.request_response,
         )
+        return NebulyDataPackage(kind=provider, body=body)
 
     def _get_task(
         self,
@@ -213,102 +304,14 @@ class OpenAIDataPackageConverter(DataPackageConverter):
     ) -> Task:
         if tag_data.task != Task.UNKNOWN:
             return tag_data.task
-        if (api_type == OpenAIAPIType.TEXT_COMPLETION) and (
-            "prompt" in request_kwargs.keys()
-        ):
-            return self._task_detector.detect_task_from_text(
-                text=request_kwargs["prompt"][0]
-            )
-        else:
-            return APITYPE_TO_TASK_DICT[api_type]
 
-    @staticmethod
-    def _get_text_api_data(
-        request_kwargs: Dict[str, Any], request_response: Dict[str, Any]
-    ) -> Tuple[Optional[str], Optional[int], Optional[int], Optional[int]]:
-        model = None
-        n_prompt_tokens = None
-        n_completion_tokens = None
-        timestamp_openai = None
-
-        if "model" in request_kwargs.keys():
-            model = request_kwargs["model"]
-        if "usage" in request_response.keys():
-            if "prompt_tokens" in request_response["usage"].keys():
-                n_prompt_tokens = int(request_response["usage"]["prompt_tokens"])
-        if "usage" in request_response.keys():
-            if "completion_tokens" in request_response["usage"].keys():
-                n_completion_tokens = int(
-                    request_response["usage"]["completion_tokens"]
-                )
-        if "created" in request_response.keys():
-            timestamp_openai = int(request_response["created"])
-
-        return model, n_prompt_tokens, n_completion_tokens, timestamp_openai
-
-    @staticmethod
-    def _get_image_api_data(
-        request_kwargs: Dict[str, Any], request_response: Dict[str, Any]
-    ) -> Tuple[str, Optional[int], Optional[str], Optional[int]]:
-        model = "dall-e"
-        n_output_images = None
-        image_size = None
-        timestamp_openai = None
-
-        if "n" in request_kwargs.keys():
-            n_output_images = int(request_kwargs["n"])
-        if "size" in request_kwargs.keys():
-            image_size = request_kwargs["size"]
-        if "created" in request_response.keys():
-            timestamp_openai = int(request_response["created"])
-
-        return model, n_output_images, image_size, timestamp_openai
-
-    @staticmethod
-    def _get_voice_request_data(
-        request_kwargs: Dict[str, Any],
-    ) -> Tuple[Optional[str], Optional[int]]:
-        model: Optional[str] = None
-        audio_duration_seconds: Optional[int] = None
-
-        if "model" in request_kwargs.keys():
-            model = request_kwargs["model"]
-        if "file" in request_kwargs.keys():
-            file_name: str = request_kwargs["file"].name
-            audio_duration_seconds = get_media_file_length_in_seconds(
-                file_path=file_name
-            )
-
-        return model, audio_duration_seconds
-
-    @staticmethod
-    def _get_finetune_request_data(
-        request_kwargs: Dict[str, Any],
-        request_response: Dict[str, Any],
-    ) -> Tuple[Optional[str], Optional[str], Optional[str], Optional[int]]:
-        model = None
-        training_file_id = None
-        training_id = None
-        timestamp_openai = None
-
-        if "model" in request_kwargs.keys():
-            model = request_kwargs["model"]
-        if "training_file" in request_kwargs.keys():
-            training_file_id = request_kwargs["training_file"]
-        if "id" in request_response.keys():
-            training_id = request_response["id"]
-        if "created_at" in request_response.keys():
-            timestamp_openai = int(request_response["created_at"])
-
-        return model, training_file_id, training_id, timestamp_openai
-
-    @staticmethod
-    def _get_moderation_request_data(request_response: Dict[str, Any]) -> Optional[str]:
-        model = None
-        if "model" in request_response.keys():
-            model = request_response["model"]
-        # is free now 19/05/2023: I don't have usage data
-        return model
+        try:
+            prompt = request_kwargs["prompt"][0]
+            if api_type == OpenAIAPIType.TEXT_COMPLETION:
+                return self._task_detector.detect_task_from_text(text=prompt)
+            return OPENAI_TASK_REGISTRY[api_type]
+        except KeyError:
+            return OPENAI_TASK_REGISTRY[api_type]
 
 
 class OpenAIQueueObject(QueueObject):
@@ -323,44 +326,171 @@ class OpenAIQueueObject(QueueObject):
         timestamp: float,
         timestamp_end: float,
     ) -> None:
-        super().__init__()
-
-        self._api_type = api_type
-        self._data_package_converter = data_package_converter
+        super().__init__(data_package_converter)
         self._request_kwargs = request_kwargs
         self._request_response = request_response
-        self._timestamp = timestamp
-        self._timestamp_end = timestamp_end
+        self._api_type = api_type
         self._api_key = api_key
         self._api_provider = api_provider
+        self._timestamp = timestamp
+        self._timestamp_end = timestamp_end
 
     def as_data_package(self) -> NebulyDataPackage:
         return self._data_package_converter.get_data_package(
-            tag_data=self._tag_data,
-            timestamp=self._timestamp,
-            timestamp_end=self._timestamp_end,
-            request_kwargs=self._request_kwargs,
-            request_response=self._request_response,
-            api_type=self._api_type,
-            api_key=self._api_key,
-            api_provider=self._api_provider,
+            raw_data=OpenAIRawTrackedData(
+                api_type=self._api_type,
+                api_key=self._api_key,
+                api_provider=self._api_provider,
+                request_kwargs=self._request_kwargs,
+                request_response=self._request_response,
+                timestamp=self._timestamp,
+                timestamp_end=self._timestamp_end,
+                tag_data=self._tag_data,
+            )
         )
 
 
+class WrappingStrategy(ABC):
+    @abstractmethod
+    def wrap(
+        self,
+        nebuly_queue: NebulyQueue,
+        original_method: Callable,
+        request_kwargs: Dict[str, Any],
+        api_type: OpenAIAPIType,
+    ) -> Any:
+        """Wrap the original method to capture the desired data"""
+        pass
+
+
+class APICallWrappingStrategy(WrappingStrategy):
+    def wrap(
+        self,
+        nebuly_queue: NebulyQueue,
+        original_method: Callable,
+        request_kwargs: Dict[str, Any],
+        api_type: OpenAIAPIType,
+    ) -> Any:
+        timestamp = get_current_timestamp()
+        request_response = original_method(**request_kwargs)
+        timestamp_end = get_current_timestamp()
+
+        api_provider = openai.api_type
+        api_key = openai.api_key
+
+        queue_object = OpenAIQueueObject(
+            data_package_converter=OpenAIDataPackageConverter(),
+            request_kwargs=request_kwargs,
+            request_response=request_response,
+            api_type=api_type,
+            api_key=api_key,
+            api_provider=api_provider,
+            timestamp=timestamp,
+            timestamp_end=timestamp_end,
+        )
+        nebuly_queue.put(item=queue_object, timeout=0)
+
+        return request_response
+
+
+class GeneratorWrappingStrategy(WrappingStrategy, ABC):
+    def __init__(self) -> None:
+        self._nebuly_queue = None
+        self._timestamp = None
+        self._api_provider = None
+        self._api_key = None
+        self._api_type = None
+        self._request_kwargs = None
+
+    def wrap(
+        self,
+        nebuly_queue: NebulyQueue,
+        original_method: Callable,
+        request_kwargs: Dict[str, Any],
+        api_type: OpenAIAPIType,
+    ) -> Any:
+        self._nebuly_queue = nebuly_queue
+        self._timestamp = get_current_timestamp()
+        request_response = original_method(**request_kwargs)
+        self._api_provider = openai.api_type
+        self._api_key = openai.api_key
+        self._request_kwargs = request_kwargs
+        self._api_type = api_type
+
+        wrapped_response = self._create_wrapped_generator(request_response)
+        return wrapped_response
+
+    def _create_wrapped_generator(self, request_response: Generator) -> Generator:
+        output_text_list = []
+
+        def wrapped_generator():
+            for element in request_response:
+                self._track_generator_element(element, output_text_list)
+                yield element
+
+            timestamp_end = get_current_timestamp()
+            output_text = "".join(output_text_list)
+            mocked_request_response = {
+                "output_text": output_text,
+            }
+            queue_object = OpenAIQueueObject(
+                data_package_converter=OpenAIDataPackageConverter(),
+                request_kwargs=self._request_kwargs,
+                request_response=mocked_request_response,
+                api_type=self._api_type,
+                api_key=self._api_key,
+                api_provider=self._api_provider,
+                timestamp=self._timestamp,
+                timestamp_end=timestamp_end,
+            )
+            self._nebuly_queue.put(item=queue_object, timeout=0)
+
+        return wrapped_generator()
+
+    @abstractmethod
+    def _track_generator_element(self, element: Any, output_text) -> None:
+        ...
+
+
+class TextCompletionGeneratorWrappingStrategy(GeneratorWrappingStrategy):
+    def _track_generator_element(self, element: Any, output_text) -> None:
+        try:
+            text = element["choices"][0]["text"]
+            output_text.append(text)
+        except (KeyError, IndexError):
+            pass
+
+
+class ChatCompletionGeneratorWrappingStrategy(GeneratorWrappingStrategy):
+    def _track_generator_element(self, element: Any, output_text) -> None:
+        try:
+            delta = element["choices"][0]["delta"]
+        except (KeyError, IndexError):
+            return
+        try:
+            text = delta["content"]
+            output_text.append(text)
+        except KeyError:
+            pass
+
+
 class OpenAITracker(Tracker):
+    _original_completion_create = None
+    _original_chat_completion_create = None
+    _original_edit_create = None
+    _original_image_create = None
+    _original_image_edit = None
+    _original_image_variation = None
+    _original_embedding_create = None
+    _original_audio_transcribe = None
+    _original_audio_translate = None
+    _original_moderation_create = None
+    _original_finetune = None
+
+    FROM_METHOD_TO_API_TYPE = {}
+
     def __init__(self, nebuly_queue: NebulyQueue) -> None:
         self._nebuly_queue: NebulyQueue = nebuly_queue
-
-        self._original_completion_create = None
-        self._original_chat_completion_create = None
-        self._original_edit_create = None
-        self._original_image_create = None
-        self._original_image_edit = None
-        self._original_image_variation = None
-        self._original_embedding_create = None
-        self._original_audio_transcribe = None
-        self._original_audio_translate = None
-        self._original_moderation_create = None
 
     def replace_sdk_functions(self) -> None:
         """Replace OpenAI SDK functions with custom ones."""
@@ -372,6 +502,19 @@ class OpenAITracker(Tracker):
         self._replace_audio()
         self._replace_finetune()
         self._replace_moderation()
+        self.FROM_METHOD_TO_API_TYPE = {
+            self._original_completion_create: OpenAIAPIType.TEXT_COMPLETION,
+            self._original_chat_completion_create: OpenAIAPIType.CHAT,
+            self._original_edit_create: OpenAIAPIType.EDIT,
+            self._original_image_create: OpenAIAPIType.IMAGE_CREATE,
+            self._original_image_edit: OpenAIAPIType.IMAGE_EDIT,
+            self._original_image_variation: OpenAIAPIType.IMAGE_VARIATION,
+            self._original_embedding_create: OpenAIAPIType.EMBEDDING,
+            self._original_audio_transcribe: OpenAIAPIType.AUDIO_TRANSCRIBE,
+            self._original_audio_translate: OpenAIAPIType.AUDIO_TRANSLATE,
+            self._original_moderation_create: OpenAIAPIType.MODERATION,
+            self._original_finetune: OpenAIAPIType.FINETUNE,
+        }
 
     def _replace_text_completion(self) -> None:
         self._original_completion_create = openai.Completion.create
@@ -462,74 +605,28 @@ class OpenAITracker(Tracker):
         *request_args: Tuple,
         **request_kwargs: Dict[str, Any],
     ) -> Dict[str, Any]:
-        timestamp = get_current_timestamp()
-        request_response = original_method(*request_args, **request_kwargs)
-        timestamp_end = get_current_timestamp()
-
         request_kwargs = transform_args_to_kwargs(
             func=original_method,
             func_args=request_args,
             func_kwargs=request_kwargs,
             specific_keyword="params",
         )
-        api_type = self._get_api_type(original_method=original_method)
-        api_provider = openai.api_type
-        api_key = openai.api_key
-        self._track_openai_api(
+        api_type = self.FROM_METHOD_TO_API_TYPE[original_method]
+
+        wrap_strategy = APICallWrappingStrategy()
+        try:
+            if request_kwargs["stream"] is True:
+                if api_type == OpenAIAPIType.CHAT:
+                    wrap_strategy = ChatCompletionGeneratorWrappingStrategy()
+                elif api_type == OpenAIAPIType.TEXT_COMPLETION:
+                    wrap_strategy = TextCompletionGeneratorWrappingStrategy()
+        except KeyError:
+            pass
+
+        request_response = wrap_strategy.wrap(
+            nebuly_queue=self._nebuly_queue,
+            original_method=original_method,
             request_kwargs=request_kwargs,
-            request_response=request_response,
             api_type=api_type,
-            api_key=api_key,
-            api_provider=api_provider,
-            timestamp=timestamp,
-            timestamp_end=timestamp_end,
         )
         return request_response
-
-    def _get_api_type(self, original_method: Any) -> OpenAIAPIType:
-        if original_method == self._original_completion_create:
-            return OpenAIAPIType.TEXT_COMPLETION
-        elif original_method == self._original_chat_completion_create:
-            return OpenAIAPIType.CHAT
-        elif original_method == self._original_audio_transcribe:
-            return OpenAIAPIType.AUDIO_TRANSCRIBE
-        elif original_method == self._original_audio_translate:
-            return OpenAIAPIType.AUDIO_TRANSLATE
-        elif original_method == self._original_edit_create:
-            return OpenAIAPIType.EDIT
-        elif original_method == self._original_image_create:
-            return OpenAIAPIType.IMAGE_CREATE
-        elif original_method == self._original_image_edit:
-            return OpenAIAPIType.IMAGE_EDIT
-        elif original_method == self._original_image_variation:
-            return OpenAIAPIType.IMAGE_VARIATION
-        elif original_method == self._original_embedding_create:
-            return OpenAIAPIType.EMBEDDING
-        elif original_method == self._original_finetune:
-            return OpenAIAPIType.FINETUNE
-        elif original_method == self._original_moderation_create:
-            return OpenAIAPIType.MODERATION
-        else:
-            return OpenAIAPIType.UNKNOWN
-
-    def _track_openai_api(
-        self,
-        request_kwargs: Dict[str, Any],
-        request_response: Dict[str, Any],
-        api_type: OpenAIAPIType,
-        api_key: Optional[str],
-        api_provider: str,
-        timestamp: float,
-        timestamp_end: float,
-    ) -> None:
-        queue_object = OpenAIQueueObject(
-            data_package_converter=OpenAIDataPackageConverter(),
-            request_kwargs=request_kwargs,
-            request_response=request_response,
-            api_type=api_type,
-            api_key=api_key,
-            api_provider=api_provider,
-            timestamp=timestamp,
-            timestamp_end=timestamp_end,
-        )
-        self._nebuly_queue.put(item=queue_object, timeout=0)
