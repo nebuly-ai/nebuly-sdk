@@ -52,6 +52,7 @@ class OpenAIAPIType(Enum):
 class OpenAIAttributes(GenericProviderAttributes):
     api_type: OpenAIAPIType
     api_key: str
+    organization: Optional[str] = None
     timestamp_openai: Optional[int] = None
 
     model: Optional[str] = None
@@ -76,6 +77,7 @@ class OpenAIRawTrackedData(RawTrackedData):
     api_type: OpenAIAPIType
     api_key: Optional[str]
     api_provider: str
+    organization: Optional[str]
 
 
 class APITypeBodyFiller(ABC):
@@ -128,7 +130,6 @@ class TextAPIBodyFiller(APITypeBodyFiller):
             try:
                 if body.api_type == OpenAIAPIType.CHAT:
                     input_text = request_kwargs["messages"][0]["content"]
-                    print(input_text)
                 elif body.api_type == OpenAIAPIType.TEXT_COMPLETION:
                     input_text = request_kwargs["prompt"]
                 else:
@@ -140,7 +141,6 @@ class TextAPIBodyFiller(APITypeBodyFiller):
                 pass
             try:
                 output_text = request_response["output_text"]
-                print(output_text)
                 body.n_completion_tokens = TextAPIBodyFiller._num_tokens_from_text(
                     string=output_text, encoding_name=model
                 )
@@ -303,6 +303,7 @@ class OpenAIDataPackageConverter(DataPackageConverter):
             api_key=raw_data.api_key,
             timestamp=raw_data.timestamp,
             timestamp_end=raw_data.timestamp_end,
+            organization=raw_data.organization,
         )
         filler.fill_body_with_request_data(
             body=body,
@@ -365,17 +366,15 @@ class APICallWrappingStrategy(WrappingStrategy):
         request_response = original_method(**request_kwargs)
         timestamp_end = get_current_timestamp()
 
-        api_provider = openai.api_type
-        api_key = openai.api_key
-
         raw_data = OpenAIRawTrackedData(
             request_kwargs=request_kwargs,
             request_response=request_response,
             api_type=api_type,
-            api_key=api_key,
-            api_provider=api_provider,
+            api_key=openai.api_key,
+            api_provider=openai.api_type,
             timestamp=timestamp,
             timestamp_end=timestamp_end,
+            organization=openai.organization,
         )
 
         queue_object = OpenAIQueueObject(raw_data)
@@ -430,6 +429,7 @@ class GeneratorWrappingStrategy(WrappingStrategy, ABC):
                 api_provider=openai.api_type,
                 timestamp=self._timestamp,
                 timestamp_end=timestamp_end,
+                organization=openai.organization,
             )
             queue_object = OpenAIQueueObject(raw_data)
             self._nebuly_queue.put(item=queue_object, timeout=0)

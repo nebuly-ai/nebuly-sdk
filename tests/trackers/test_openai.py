@@ -324,6 +324,7 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
             api_type=OpenAIAPIType.TEXT_COMPLETION,
             api_key="test-key",
             api_provider="open_ai",
+            organization="test-org",
         )
         tag_data = TagData()
         converter = OpenAIDataPackageConverter()
@@ -343,6 +344,7 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
             api_type=OpenAIAPIType.TEXT_COMPLETION,
             api_key="test-key",
             api_provider="open_ai",
+            organization="test-org",
         )
         tag_data = TagData()
         converter = OpenAIDataPackageConverter()
@@ -398,6 +400,7 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
             api_type=OpenAIAPIType.TEXT_COMPLETION,
             api_key="test-key",
             api_provider="open_ai",
+            organization="test-org",
         )
         tag_data = TagData(
             project="test_project",
@@ -425,6 +428,7 @@ class TestOpenAIQueueObject(unittest.TestCase):
             api_type=OpenAIAPIType.TEXT_COMPLETION,
             api_key="test-key",
             api_provider="open_ai",
+            organization="test-org",
         )
         tag_data = TagData(
             project="test_project",
@@ -454,6 +458,7 @@ class TestOpenAIQueueObject(unittest.TestCase):
         self.assertEqual(
             data_package.body.timestamp_openai, raw_data.request_response["created"]
         )
+        self.assertEqual(data_package.body.organization, raw_data.organization)
 
 
 class TestAPICallWrappingStrategy(unittest.TestCase):
