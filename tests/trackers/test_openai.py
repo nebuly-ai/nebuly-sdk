@@ -509,7 +509,7 @@ class TestChatCompletionGeneratorWrappingStrategy(unittest.TestCase):
         openai = MagicMock()
 
         def generator_method():
-            for i in range(10):
+            for _ in range(2):
                 item = test_data.chat_completion_generator_response
                 yield item
 
@@ -553,7 +553,7 @@ class TestTextCompletionGeneratorWrappingStrategy(unittest.TestCase):
         openai = MagicMock()
 
         def generator_method():
-            for i in range(10):
+            for _ in range(10):
                 item = test_data.text_completion_generator_response
                 yield item
 

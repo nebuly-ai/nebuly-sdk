@@ -100,12 +100,33 @@ class TextAPIBodyFiller(APITypeBodyFiller):
         request_response: Dict[str, Any],
     ):
         try:
-            model = request_kwargs["model"]
-            body.model = model
+            stream = request_kwargs["stream"]
         except KeyError:
-            model = None
+            stream = False
 
-        # Standard API Call
+        if stream is False:
+            TextAPIBodyFiller._fill_body_for_standard_api_call(
+                body=body,
+                request_kwargs=request_kwargs,
+                request_response=request_response,
+            )
+        else:
+            TextAPIBodyFiller._fill_body_for_stream_api_call(
+                body=body,
+                request_kwargs=request_kwargs,
+                request_response=request_response,
+            )
+
+    @staticmethod
+    def _fill_body_for_standard_api_call(
+        body: OpenAIAttributes,
+        request_kwargs: Dict[str, Any],
+        request_response: Dict[str, Any],
+    ):
+        try:
+            body.model = request_kwargs["model"]
+        except KeyError:
+            pass
         try:
             body.n_prompt_tokens = int(request_response["usage"]["prompt_tokens"])
         except KeyError:
@@ -121,41 +142,45 @@ class TextAPIBodyFiller(APITypeBodyFiller):
         except KeyError:
             pass
 
-        # Stream API Call
+    @staticmethod
+    def _fill_body_for_stream_api_call(
+        body: OpenAIAttributes,
+        request_kwargs: Dict[str, Any],
+        request_response: Dict[str, Any],
+    ):
         try:
-            stream = request_kwargs["stream"]
+            body.model = request_kwargs["model"]
         except KeyError:
-            stream = False
-
-        if stream is True:
-            try:
-                if body.api_type == OpenAIAPIType.CHAT:
-                    input_text = request_kwargs["messages"][0]["content"]
-                elif body.api_type == OpenAIAPIType.TEXT_COMPLETION:
-                    input_text = request_kwargs["prompt"]
-                else:
-                    input_text = ""
-                body.n_prompt_tokens = TextAPIBodyFiller._num_tokens_from_text(
-                    string=input_text, encoding_name=model
-                )
-            except KeyError:
-                pass
-            try:
-                output_text = request_response["output_text"]
-                body.n_completion_tokens = TextAPIBodyFiller._num_tokens_from_text(
-                    string=output_text, encoding_name=model
-                )
-            except KeyError:
-                pass
+            return
+        try:
             if body.api_type == OpenAIAPIType.CHAT:
-                # OpenAI adds some tokens to the ones provided to and by the user.
-                body.n_completion_tokens += (
-                    ADDITIONAL_COMPLETION_TOKENS_FOR_CHAT_COMPLETION_GENERATION
-                )
+                input_text = request_kwargs["messages"][0]["content"]
+            elif body.api_type == OpenAIAPIType.TEXT_COMPLETION:
+                input_text = request_kwargs["prompt"]
+            else:
+                input_text = ""
+            body.n_prompt_tokens = TextAPIBodyFiller._num_tokens_from_text(
+                string=input_text, encoding_name=body.model
+            )
+        except (KeyError, IndexError):
+            pass
+        try:
+            output_text = request_response["output_text"]
+            body.n_completion_tokens = TextAPIBodyFiller._num_tokens_from_text(
+                string=output_text, encoding_name=body.model
+            )
+        except KeyError:
+            pass
+        if body.api_type == OpenAIAPIType.CHAT:
+            # OpenAI adds some tokens to the ones provided to and by the user.
+            if body.n_prompt_tokens is not None:
                 body.n_prompt_tokens += (
                     ADDITIONAL_PROMPT_TOKENS_FOR_CHAT_COMPLETION_GENERATION
                 )
-        return body
+            if body.n_completion_tokens is not None:
+                body.n_completion_tokens += (
+                    ADDITIONAL_COMPLETION_TOKENS_FOR_CHAT_COMPLETION_GENERATION
+                )
 
     @staticmethod
     def _num_tokens_from_text(string: str, encoding_name: str) -> int:
