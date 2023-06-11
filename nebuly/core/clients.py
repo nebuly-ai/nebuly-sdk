@@ -2,6 +2,7 @@ import logging
 from http import HTTPStatus
 from typing import Dict
 
+import requests
 from requests import (
     ConnectionError,
     ConnectTimeout,
@@ -95,13 +96,12 @@ class NebulyClient:
     ) -> None:
         response = None
         try:
-            # response = requests.post(
-            #     url=self._nebuly_event_ingestion_url,
-            #     headers=headers,
-            #     data=request_data.json(),
-            # )
-            # response.raise_for_status()
-            print("\n\nSending data to Nebuly Server:\n", request_data)
+            response = requests.post(
+                url=self._nebuly_event_ingestion_url,
+                headers=headers,
+                data=request_data.json(),
+            )
+            response.raise_for_status()
         except HTTPError as e:
             if response and response.status_code == HTTPStatus.SERVICE_UNAVAILABLE:
                 raise RetryHTTPException(HTTPStatus.SERVICE_UNAVAILABLE, str(e)) from e

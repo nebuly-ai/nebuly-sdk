@@ -8,14 +8,19 @@ from typing import Dict, Tuple, Optional, Any, Callable, Generator
 import openai
 import tiktoken as tiktoken
 
-from nebuly.core.core import DataPackageConverter, NebulyQueue, QueueObject, Tracker
+from nebuly.core.queues import (
+    DataPackageConverter,
+    NebulyQueue,
+    QueueObject,
+    Tracker,
+    RawTrackedData,
+)
 from nebuly.core.schemas import (
     GenericProviderAttributes,
     NebulyDataPackage,
     Provider,
     TagData,
     Task,
-    RawTrackedData,
 )
 from nebuly.utils.functions import (
     get_current_timestamp,
@@ -24,7 +29,9 @@ from nebuly.utils.functions import (
 )
 
 nebuly_logger = logging.getLogger(name=__name__)
-nebuly_logger.setLevel(level=logging.INFO)
+
+ADDITIONAL_PROMPT_TOKENS_FOR_CHAT_COMPLETION_GENERATION = 7
+ADDITIONAL_COMPLETION_TOKENS_FOR_CHAT_COMPLETION_GENERATION = 1
 
 
 class OpenAIAPIType(Enum):
@@ -62,7 +69,6 @@ class OpenAIAttributes(GenericProviderAttributes):
 
 @dataclass
 class OpenAIRawTrackedData(RawTrackedData):
-    tag_data: TagData
     timestamp: float
     timestamp_end: float
     request_kwargs: Dict[str, Any]
@@ -120,29 +126,38 @@ class TextAPIBodyFiller(APITypeBodyFiller):
 
         if stream is True:
             try:
-                print(request_kwargs)
                 if body.api_type == OpenAIAPIType.CHAT:
                     input_text = request_kwargs["messages"][0]["content"]
+                    print(input_text)
                 elif body.api_type == OpenAIAPIType.TEXT_COMPLETION:
                     input_text = request_kwargs["prompt"]
                 else:
                     input_text = ""
-                body.n_prompt_tokens = TextAPIBodyFiller._num_tokens_from_string(
+                body.n_prompt_tokens = TextAPIBodyFiller._num_tokens_from_text(
                     string=input_text, encoding_name=model
                 )
             except KeyError:
                 pass
             try:
                 output_text = request_response["output_text"]
-                body.n_completion_tokens = TextAPIBodyFiller._num_tokens_from_string(
+                print(output_text)
+                body.n_completion_tokens = TextAPIBodyFiller._num_tokens_from_text(
                     string=output_text, encoding_name=model
                 )
             except KeyError:
                 pass
+            if body.api_type == OpenAIAPIType.CHAT:
+                # OpenAI adds some tokens to the ones provided to and by the user.
+                body.n_completion_tokens += (
+                    ADDITIONAL_COMPLETION_TOKENS_FOR_CHAT_COMPLETION_GENERATION
+                )
+                body.n_prompt_tokens += (
+                    ADDITIONAL_PROMPT_TOKENS_FOR_CHAT_COMPLETION_GENERATION
+                )
         return body
 
     @staticmethod
-    def _num_tokens_from_string(string: str, encoding_name: str) -> int:
+    def _num_tokens_from_text(string: str, encoding_name: str) -> int:
         """Returns the number of tokens in a text string."""
         encoding = tiktoken.encoding_for_model(encoding_name)
         num_tokens = len(encoding.encode(string))
@@ -161,15 +176,15 @@ class ImageAPIBodyFiller(APITypeBodyFiller):
         except KeyError:
             body.model = "dall-e"
         try:
-            body.training_file_id = request_kwargs["training_file"]
+            body.n_output_images = int(request_kwargs["n"])
         except KeyError:
             pass
         try:
-            body.training_id = request_response["id"]
+            body.image_size = request_kwargs["size"]
         except KeyError:
             pass
         try:
-            body.timestamp_openai = int(request_response["created_at"])
+            body.timestamp_openai = int(request_response["created"])
         except KeyError:
             pass
 
@@ -186,7 +201,7 @@ class AudioAPIBodyFiller(APITypeBodyFiller):
         except KeyError:
             pass
         try:
-            file_name: str = request_kwargs["file"].name
+            file_name = request_kwargs["file"]
             body.audio_duration_seconds = get_media_file_length_in_seconds(
                 file_path=file_name
             )
@@ -202,7 +217,7 @@ class FineTuneAPIBodyFiller(APITypeBodyFiller):
         request_response: Dict[str, Any],
     ):
         try:
-            body.model = request_kwargs["model"]
+            body.model = request_response["model"]
         except KeyError:
             pass
         try:
@@ -233,7 +248,7 @@ class ModerationAPIBodyFiller(APITypeBodyFiller):
         # is free now 19/05/2023: I don't have usage data
 
 
-OPENAI_FILLER_REGISTRY = {
+FROM_API_TO_FILLER = {
     OpenAIAPIType.TEXT_COMPLETION: TextAPIBodyFiller(),
     OpenAIAPIType.CHAT: TextAPIBodyFiller(),
     OpenAIAPIType.EDIT: TextAPIBodyFiller(),
@@ -247,7 +262,7 @@ OPENAI_FILLER_REGISTRY = {
     OpenAIAPIType.AUDIO_TRANSLATE: AudioAPIBodyFiller(),
 }
 
-OPENAI_TASK_REGISTRY = {
+FROM_API_TO_TASK = {
     OpenAIAPIType.CHAT: Task.CHAT,
     OpenAIAPIType.EDIT: Task.TEXT_EDITING,
     OpenAIAPIType.IMAGE_CREATE: Task.IMAGE_GENERATION,
@@ -261,7 +276,7 @@ OPENAI_TASK_REGISTRY = {
     OpenAIAPIType.TEXT_COMPLETION: Task.TEXT_GENERATION,
 }
 
-OPENAI_PROVIDER_REGISTRY = {
+PROVIDER_REGISTRY = {
     "azure": Provider.AZURE_OPENAI,
     "open_ai": Provider.OPENAI,
 }
@@ -271,20 +286,20 @@ class OpenAIDataPackageConverter(DataPackageConverter):
     def get_data_package(
         self,
         raw_data: OpenAIRawTrackedData,
+        tag_data: TagData,
     ) -> NebulyDataPackage:
-        filler = OPENAI_FILLER_REGISTRY[raw_data.api_type]
-        provider = OPENAI_PROVIDER_REGISTRY[raw_data.api_provider]
+        filler = FROM_API_TO_FILLER[raw_data.api_type]
+        provider = PROVIDER_REGISTRY[raw_data.api_provider]
         detected_task = self._get_task(
-            raw_data.tag_data,
+            tag_data,
             raw_data.api_type,
             raw_data.request_kwargs,
         )
         body = OpenAIAttributes(
-            project=raw_data.tag_data.project,
-            phase=raw_data.tag_data.phase,
+            project=tag_data.project,
+            phase=tag_data.phase,
             task=detected_task,
             api_type=raw_data.api_type,
-            api_provider=provider,
             api_key=raw_data.api_key,
             timestamp=raw_data.timestamp,
             timestamp_end=raw_data.timestamp_end,
@@ -309,44 +324,19 @@ class OpenAIDataPackageConverter(DataPackageConverter):
             prompt = request_kwargs["prompt"][0]
             if api_type == OpenAIAPIType.TEXT_COMPLETION:
                 return self._task_detector.detect_task_from_text(text=prompt)
-            return OPENAI_TASK_REGISTRY[api_type]
+            return FROM_API_TO_TASK[api_type]
         except KeyError:
-            return OPENAI_TASK_REGISTRY[api_type]
+            return FROM_API_TO_TASK[api_type]
 
 
 class OpenAIQueueObject(QueueObject):
     def __init__(
         self,
-        data_package_converter: OpenAIDataPackageConverter,
-        request_kwargs: Dict[str, Any],
-        request_response: Dict[str, Any],
-        api_type: OpenAIAPIType,
-        api_key: Optional[str],
-        api_provider: str,
-        timestamp: float,
-        timestamp_end: float,
+        raw_data: OpenAIRawTrackedData,
+        data_package_converter: DataPackageConverter = OpenAIDataPackageConverter(),
     ) -> None:
-        super().__init__(data_package_converter)
-        self._request_kwargs = request_kwargs
-        self._request_response = request_response
-        self._api_type = api_type
-        self._api_key = api_key
-        self._api_provider = api_provider
-        self._timestamp = timestamp
-        self._timestamp_end = timestamp_end
-
-    def as_data_package(self) -> NebulyDataPackage:
-        return self._data_package_converter.get_data_package(
-            raw_data=OpenAIRawTrackedData(
-                api_type=self._api_type,
-                api_key=self._api_key,
-                api_provider=self._api_provider,
-                request_kwargs=self._request_kwargs,
-                request_response=self._request_response,
-                timestamp=self._timestamp,
-                timestamp_end=self._timestamp_end,
-                tag_data=self._tag_data,
-            )
+        super().__init__(
+            raw_data=raw_data, data_package_converter=data_package_converter
         )
 
 
@@ -378,8 +368,7 @@ class APICallWrappingStrategy(WrappingStrategy):
         api_provider = openai.api_type
         api_key = openai.api_key
 
-        queue_object = OpenAIQueueObject(
-            data_package_converter=OpenAIDataPackageConverter(),
+        raw_data = OpenAIRawTrackedData(
             request_kwargs=request_kwargs,
             request_response=request_response,
             api_type=api_type,
@@ -388,6 +377,8 @@ class APICallWrappingStrategy(WrappingStrategy):
             timestamp=timestamp,
             timestamp_end=timestamp_end,
         )
+
+        queue_object = OpenAIQueueObject(raw_data)
         nebuly_queue.put(item=queue_object, timeout=0)
 
         return request_response
@@ -412,8 +403,6 @@ class GeneratorWrappingStrategy(WrappingStrategy, ABC):
         self._nebuly_queue = nebuly_queue
         self._timestamp = get_current_timestamp()
         request_response = original_method(**request_kwargs)
-        self._api_provider = openai.api_type
-        self._api_key = openai.api_key
         self._request_kwargs = request_kwargs
         self._api_type = api_type
 
@@ -433,27 +422,29 @@ class GeneratorWrappingStrategy(WrappingStrategy, ABC):
             mocked_request_response = {
                 "output_text": output_text,
             }
-            queue_object = OpenAIQueueObject(
-                data_package_converter=OpenAIDataPackageConverter(),
+            raw_data = OpenAIRawTrackedData(
                 request_kwargs=self._request_kwargs,
                 request_response=mocked_request_response,
                 api_type=self._api_type,
-                api_key=self._api_key,
-                api_provider=self._api_provider,
+                api_key=openai.api_key,
+                api_provider=openai.api_type,
                 timestamp=self._timestamp,
                 timestamp_end=timestamp_end,
             )
+            queue_object = OpenAIQueueObject(raw_data)
             self._nebuly_queue.put(item=queue_object, timeout=0)
 
         return wrapped_generator()
 
+    @staticmethod
     @abstractmethod
-    def _track_generator_element(self, element: Any, output_text) -> None:
+    def _track_generator_element(element: Any, output_text) -> None:
         ...
 
 
 class TextCompletionGeneratorWrappingStrategy(GeneratorWrappingStrategy):
-    def _track_generator_element(self, element: Any, output_text) -> None:
+    @staticmethod
+    def _track_generator_element(element: Any, output_text) -> None:
         try:
             text = element["choices"][0]["text"]
             output_text.append(text)
@@ -462,7 +453,8 @@ class TextCompletionGeneratorWrappingStrategy(GeneratorWrappingStrategy):
 
 
 class ChatCompletionGeneratorWrappingStrategy(GeneratorWrappingStrategy):
-    def _track_generator_element(self, element: Any, output_text) -> None:
+    @staticmethod
+    def _track_generator_element(element: Any, output_text) -> None:
         try:
             delta = element["choices"][0]["delta"]
         except (KeyError, IndexError):

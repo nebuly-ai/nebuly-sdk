@@ -1,4 +1,3 @@
-from abc import ABC
 from dataclasses import dataclass
 from enum import Enum
 
@@ -55,7 +54,3 @@ class GenericProviderAttributes(BaseModel):
 class NebulyDataPackage(BaseModel):
     kind: Provider
     body: GenericProviderAttributes
-
-
-class RawTrackedData(ABC):
-    ...

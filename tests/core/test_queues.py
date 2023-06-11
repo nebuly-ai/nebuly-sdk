@@ -2,13 +2,19 @@ from typing import Dict, Union
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
-
-from nebuly.core.queues import NebulyQueue, QueueObject
+from nebuly.core.queues import (
+    NebulyQueue,
+    QueueObject,
+    RawTrackedData,
+    DataPackageConverter,
+)
 from nebuly.core.schemas import (
     DevelopmentPhase,
     NebulyDataPackage,
     TagData,
     Task,
+    GenericProviderAttributes,
+    Provider,
 )
 
 
@@ -31,7 +37,7 @@ class TestNebulyQueue(TestCase):
 
         self.assertEqual(first=nebuly_queue.tag_data, second=new_tag_data)
 
-    def test_patch_tag_data__is_discarding_unkown_attributes(self) -> None:
+    def test_patch_tag_data__is_discarding_unknown_attributes(self) -> None:
         nebuly_queue = NebulyQueue(tag_data=self.default_tag_data)
         undefined_tag_data = TagData()
 
@@ -56,9 +62,22 @@ class TestNebulyQueue(TestCase):
         queue_object_mocked.tag.assert_called_once()
 
 
-class ImplementedQueueObject(QueueObject):
-    def as_data_package(self) -> NebulyDataPackage:
-        return MagicMock()
+class ImplementedDatapackageConverter(DataPackageConverter):
+    def get_data_package(
+        self, raw_data: RawTrackedData, tag_data: TagData
+    ) -> NebulyDataPackage:
+        body = GenericProviderAttributes(
+            project="project",
+            phase=DevelopmentPhase.PRODUCTION,
+            task=Task.TEXT_CLASSIFICATION,
+            api_type="api_type",
+            timestamp=1234567890.1234567890,
+            timestamp_end=1234567890.1234567890,
+        )
+        return NebulyDataPackage(
+            kind=Provider.OPENAI,
+            body=body,
+        )
 
 
 class TestQueueObject(TestCase):
@@ -74,7 +93,10 @@ class TestQueueObject(TestCase):
     mocked_timestamp = 1234567890.1234567890
 
     def test_tag__is_updating_all_the_fields(self) -> None:
-        queue_object = ImplementedQueueObject()
+        queue_object = QueueObject(
+            data_package_converter=ImplementedDatapackageConverter(),
+            raw_data=RawTrackedData(),
+        )
         tag_data = TagData(
             project="project",
             phase=DevelopmentPhase.PRODUCTION,
@@ -85,8 +107,11 @@ class TestQueueObject(TestCase):
 
         self.assertEqual(first=queue_object._tag_data, second=tag_data)
 
-    def test_tag__is_not_linking_dirctly_the_tag_data(self) -> None:
-        queue_object = ImplementedQueueObject()
+    def test_tag__is_not_linking_directly_the_tag_data(self) -> None:
+        queue_object = QueueObject(
+            data_package_converter=ImplementedDatapackageConverter(),
+            raw_data=RawTrackedData(),
+        )
         tag_data = TagData(
             project="project",
             phase=DevelopmentPhase.PRODUCTION,
@@ -98,7 +123,10 @@ class TestQueueObject(TestCase):
         self.assertNotEqual(first=id(queue_object._tag_data), second=id(tag_data))
 
     def test_tag__is_raising_value_error_for_unspecified_project(self) -> None:
-        queue_object = ImplementedQueueObject()
+        queue_object = QueueObject(
+            data_package_converter=ImplementedDatapackageConverter(),
+            raw_data=RawTrackedData(),
+        )
 
         tag_data = TagData(phase=DevelopmentPhase.PRODUCTION)
 
@@ -108,7 +136,10 @@ class TestQueueObject(TestCase):
         self.assertTrue(expr="Project" in str(object=context.exception))
 
     def test_tag__is_raising_value_error_for_unspecified_phase(self) -> None:
-        queue_object = ImplementedQueueObject()
+        queue_object = QueueObject(
+            data_package_converter=ImplementedDatapackageConverter(),
+            raw_data=RawTrackedData(),
+        )
 
         tag_data = TagData(project="my_project")
 

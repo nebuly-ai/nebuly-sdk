@@ -3,7 +3,8 @@ from unittest import TestCase
 from unittest.mock import MagicMock, patch
 import time
 
-from nebuly.core.clients import NebulyTrackingDataThread, NebulyClient
+from nebuly.core.clients import NebulyClient
+from nebuly.core.queues import NebulyTrackingDataThread
 from nebuly.core.schemas import (
     DevelopmentPhase,
     GenericProviderAttributes,

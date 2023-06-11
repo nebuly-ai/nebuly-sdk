@@ -5,7 +5,7 @@ import logging
 from typing import Generator, Optional, Any, List
 
 from nebuly.core.clients import NebulyClient
-from nebuly.core.core import NebulyQueue, Tracker, NebulyTrackingDataThread
+from nebuly.core.queues import NebulyQueue, Tracker, NebulyTrackingDataThread
 from nebuly.core.schemas import DevelopmentPhase, TagData, Task
 
 nebuly_logger = logging.getLogger(name=__name__)

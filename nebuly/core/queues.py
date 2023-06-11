@@ -10,7 +10,6 @@ from nebuly.core.schemas import (
     NebulyDataPackage,
     Task,
     TagData,
-    RawTrackedData,
 )
 from nebuly.core.services import TaskDetector
 
@@ -21,9 +20,15 @@ class Tracker(ABC):
     @abstractmethod
     def replace_sdk_functions(self) -> None:
         """Replaces the original functions of a provider
-        with the tracked ones from the SDK.
+        with the new ones that can track required data.
         """
         raise NotImplementedError
+
+
+class RawTrackedData(ABC):
+    """Contains the raw data that is tracked by the SDK."""
+
+    ...
 
 
 class DataPackageConverter(ABC):
@@ -37,12 +42,15 @@ class DataPackageConverter(ABC):
     def get_data_package(
         self,
         raw_data: RawTrackedData,
+        tag_data: TagData,
     ) -> NebulyDataPackage:
         """Converts the queue object to a data package.
 
         Args:
             raw_data (RawTrackedData): The data package info used to
                 create the data package.
+            tag_data (TagData): The data that contains information about
+                project, phase and task.
 
         Returns:
             NebulyDataPackage: The data package.
@@ -50,12 +58,14 @@ class DataPackageConverter(ABC):
         raise NotImplementedError
 
 
-class QueueObject(ABC):
+class QueueObject:
     def __init__(
         self,
+        raw_data: RawTrackedData,
         data_package_converter: DataPackageConverter,
     ) -> None:
         self._tag_data = TagData()
+        self._raw_data = raw_data
         self._data_package_converter = data_package_converter
 
     def tag(self, tag_data: TagData) -> None:
@@ -75,14 +85,19 @@ class QueueObject(ABC):
 
         self._tag_data: TagData = self._clone(item=tag_data)
 
-    @abstractmethod
     def as_data_package(self) -> NebulyDataPackage:
         """Converts the queue object to a data package.
+        It is used inside the NebulyThread to convert the raw data
+        to a data package that is sent to Nebuly Server.
+        To perform the conversion it uses the DataPacakgeConverter.
 
         Returns:
-            NebulyDataPackage: The data package that is sent to Nebuly.
+            NebulyDataPackage: The data package that is sent to Nebuly Server.
         """
-        raise NotImplementedError
+        return self._data_package_converter.get_data_package(
+            raw_data=self._raw_data,
+            tag_data=self._tag_data,
+        )
 
     @staticmethod
     def _clone(item: Any) -> Any:
