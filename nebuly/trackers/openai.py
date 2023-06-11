@@ -66,6 +66,7 @@ class OpenAIAttributes(GenericProviderAttributes):
 
     training_file_id: Optional[str] = None
     training_id: Optional[str] = None
+    n_epochs: Optional[int] = None
 
 
 @dataclass
@@ -226,6 +227,10 @@ class FineTuneAPIBodyFiller(APITypeBodyFiller):
             pass
         try:
             body.training_id = request_response["id"]
+        except KeyError:
+            pass
+        try:
+            body.n_epochs = request_response["hyperparams"]["n_epochs"]
         except KeyError:
             pass
         try:

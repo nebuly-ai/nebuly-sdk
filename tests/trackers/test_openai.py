@@ -283,10 +283,10 @@ class TestFineTuneBodyFiller(unittest.TestCase):
         )
 
         self.assertEqual(body.model, request_response["model"])
-        self.assertEqual(body.model, request_response["model"])
         self.assertEqual(body.training_id, request_response["id"])
         self.assertEqual(body.training_file_id, request_kwargs["training_file"])
         self.assertEqual(body.timestamp_openai, request_response["created_at"])
+        self.assertEqual(body.n_epochs, request_response["hyperparams"]["n_epochs"])
 
 
 class TestModerationAPIBodyFiller(unittest.TestCase):
