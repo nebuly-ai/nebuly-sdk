@@ -472,7 +472,7 @@ class GeneratorWrappingStrategy(WrappingStrategy, ABC):
         ...
 
 
-class TextCompletionGeneratorWrappingStrategy(GeneratorWrappingStrategy):
+class TextCompletionStrategy(GeneratorWrappingStrategy):
     @staticmethod
     def _track_generator_element(element: Any, output_text) -> None:
         try:
@@ -482,7 +482,7 @@ class TextCompletionGeneratorWrappingStrategy(GeneratorWrappingStrategy):
             pass
 
 
-class ChatCompletionGeneratorWrappingStrategy(GeneratorWrappingStrategy):
+class ChatCompletionStrategy(GeneratorWrappingStrategy):
     @staticmethod
     def _track_generator_element(element: Any, output_text) -> None:
         try:
@@ -639,9 +639,9 @@ class OpenAITracker(Tracker):
         try:
             if request_kwargs["stream"] is True:
                 if api_type == OpenAIAPIType.CHAT:
-                    wrap_strategy = ChatCompletionGeneratorWrappingStrategy()
+                    wrap_strategy = ChatCompletionStrategy()
                 elif api_type == OpenAIAPIType.TEXT_COMPLETION:
-                    wrap_strategy = TextCompletionGeneratorWrappingStrategy()
+                    wrap_strategy = TextCompletionStrategy()
         except KeyError:
             pass
 

@@ -21,8 +21,8 @@ from nebuly.trackers.openai import (
     ModerationAPIBodyFiller,
     OpenAIRawTrackedData,
     APICallWrappingStrategy,
-    TextCompletionGeneratorWrappingStrategy,
-    ChatCompletionGeneratorWrappingStrategy,
+    TextCompletionStrategy,
+    ChatCompletionStrategy,
 )
 
 import tests.trackers.openai_data as test_data
@@ -519,7 +519,7 @@ class TestChatCompletionGeneratorWrappingStrategy(unittest.TestCase):
         self.api_type = OpenAIAPIType.TEXT_COMPLETION
 
     def test_wrap__is_returning_a_generator(self):
-        strategy = ChatCompletionGeneratorWrappingStrategy()
+        strategy = ChatCompletionStrategy()
         response = strategy.wrap(
             nebuly_queue=self.mocked_nebuly_queue,
             original_method=self.mocked_openai_method,
@@ -529,7 +529,7 @@ class TestChatCompletionGeneratorWrappingStrategy(unittest.TestCase):
         self.assertIsInstance(response, Generator)
 
     def test_wrap__is_adding_the_data_to_the_queue_when_generator_ends(self):
-        strategy = TextCompletionGeneratorWrappingStrategy()
+        strategy = TextCompletionStrategy()
         generator = strategy.wrap(
             nebuly_queue=self.mocked_nebuly_queue,
             original_method=self.mocked_openai_method,
@@ -563,7 +563,7 @@ class TestTextCompletionGeneratorWrappingStrategy(unittest.TestCase):
         self.api_type = OpenAIAPIType.TEXT_COMPLETION
 
     def test_wrap__is_returning_a_generator(self):
-        strategy = TextCompletionGeneratorWrappingStrategy()
+        strategy = TextCompletionStrategy()
         response = strategy.wrap(
             nebuly_queue=self.mocked_nebuly_queue,
             original_method=self.mocked_openai_method,
@@ -573,7 +573,7 @@ class TestTextCompletionGeneratorWrappingStrategy(unittest.TestCase):
         self.assertIsInstance(response, Generator)
 
     def test_wrap__is_adding_the_data_to_the_queue_when_generator_ends(self):
-        strategy = TextCompletionGeneratorWrappingStrategy()
+        strategy = TextCompletionStrategy()
         generator = strategy.wrap(
             nebuly_queue=self.mocked_nebuly_queue,
             original_method=self.mocked_openai_method,
