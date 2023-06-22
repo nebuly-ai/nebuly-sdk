@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 import unittest
 
 import nebuly.core.apis as nebuly
-from nebuly.core.clients import NebulyQueue
+from nebuly.core.queues import NebulyQueue
 from nebuly.core.schemas import DevelopmentPhase, TagData, Task
 
 

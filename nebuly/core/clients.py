@@ -1,8 +1,6 @@
 import logging
 from http import HTTPStatus
-from queue import Empty
-from threading import Thread
-from typing import Dict, Any
+from typing import Dict
 
 import requests
 from requests import (
@@ -20,7 +18,6 @@ from tenacity import (
     wait_fixed,
 )
 
-from nebuly.core.queues import NebulyQueue
 from nebuly.core.schemas import NebulyDataPackage
 
 nebuly_logger = logging.getLogger(name=__name__)
@@ -112,35 +109,3 @@ class NebulyClient:
                 raise RetryHTTPException(HTTPStatus.GATEWAY_TIMEOUT, str(e)) from e
             else:
                 raise e
-
-
-class NebulyTrackingDataThread(Thread):
-    def __init__(
-        self,
-        queue: NebulyQueue,
-        nebuly_client: NebulyClient,
-        **kwargs: Dict[str, Any],
-    ) -> None:
-        super().__init__(**kwargs)
-
-        self._queue = queue
-        self._nebuly_client = nebuly_client
-        self.thread_running = True
-        self.force_exit = False
-
-    def run(self) -> None:
-        """Continuously takes elements from the queue and sends them to the
-        Nebuly server.
-        """
-        while self.thread_running is True or self._queue.empty() is False:
-            if self.force_exit is True:
-                break
-
-            try:
-                queue_object = self._queue.get(timeout=0)
-            except Empty:
-                continue
-
-            request_data = queue_object.as_data_package()
-            self._nebuly_client.send_request_to_nebuly_server(request_data=request_data)
-            self._queue.task_done()

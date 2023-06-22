@@ -1,8 +1,8 @@
+from typing import Generator
 from unittest.mock import MagicMock, patch
 import unittest
 
 from nebuly.core.schemas import (
-    NebulyDataPackage,
     DevelopmentPhase,
     Provider,
     TagData,
@@ -14,542 +14,575 @@ from nebuly.trackers.openai import (
     OpenAIDataPackageConverter,
     OpenAIQueueObject,
     OpenAITracker,
+    TextAPIBodyFiller,
+    ImageAPIBodyFiller,
+    AudioAPIBodyFiller,
+    FineTuneAPIBodyFiller,
+    ModerationAPIBodyFiller,
+    OpenAIRawTrackedData,
+    APICallWrappingStrategy,
+    TextCompletionStrategy,
+    ChatCompletionStrategy,
 )
+
+import tests.trackers.openai_data as test_data
+
+
+class TestTextAPIBodyFiller(unittest.TestCase):
+    def test_fill_body_with_request_data__is_filling_completion_requests(self):
+        filler = TextAPIBodyFiller()
+
+        # STANDARD API
+        request_kwargs = test_data.text_completion.request_kwargs
+        request_response = test_data.text_completion.request_response
+
+        body = OpenAIAttributes(
+            project="test_project",
+            phase=DevelopmentPhase.EXPERIMENTATION,
+            task=Task.TEXT_GENERATION,
+            api_type=OpenAIAPIType.TEXT_COMPLETION,
+            api_key="test_api_key",
+            timestamp=111111,
+            timestamp_end=222222,
+        )
+        filler.fill_body_with_request_data(
+            body=body,
+            request_kwargs=request_kwargs,
+            request_response=request_response,
+        )
+
+        self.assertEqual(body.model, request_kwargs["model"])
+        self.assertEqual(
+            body.n_completion_tokens, request_response["usage"]["completion_tokens"]
+        )
+        self.assertEqual(
+            body.n_prompt_tokens, request_response["usage"]["prompt_tokens"]
+        )
+        self.assertEqual(body.timestamp_openai, request_response["created"])
+
+        # STREAM API
+        stream_request_kwargs = test_data.text_completion_stream.request_kwargs
+        stream_request_response = test_data.text_completion_stream.request_response
+
+        body = OpenAIAttributes(
+            project="test_project",
+            phase=DevelopmentPhase.EXPERIMENTATION,
+            task=Task.TEXT_GENERATION,
+            api_type=OpenAIAPIType.TEXT_COMPLETION,
+            api_key="test_api_key",
+            timestamp=111111,
+            timestamp_end=222222,
+        )
+
+        filler.fill_body_with_request_data(
+            body=body,
+            request_kwargs=stream_request_kwargs,
+            request_response=stream_request_response,
+        )
+
+        self.assertEqual(body.model, request_kwargs["model"])
+        self.assertEqual(
+            body.n_completion_tokens, request_response["usage"]["completion_tokens"]
+        )
+        self.assertEqual(
+            body.n_prompt_tokens, request_response["usage"]["prompt_tokens"]
+        )
+
+    def test_fill_body_with_request_data__is_filling_chat_request(self):
+        filler = TextAPIBodyFiller()
+
+        # STANDARD API
+        request_kwargs = test_data.chat_completion.request_kwargs
+        request_response = test_data.chat_completion.request_response
+
+        body = OpenAIAttributes(
+            project="test_project",
+            phase=DevelopmentPhase.EXPERIMENTATION,
+            task=Task.TEXT_GENERATION,
+            api_type=OpenAIAPIType.CHAT,
+            api_key="test_api_key",
+            timestamp=111111,
+            timestamp_end=222222,
+        )
+        filler.fill_body_with_request_data(
+            body=body,
+            request_kwargs=request_kwargs,
+            request_response=request_response,
+        )
+
+        self.assertEqual(body.model, request_kwargs["model"])
+        self.assertEqual(
+            body.n_completion_tokens, request_response["usage"]["completion_tokens"]
+        )
+        self.assertEqual(
+            body.n_prompt_tokens, request_response["usage"]["prompt_tokens"]
+        )
+        self.assertEqual(body.timestamp_openai, request_response["created"])
+
+        # STREAM API
+        stream_request_kwargs = test_data.chat_completion_stream.request_kwargs
+        stream_request_response = test_data.chat_completion_stream.request_response
+
+        body = OpenAIAttributes(
+            project="test_project",
+            phase=DevelopmentPhase.EXPERIMENTATION,
+            task=Task.CHAT,
+            api_type=OpenAIAPIType.CHAT,
+            api_key="test_api_key",
+            timestamp=111111,
+            timestamp_end=222222,
+        )
+
+        filler.fill_body_with_request_data(
+            body=body,
+            request_kwargs=stream_request_kwargs,
+            request_response=stream_request_response,
+        )
+
+        self.assertEqual(body.model, request_kwargs["model"])
+        self.assertEqual(
+            body.n_completion_tokens, request_response["usage"]["completion_tokens"]
+        )
+        self.assertEqual(
+            body.n_prompt_tokens, request_response["usage"]["prompt_tokens"]
+        )
+
+    def test_fill_body_with_request_data__is_filling_edit_request(self):
+        filler = TextAPIBodyFiller()
+
+        request_kwargs = test_data.edit.request_kwargs
+        request_response = test_data.edit.request_response
+
+        body = OpenAIAttributes(
+            project="test_project",
+            phase=DevelopmentPhase.EXPERIMENTATION,
+            task=Task.TEXT_EDITING,
+            api_type=OpenAIAPIType.EDIT,
+            api_key="test_api_key",
+            timestamp=111111,
+            timestamp_end=222222,
+        )
+        filler.fill_body_with_request_data(
+            body=body,
+            request_kwargs=request_kwargs,
+            request_response=request_response,
+        )
+
+        self.assertEqual(body.model, request_kwargs["model"])
+        self.assertEqual(
+            body.n_completion_tokens, request_response["usage"]["completion_tokens"]
+        )
+        self.assertEqual(
+            body.n_prompt_tokens, request_response["usage"]["prompt_tokens"]
+        )
+        self.assertEqual(body.timestamp_openai, request_response["created"])
+
+    def test_fill_body_with_request_data__is_filling_embedding_request(self):
+        filler = TextAPIBodyFiller()
+
+        request_kwargs = test_data.embedding.request_kwargs
+        request_response = test_data.embedding.request_response
+
+        body = OpenAIAttributes(
+            project="test_project",
+            phase=DevelopmentPhase.EXPERIMENTATION,
+            task=Task.TEXT_EMBEDDING,
+            api_type=OpenAIAPIType.EMBEDDING,
+            api_key="test_api_key",
+            timestamp=111111,
+            timestamp_end=222222,
+        )
+        filler.fill_body_with_request_data(
+            body=body,
+            request_kwargs=request_kwargs,
+            request_response=request_response,
+        )
+
+        self.assertEqual(body.model, request_kwargs["model"])
+        self.assertEqual(
+            body.n_prompt_tokens, request_response["usage"]["prompt_tokens"]
+        )
+
+
+class TestImageAPIBodyFiller(unittest.TestCase):
+    def test_is_filling_body_with_request_data__is_filling_image_request(self):
+        filler = ImageAPIBodyFiller()
+
+        request_kwargs = test_data.image.request_kwargs
+        request_response = test_data.image.request_response
+
+        body = OpenAIAttributes(
+            project="test_project",
+            phase=DevelopmentPhase.EXPERIMENTATION,
+            task=Task.IMAGE_GENERATION,
+            api_type=OpenAIAPIType.IMAGE_CREATE,
+            api_key="test_api_key",
+            timestamp=111111,
+            timestamp_end=222222,
+        )
+        filler.fill_body_with_request_data(
+            body=body,
+            request_kwargs=request_kwargs,
+            request_response=request_response,
+        )
+
+        self.assertEqual(body.model, "dall-e")
+        self.assertEqual(body.timestamp_openai, request_response["created"])
+        self.assertEqual(body.n_output_images, request_kwargs["n"])
+        self.assertEqual(body.image_size, request_kwargs["size"])
+
+
+class TestAudioAPIBodyFiller(unittest.TestCase):
+    @patch("nebuly.trackers.openai.get_media_file_length_in_seconds")
+    def test_fill_body_with_request_data__is_filling_audio_request(self, mocked_method):
+        filler = AudioAPIBodyFiller()
+        mocked_method.return_value = 10
+
+        request_kwargs = test_data.audio.request_kwargs
+        request_response = test_data.audio.request_response
+
+        body = OpenAIAttributes(
+            project="test_project",
+            phase=DevelopmentPhase.EXPERIMENTATION,
+            task=Task.AUDIO_TRANSLATION,
+            api_type=OpenAIAPIType.AUDIO_TRANSLATE,
+            api_key="test_api_key",
+            timestamp=111111,
+            timestamp_end=222222,
+        )
+        filler.fill_body_with_request_data(
+            body=body,
+            request_kwargs=request_kwargs,
+            request_response=request_response,
+        )
+
+        self.assertEqual(body.model, request_kwargs["model"])
+        self.assertEqual(body.audio_duration_seconds, 10)
+
+
+class TestFineTuneBodyFiller(unittest.TestCase):
+    def test_fill_body_with_request_data__is_filling_finetune_request(self):
+        filler = FineTuneAPIBodyFiller()
+
+        request_kwargs = test_data.finetune.request_kwargs
+        request_response = test_data.finetune.request_response
+
+        body = OpenAIAttributes(
+            project="test_project",
+            phase=DevelopmentPhase.EXPERIMENTATION,
+            task=Task.FINETUNING,
+            api_type=OpenAIAPIType.FINETUNE,
+            api_key="test_api_key",
+            timestamp=111111,
+            timestamp_end=222222,
+        )
+        filler.fill_body_with_request_data(
+            body=body,
+            request_kwargs=request_kwargs,
+            request_response=request_response,
+        )
+
+        self.assertEqual(body.model, request_response["model"])
+        self.assertEqual(body.training_id, request_response["id"])
+        self.assertEqual(body.training_file_id, request_kwargs["training_file"])
+        self.assertEqual(body.timestamp_openai, request_response["created_at"])
+        self.assertEqual(body.n_epochs, request_response["hyperparams"]["n_epochs"])
+
+
+class TestModerationAPIBodyFiller(unittest.TestCase):
+    def test_fill_body_with_request_data__is_filling_moderation_request(self):
+        filler = ModerationAPIBodyFiller()
+
+        request_kwargs = test_data.finetune.request_kwargs
+        request_response = test_data.finetune.request_response
+
+        body = OpenAIAttributes(
+            project="test_project",
+            phase=DevelopmentPhase.EXPERIMENTATION,
+            task=Task.TEXT_MODERATION,
+            api_type=OpenAIAPIType.MODERATION,
+            api_key="test_api_key",
+            timestamp=111111,
+            timestamp_end=222222,
+        )
+        filler.fill_body_with_request_data(
+            body=body,
+            request_kwargs=request_kwargs,
+            request_response=request_response,
+        )
+
+        self.assertEqual(body.model, request_response["model"])
 
 
 class TestOpenAIDataPackageConverter(unittest.TestCase):
-    mocked_timestamp = 1614807352
-    mocked_timestamp_end = 1614807353
-    mocked_api_key = "test_api_key"
-    mocked_api_provider = "open_ai"
-    text_request_kwargs = {
-        "model": "text-davinci-003",
-        "prompt": "Say this is a test",
-        "max_tokens": 7,
-        "temperature": 0,
-        "top_p": 1,
-        "n": 1,
-        "stream": False,
-        "logprobs": None,
-        "stop": "\n",
-    }
-    text_request_response = {
-        "id": "cmpl-uqkvlQyYK7bGYrRHQ0eXlWi7",
-        "object": "text_completion",
-        "created": 1589478378,
-        "model": "text-davinci-003",
-        "choices": [
-            {
-                "text": "\n\nThis is indeed a test",
-                "index": 0,
-                "logprobs": None,
-                "finish_reason": "length",
-            }
-        ],
-        "usage": {"prompt_tokens": 5, "completion_tokens": 7, "total_tokens": 12},
-    }
-
-    audio_file = MagicMock()
-    audio_file.name = "french_audio.mp3"
-    audio_request_kwargs = {"file": audio_file, "model": "whisper-1"}
-
-    audio_request_response = {
-        "text": (
-            "Imagine the wildest idea that you've ever had, and you're "
-            "curious about how it might scale to something that's a 100,"
-            "a 1,000 times bigger."
-        )
-    }
-
-    image_request_kwargs = {
-        "prompt": "A cute baby sea otter",
-        "n": 2,
-        "size": "1024x1024",
-    }
-
-    image_request_response = {
-        "created": 1589478378,
-        "data": [{"url": "https://..."}, {"url": "https://..."}],
-    }
-
-    finetune_request_kwargs = {
-        "training_file": "file-XGinujblHPwGLSztz8cPS8XY",
-        "model": "curie",
-    }
-    finetune_request_response = {
-        "id": "ft-AF1WoRqd3aJAHsqc9NY7iL8F",
-        "object": "fine-tune",
-        "model": "curie",
-        "created_at": 1614807352,
-        "events": [
-            {
-                "object": "fine-tune-event",
-                "created_at": 1614807352,
-                "level": "info",
-                "message": (
-                    "Job enqueued. Waiting for jobs ahead to complete. Queue number: 0."
-                ),
-            }
-        ],
-        "fine_tuned_model": None,
-        "hyperparams": {
-            "batch_size": 4,
-            "learning_rate_multiplier": 0.1,
-            "n_epochs": 4,
-            "prompt_loss_weight": 0.1,
-        },
-        "organization_id": "org-...",
-        "result_files": [],
-        "status": "pending",
-        "validation_files": [],
-        "training_files": [
-            {
-                "id": "file-XGinujblHPwGLSztz8cPS8XY",
-                "object": "file",
-                "bytes": 1547276,
-                "created_at": 1610062281,
-                "filename": "my-data-train.jsonl",
-                "purpose": "fine-tune-train",
-            }
-        ],
-        "updated_at": 1614807352,
-    }
-
-    moderation_request_kwargs = {"input": "I want to kill them."}
-    moderation_request_response = {
-        "id": "modr-XXXXX",
-        "model": "text-moderation-001",
-        "results": [
-            {
-                "categories": {
-                    "hate": False,
-                    "hate/threatening": False,
-                    "self-harm": False,
-                    "sexual": False,
-                    "sexual/minors": False,
-                    "violence": False,
-                    "violence/graphic": False,
-                },
-                "category_scores": {
-                    "hate": 0.18805529177188873,
-                    "hate/threatening": 0.0001250059431185946,
-                    "self-harm": 0.0003706029092427343,
-                    "sexual": 0.0008735615410842001,
-                    "sexual/minors": 0.0007470346172340214,
-                    "violence": 0.0041268812492489815,
-                    "violence/graphic": 0.00023186142789199948,
-                },
-                "flagged": False,
-            }
-        ],
-    }
-
-    def test_get_data_package__is_returning_an_instance_of_nebuly_data_package(
-        self,
-    ) -> None:
-        mocked_api_type = OpenAIAPIType.TEXT_COMPLETION
-        tag_data = TagData()
-        data_converter = OpenAIDataPackageConverter()
-        request_data: NebulyDataPackage = data_converter.get_data_package(
-            tag_data=tag_data,
-            request_kwargs=self.text_request_kwargs,
-            request_response=self.text_request_response,
-            api_type=mocked_api_type,
-            api_key=self.mocked_api_key,
-            api_provider=self.mocked_api_provider,
-            timestamp=self.mocked_timestamp,
-            timestamp_end=self.mocked_timestamp_end,
-        )
-
-        self.assertIsInstance(obj=request_data, cls=NebulyDataPackage)
-
-    def test_get_data_package__is_returning_the_right_api_provider(
-        self,
-    ) -> None:
-        mocked_api_type = OpenAIAPIType.TEXT_COMPLETION
-        tag_data = TagData()
-        data_converter = OpenAIDataPackageConverter()
-        request_data: NebulyDataPackage = data_converter.get_data_package(
-            tag_data=tag_data,
-            request_kwargs=self.text_request_kwargs,
-            request_response=self.text_request_response,
-            api_type=mocked_api_type,
-            api_key=self.mocked_api_key,
-            api_provider="open_ai",
-            timestamp=self.mocked_timestamp,
-            timestamp_end=self.mocked_timestamp_end,
-        )
-
-        self.assertEqual(first=request_data.kind, second=Provider.OPENAI)
-
-        request_data: NebulyDataPackage = data_converter.get_data_package(
-            tag_data=tag_data,
-            request_kwargs=self.text_request_kwargs,
-            request_response=self.text_request_response,
-            api_type=mocked_api_type,
-            api_key=self.mocked_api_key,
-            api_provider="azure",
-            timestamp=self.mocked_timestamp,
-            timestamp_end=self.mocked_timestamp_end,
-        )
-        self.assertEqual(first=request_data.kind, second=Provider.AZURE_OPENAI)
-
-    def test_as_data_package__is_returning_the_correct_data_for_text_api(
-        self,
-    ) -> None:
-        api_type = OpenAIAPIType.TEXT_COMPLETION
-        tag_data = TagData()
-        data_converter = OpenAIDataPackageConverter()
-
-        request_data = data_converter.get_data_package(
-            tag_data=tag_data,
-            request_kwargs=self.text_request_kwargs,
-            request_response=self.text_request_response,
-            api_type=api_type,
-            api_key=self.mocked_api_key,
-            api_provider=self.mocked_api_provider,
-            timestamp=self.mocked_timestamp,
-            timestamp_end=self.mocked_timestamp_end,
-        )
-
-        expected_body: OpenAIAttributes = OpenAIAttributes(
-            project="unknown",
-            phase=DevelopmentPhase.UNKNOWN,
-            task=Task.TEXT_GENERATION,
+    def test_get_data_package__is_detecting_the_provider(self):
+        raw_data = OpenAIRawTrackedData(
+            timestamp=1010101,
+            timestamp_end=20202020,
+            request_kwargs=test_data.text_completion.request_kwargs,
+            request_response=test_data.text_completion.request_response,
             api_type=OpenAIAPIType.TEXT_COMPLETION,
-            api_key=self.mocked_api_key,
-            timestamp=self.mocked_timestamp,
-            timestamp_end=self.mocked_timestamp_end,
-            timestamp_openai=1589478378,
-            model="text-davinci-003",
-            n_prompt_tokens=5,
-            n_output_tokens=7,
-            n_output_images=None,
-            image_size=None,
-            audio_duration_seconds=None,
-            training_file_id=None,
-            training_id=None,
+            api_key="test-key",
+            api_provider="open_ai",
+            organization="test-org",
         )
-        expected_response = NebulyDataPackage(
-            kind=Provider.OPENAI,
-            body=expected_body,
-        )
-
-        self.assertEqual(first=request_data, second=expected_response)
-
-        api_type = OpenAIAPIType.CHAT
-        tag_data.task = Task.UNKNOWN
-        request_data = data_converter.get_data_package(
-            tag_data=tag_data,
-            request_kwargs=self.text_request_kwargs,
-            request_response=self.text_request_response,
-            api_type=api_type,
-            api_key=self.mocked_api_key,
-            api_provider=self.mocked_api_provider,
-            timestamp=self.mocked_timestamp,
-            timestamp_end=self.mocked_timestamp_end,
-        )
-        expected_response.body.task = Task.CHAT
-        expected_response.body.api_type = OpenAIAPIType.CHAT
-        self.assertEqual(first=request_data, second=expected_response)
-
-        api_type = OpenAIAPIType.EMBEDDING
-        tag_data.task = Task.UNKNOWN
-        request_data = data_converter.get_data_package(
-            tag_data=tag_data,
-            request_kwargs=self.text_request_kwargs,
-            request_response=self.text_request_response,
-            api_type=api_type,
-            api_key=self.mocked_api_key,
-            api_provider=self.mocked_api_provider,
-            timestamp=self.mocked_timestamp,
-            timestamp_end=self.mocked_timestamp_end,
-        )
-        expected_response.body.task = Task.TEXT_EMBEDDING
-        expected_response.body.api_type = OpenAIAPIType.EMBEDDING
-        self.assertEqual(first=request_data, second=expected_response)
-
-        api_type = OpenAIAPIType.EDIT
-        tag_data.task = Task.UNKNOWN
-        request_data: NebulyDataPackage = data_converter.get_data_package(
-            tag_data=tag_data,
-            request_kwargs=self.text_request_kwargs,
-            request_response=self.text_request_response,
-            api_type=api_type,
-            api_key=self.mocked_api_key,
-            api_provider=self.mocked_api_provider,
-            timestamp=self.mocked_timestamp,
-            timestamp_end=self.mocked_timestamp_end,
-        )
-        expected_response.body.task = Task.TEXT_EDITING
-        expected_response.body.api_type = OpenAIAPIType.EDIT
-        self.assertEqual(first=request_data, second=expected_response)
-
-    @patch("nebuly.trackers.openai.openai")
-    @patch("nebuly.trackers.openai.get_media_file_length_in_seconds")
-    def test_get_data_package__is_returning_the_correct_data_for_audio_api(
-        self,
-        mocked_function: MagicMock,
-        mocked_openai: MagicMock,
-    ) -> None:
-        mocked_openai.api_type = "open_ai"
-        mocked_function.return_value = 10
-        api_type = OpenAIAPIType.AUDIO_TRANSCRIBE
         tag_data = TagData()
-        data_converter = OpenAIDataPackageConverter()
+        converter = OpenAIDataPackageConverter()
+        data_package = converter.get_data_package(raw_data, tag_data)
+        self.assertEqual(data_package.kind, Provider.OPENAI)
 
-        request_data: NebulyDataPackage = data_converter.get_data_package(
-            tag_data=tag_data,
-            request_kwargs=self.audio_request_kwargs,
-            request_response=self.audio_request_response,
-            api_type=api_type,
-            api_key=self.mocked_api_key,
-            api_provider=self.mocked_api_provider,
-            timestamp=self.mocked_timestamp,
-            timestamp_end=self.mocked_timestamp_end,
+        raw_data.api_provider = "azure"
+        data_package = converter.get_data_package(raw_data, tag_data)
+        self.assertEqual(data_package.kind, Provider.AZURE_OPENAI)
+
+    def test_get_data_package__is_detecting_the_task(self):
+        raw_data = OpenAIRawTrackedData(
+            timestamp=1010101,
+            timestamp_end=20202020,
+            request_kwargs=test_data.text_completion.request_kwargs,
+            request_response=test_data.text_completion.request_response,
+            api_type=OpenAIAPIType.TEXT_COMPLETION,
+            api_key="test-key",
+            api_provider="open_ai",
+            organization="test-org",
         )
-
-        expected_body: OpenAIAttributes = OpenAIAttributes(
-            project="unknown",
-            phase=DevelopmentPhase.UNKNOWN,
-            task=Task.AUDIO_TRANSCRIPTION,
-            api_type=OpenAIAPIType.AUDIO_TRANSCRIBE,
-            api_key=self.mocked_api_key,
-            timestamp=self.mocked_timestamp,
-            timestamp_end=self.mocked_timestamp_end,
-            timestamp_openai=None,
-            model="whisper-1",
-            n_prompt_tokens=None,
-            n_output_tokens=None,
-            n_output_images=None,
-            image_size=None,
-            audio_duration_seconds=10,
-            training_file_id=None,
-            training_id=None,
-        )
-        expected_response = NebulyDataPackage(
-            kind=Provider.OPENAI,
-            body=expected_body,
-        )
-
-        self.assertEqual(first=request_data, second=expected_response)
-
-        api_type = OpenAIAPIType.AUDIO_TRANSLATE
-        tag_data.task = Task.UNKNOWN
-        request_data = data_converter.get_data_package(
-            tag_data=tag_data,
-            request_kwargs=self.audio_request_kwargs,
-            request_response=self.audio_request_response,
-            api_type=api_type,
-            api_key=self.mocked_api_key,
-            api_provider=self.mocked_api_provider,
-            timestamp=self.mocked_timestamp,
-            timestamp_end=self.mocked_timestamp_end,
-        )
-        expected_response.body.task = Task.AUDIO_TRANSLATION
-        expected_response.body.api_type = OpenAIAPIType.AUDIO_TRANSLATE
-        self.assertEqual(first=request_data, second=expected_response)
-
-    @patch("nebuly.trackers.openai.openai")
-    def test_get_data_package__is_returning_the_correct_data_for_image_api(
-        self,
-        mocked_openai: MagicMock,
-    ) -> None:
-        mocked_openai.api_type = "open_ai"
-        api_type = OpenAIAPIType.IMAGE_CREATE
         tag_data = TagData()
-        data_converter = OpenAIDataPackageConverter()
+        converter = OpenAIDataPackageConverter()
+        data_package = converter.get_data_package(raw_data, tag_data)
+        self.assertEqual(data_package.body.task, Task.TEXT_GENERATION)
 
-        request_data: NebulyDataPackage = data_converter.get_data_package(
-            tag_data=tag_data,
-            request_kwargs=self.image_request_kwargs,
-            request_response=self.image_request_response,
-            api_type=api_type,
-            api_key=self.mocked_api_key,
-            api_provider=self.mocked_api_provider,
-            timestamp=self.mocked_timestamp,
-            timestamp_end=self.mocked_timestamp_end,
-        )
+        raw_data.api_type = OpenAIAPIType.CHAT
+        data_package = converter.get_data_package(raw_data, tag_data)
+        self.assertEqual(data_package.body.task, Task.CHAT)
 
-        expected_body: OpenAIAttributes = OpenAIAttributes(
-            project="unknown",
-            phase=DevelopmentPhase.UNKNOWN,
-            task=Task.IMAGE_GENERATION,
-            api_type=OpenAIAPIType.IMAGE_CREATE,
-            api_key=self.mocked_api_key,
-            timestamp=self.mocked_timestamp,
-            timestamp_end=self.mocked_timestamp_end,
-            timestamp_openai=1589478378,
-            model="dall-e",
-            n_prompt_tokens=None,
-            n_output_tokens=None,
-            n_output_images=2,
-            image_size="1024x1024",
-            audio_duration_seconds=None,
-            training_file_id=None,
-            training_id=None,
-        )
-        expected_response = NebulyDataPackage(
-            kind=Provider.OPENAI,
-            body=expected_body,
-        )
+        raw_data.api_type = OpenAIAPIType.EDIT
+        data_package = converter.get_data_package(raw_data, tag_data)
+        self.assertEqual(data_package.body.task, Task.TEXT_EDITING)
 
-        self.assertEqual(first=request_data, second=expected_response)
+        raw_data.api_type = OpenAIAPIType.EMBEDDING
+        data_package = converter.get_data_package(raw_data, tag_data)
+        self.assertEqual(data_package.body.task, Task.TEXT_EMBEDDING)
 
-        api_type = OpenAIAPIType.IMAGE_EDIT
-        tag_data.task = Task.UNKNOWN
-        request_data = data_converter.get_data_package(
-            tag_data=tag_data,
-            request_kwargs=self.image_request_kwargs,
-            request_response=self.image_request_response,
-            api_type=api_type,
-            api_key=self.mocked_api_key,
-            api_provider=self.mocked_api_provider,
-            timestamp=self.mocked_timestamp,
-            timestamp_end=self.mocked_timestamp_end,
-        )
-        expected_response.body.task = Task.IMAGE_EDITING
-        expected_response.body.api_type = OpenAIAPIType.IMAGE_EDIT
-        self.assertEqual(first=request_data, second=expected_response)
+        raw_data.api_type = OpenAIAPIType.IMAGE_CREATE
+        data_package = converter.get_data_package(raw_data, tag_data)
+        self.assertEqual(data_package.body.task, Task.IMAGE_GENERATION)
 
-        api_type = OpenAIAPIType.IMAGE_VARIATION
-        tag_data.task = Task.UNKNOWN
-        request_data = data_converter.get_data_package(
-            tag_data=tag_data,
-            request_kwargs=self.image_request_kwargs,
-            request_response=self.image_request_response,
-            api_type=api_type,
-            api_key=self.mocked_api_key,
-            api_provider=self.mocked_api_provider,
-            timestamp=self.mocked_timestamp,
-            timestamp_end=self.mocked_timestamp_end,
-        )
-        expected_response.body.task = Task.IMAGE_VARIATION
-        expected_response.body.api_type = OpenAIAPIType.IMAGE_VARIATION
-        self.assertEqual(first=request_data, second=expected_response)
+        raw_data.api_type = OpenAIAPIType.IMAGE_EDIT
+        data_package = converter.get_data_package(raw_data, tag_data)
+        self.assertEqual(data_package.body.task, Task.IMAGE_EDITING)
 
-    @patch("nebuly.trackers.openai.openai")
-    def test_get_data_package__is_returning_the_correct_data_for_finetune_api(
-        self,
-        mocked_openai: MagicMock,
-    ) -> None:
-        mocked_openai.api_type = "open_ai"
-        api_type = OpenAIAPIType.FINETUNE
-        tag_data = TagData()
-        data_converter = OpenAIDataPackageConverter()
-        request_data: NebulyDataPackage = data_converter.get_data_package(
-            tag_data=tag_data,
-            request_kwargs=self.finetune_request_kwargs,
-            request_response=self.finetune_request_response,
-            api_type=api_type,
-            api_key=self.mocked_api_key,
-            api_provider=self.mocked_api_provider,
-            timestamp=self.mocked_timestamp,
-            timestamp_end=self.mocked_timestamp_end,
-        )
+        raw_data.api_type = OpenAIAPIType.IMAGE_VARIATION
+        data_package = converter.get_data_package(raw_data, tag_data)
+        self.assertEqual(data_package.body.task, Task.IMAGE_VARIATION)
 
-        expected_body: OpenAIAttributes = OpenAIAttributes(
-            project="unknown",
-            phase=DevelopmentPhase.UNKNOWN,
-            task=Task.FINETUNING,
-            api_type=OpenAIAPIType.FINETUNE,
-            api_key=self.mocked_api_key,
-            timestamp=self.mocked_timestamp,
-            timestamp_end=self.mocked_timestamp_end,
-            timestamp_openai=1614807352,
-            model="curie",
-            n_prompt_tokens=None,
-            n_output_tokens=None,
-            n_output_images=None,
-            image_size=None,
-            audio_duration_seconds=None,
-            training_file_id="file-XGinujblHPwGLSztz8cPS8XY",
-            training_id="ft-AF1WoRqd3aJAHsqc9NY7iL8F",
-        )
-        expected_response = NebulyDataPackage(
-            kind=Provider.OPENAI,
-            body=expected_body,
-        )
-        print(request_data)
-        print(expected_response)
-        self.assertEqual(first=request_data, second=expected_response)
+        raw_data.api_type = OpenAIAPIType.AUDIO_TRANSLATE
+        data_package = converter.get_data_package(raw_data, tag_data)
+        self.assertEqual(data_package.body.task, Task.AUDIO_TRANSLATION)
 
-    @patch("nebuly.trackers.openai.openai")
-    def test_get_data_package__is_returning_the_correct_data_for_moderation_api(
-        self,
-        mocked_openai: MagicMock,
-    ) -> None:
-        mocked_openai.api_type = "open_ai"
-        api_type = OpenAIAPIType.MODERATION
-        tag_data = TagData()
-        data_converter = OpenAIDataPackageConverter()
-        request_data: NebulyDataPackage = data_converter.get_data_package(
-            tag_data=tag_data,
-            request_kwargs=self.moderation_request_kwargs,
-            request_response=self.moderation_request_response,
-            api_type=api_type,
-            api_key=self.mocked_api_key,
-            api_provider=self.mocked_api_provider,
-            timestamp=self.mocked_timestamp,
-            timestamp_end=self.mocked_timestamp_end,
-        )
+        raw_data.api_type = OpenAIAPIType.AUDIO_TRANSCRIBE
+        data_package = converter.get_data_package(raw_data, tag_data)
+        self.assertEqual(data_package.body.task, Task.AUDIO_TRANSCRIPTION)
 
-        expected_body: OpenAIAttributes = OpenAIAttributes(
-            project="unknown",
-            phase=DevelopmentPhase.UNKNOWN,
-            task=Task.TEXT_MODERATION,
-            api_type=OpenAIAPIType.MODERATION,
-            api_key=self.mocked_api_key,
-            timestamp=self.mocked_timestamp,
-            timestamp_end=self.mocked_timestamp_end,
-            timestamp_openai=None,
-            model="text-moderation-001",
-            n_prompt_tokens=None,
-            n_output_tokens=None,
-            n_output_images=None,
-            image_size=None,
-            audio_duration_seconds=None,
-            training_file_id=None,
-            training_id=None,
-        )
+        raw_data.api_type = OpenAIAPIType.FINETUNE
+        data_package = converter.get_data_package(raw_data, tag_data)
+        self.assertEqual(data_package.body.task, Task.FINETUNING)
 
-        expected_response = NebulyDataPackage(
-            kind=Provider.OPENAI,
-            body=expected_body,
-        )
+        raw_data.api_type = OpenAIAPIType.MODERATION
+        data_package = converter.get_data_package(raw_data, tag_data)
+        self.assertEqual(data_package.body.task, Task.TEXT_MODERATION)
 
-        self.assertEqual(first=request_data, second=expected_response)
+    def test_get_data_package__is_filling_the_request_independent_body_field(self):
+        raw_data = OpenAIRawTrackedData(
+            timestamp=1010101,
+            timestamp_end=20202020,
+            request_kwargs=test_data.text_completion.request_kwargs,
+            request_response=test_data.text_completion.request_response,
+            api_type=OpenAIAPIType.TEXT_COMPLETION,
+            api_key="test-key",
+            api_provider="open_ai",
+            organization="test-org",
+        )
+        tag_data = TagData(
+            project="test_project",
+            phase=DevelopmentPhase.EXPERIMENTATION,
+            task=Task.TEXT_GENERATION,
+        )
+        converter = OpenAIDataPackageConverter()
+        data_package = converter.get_data_package(raw_data, tag_data)
+        self.assertEqual(data_package.body.project, tag_data.project)
+        self.assertEqual(data_package.body.phase, tag_data.phase)
+        self.assertEqual(data_package.body.task, tag_data.task)
+        self.assertEqual(data_package.body.api_type, raw_data.api_type)
+        self.assertEqual(data_package.body.api_key, raw_data.api_key)
+        self.assertEqual(data_package.body.timestamp, raw_data.timestamp)
+        self.assertEqual(data_package.body.timestamp_end, raw_data.timestamp_end)
 
 
 class TestOpenAIQueueObject(unittest.TestCase):
-    def test_as_data_package__is_calling_the_get_data_package_method_of_the_converter(
-        self,
-    ) -> None:
-        mocked_converter = MagicMock()
-        tag_data = TagData()
-        mocked_converter.get_data_package.return_value = "data_package"
-        mocked_openai_queue_object = OpenAIQueueObject(
-            data_package_converter=mocked_converter,
-            request_kwargs={"request_kwargs": "request_kwargs"},
-            request_response={"request_response": "request_response"},
-            api_type="api_type",
-            api_key="test_api_key",
+    def test_as_data_package__is_converting_the_raw_data(self):
+        raw_data = OpenAIRawTrackedData(
+            timestamp=1010101,
+            timestamp_end=20202020,
+            request_kwargs=test_data.text_completion.request_kwargs,
+            request_response=test_data.text_completion.request_response,
+            api_type=OpenAIAPIType.TEXT_COMPLETION,
+            api_key="test-key",
             api_provider="open_ai",
-            timestamp=2.3,
-            timestamp_end=2.4,
+            organization="test-org",
         )
-        mocked_openai_queue_object.as_data_package()
+        tag_data = TagData(
+            project="test_project",
+            phase=DevelopmentPhase.EXPERIMENTATION,
+            task=Task.TEXT_GENERATION,
+        )
+        queue_object = OpenAIQueueObject(raw_data)
+        queue_object.tag(tag_data)
+        data_package = queue_object.as_data_package()
+        self.assertEqual(data_package.kind, Provider.OPENAI)
+        self.assertEqual(data_package.body.api_type, raw_data.api_type)
+        self.assertEqual(data_package.body.api_key, raw_data.api_key)
+        self.assertEqual(data_package.body.timestamp, raw_data.timestamp)
+        self.assertEqual(data_package.body.timestamp_end, raw_data.timestamp_end)
+        self.assertEqual(data_package.body.project, tag_data.project)
+        self.assertEqual(data_package.body.phase, tag_data.phase)
+        self.assertEqual(data_package.body.task, tag_data.task)
+        self.assertEqual(data_package.body.model, raw_data.request_kwargs["model"])
+        self.assertEqual(
+            data_package.body.n_prompt_tokens,
+            raw_data.request_response["usage"]["prompt_tokens"],
+        )
+        self.assertEqual(
+            data_package.body.n_completion_tokens,
+            raw_data.request_response["usage"]["completion_tokens"],
+        )
+        self.assertEqual(
+            data_package.body.timestamp_openai, raw_data.request_response["created"]
+        )
+        self.assertEqual(data_package.body.organization, raw_data.organization)
 
-        mocked_converter.get_data_package.assert_called_once_with(
-            tag_data=tag_data,
-            request_kwargs={"request_kwargs": "request_kwargs"},
-            request_response={"request_response": "request_response"},
-            api_type="api_type",
-            api_key="test_api_key",
-            api_provider="open_ai",
-            timestamp=2.3,
-            timestamp_end=2.4,
+
+class TestAPICallWrappingStrategy(unittest.TestCase):
+    mocked_nebuly_queue = None
+    mocked_openai_method = None
+    mocked_request_kwargs = None
+    mocked_api_type = None
+    mocked_value = 10
+
+    def setUp(self) -> None:
+        self.mocked_nebuly_queue = MagicMock()
+        openai = MagicMock()
+        openai.mock_method.return_value = self.mocked_value
+        self.mocked_openai_method = openai.mock_method
+        self.request_kwargs = test_data.text_completion.request_kwargs
+        self.api_type = OpenAIAPIType.TEXT_COMPLETION
+
+    def test_wrap__is_returning_the_response(self):
+        strategy = APICallWrappingStrategy()
+        response = strategy.wrap(
+            nebuly_queue=self.mocked_nebuly_queue,
+            original_method=self.mocked_openai_method,
+            request_kwargs=self.request_kwargs,
+            api_type=self.api_type,
         )
+        self.assertEqual(response, self.mocked_value)
+
+    def test_wrap__is_adding_the_data_to_the_queue(self):
+        strategy = APICallWrappingStrategy()
+        strategy.wrap(
+            nebuly_queue=self.mocked_nebuly_queue,
+            original_method=self.mocked_openai_method,
+            request_kwargs=self.request_kwargs,
+            api_type=self.api_type,
+        )
+        self.mocked_nebuly_queue.put.assert_called_once()
+
+
+class TestChatCompletionGeneratorWrappingStrategy(unittest.TestCase):
+    mocked_nebuly_queue = None
+    mocked_openai_method = None
+    mocked_request_kwargs = None
+    mocked_api_type = None
+    mocked_value = 10
+
+    def setUp(self) -> None:
+        self.mocked_nebuly_queue = MagicMock()
+        openai = MagicMock()
+
+        def generator_method():
+            for _ in range(2):
+                item = test_data.chat_completion_generator_response
+                yield item
+
+        openai.mock_method.return_value = generator_method()
+        self.mocked_openai_method = openai.mock_method
+        self.request_kwargs = test_data.text_completion.request_kwargs
+        self.api_type = OpenAIAPIType.TEXT_COMPLETION
+
+    def test_wrap__is_returning_a_generator(self):
+        strategy = ChatCompletionStrategy()
+        response = strategy.wrap(
+            nebuly_queue=self.mocked_nebuly_queue,
+            original_method=self.mocked_openai_method,
+            request_kwargs=self.request_kwargs,
+            api_type=self.api_type,
+        )
+        self.assertIsInstance(response, Generator)
+
+    def test_wrap__is_adding_the_data_to_the_queue_when_generator_ends(self):
+        strategy = TextCompletionStrategy()
+        generator = strategy.wrap(
+            nebuly_queue=self.mocked_nebuly_queue,
+            original_method=self.mocked_openai_method,
+            request_kwargs=self.request_kwargs,
+            api_type=self.api_type,
+        )
+        for _ in generator:
+            pass
+        self.mocked_nebuly_queue.put.assert_called_once()
+
+
+class TestTextCompletionGeneratorWrappingStrategy(unittest.TestCase):
+    mocked_nebuly_queue = None
+    mocked_openai_method = None
+    mocked_request_kwargs = None
+    mocked_api_type = None
+    mocked_value = 10
+
+    def setUp(self) -> None:
+        self.mocked_nebuly_queue = MagicMock()
+        openai = MagicMock()
+
+        def generator_method():
+            for _ in range(10):
+                item = test_data.text_completion_generator_response
+                yield item
+
+        openai.mock_method.return_value = generator_method()
+        self.mocked_openai_method = openai.mock_method
+        self.request_kwargs = test_data.text_completion.request_kwargs
+        self.api_type = OpenAIAPIType.TEXT_COMPLETION
+
+    def test_wrap__is_returning_a_generator(self):
+        strategy = TextCompletionStrategy()
+        response = strategy.wrap(
+            nebuly_queue=self.mocked_nebuly_queue,
+            original_method=self.mocked_openai_method,
+            request_kwargs=self.request_kwargs,
+            api_type=self.api_type,
+        )
+        self.assertIsInstance(response, Generator)
+
+    def test_wrap__is_adding_the_data_to_the_queue_when_generator_ends(self):
+        strategy = TextCompletionStrategy()
+        generator = strategy.wrap(
+            nebuly_queue=self.mocked_nebuly_queue,
+            original_method=self.mocked_openai_method,
+            request_kwargs=self.request_kwargs,
+            api_type=self.api_type,
+        )
+        for _ in generator:
+            pass
+        self.mocked_nebuly_queue.put.assert_called_once()
 
 
 class TestOpenAITracker(unittest.TestCase):
@@ -572,13 +605,15 @@ class TestOpenAITracker(unittest.TestCase):
         mocked_nebuly_queue.put.assert_called_once()
         _, kwargs = mocked_nebuly_queue.put.call_args
         queue_object = kwargs["item"]
-        self.assertEqual(first=queue_object._request_kwargs, second=self.mocked_kwargs)
         self.assertEqual(
-            first=queue_object._request_response,
+            first=queue_object._raw_data.request_kwargs, second=self.mocked_kwargs
+        )
+        self.assertEqual(
+            first=queue_object._raw_data.request_response,
             second=self.mocked_openai_response,
         )
         self.assertEqual(
-            first=queue_object._api_type,
+            first=queue_object._raw_data.api_type,
             second=OpenAIAPIType.TEXT_COMPLETION,
         )
 
@@ -610,12 +645,16 @@ class TestOpenAITracker(unittest.TestCase):
         mocked_nebuly_queue.put.assert_called_once()
         _, kwargs = mocked_nebuly_queue.put.call_args
         queue_object = kwargs["item"]
-        self.assertEqual(first=queue_object._request_kwargs, second=self.mocked_kwargs)
         self.assertEqual(
-            first=queue_object._request_response,
+            first=queue_object._raw_data.request_kwargs, second=self.mocked_kwargs
+        )
+        self.assertEqual(
+            first=queue_object._raw_data.request_response,
             second=self.mocked_openai_response,
         )
-        self.assertEqual(first=queue_object._api_type, second=OpenAIAPIType.CHAT)
+        self.assertEqual(
+            first=queue_object._raw_data.api_type, second=OpenAIAPIType.CHAT
+        )
 
     @patch("nebuly.trackers.openai.openai")
     def test_replace_sdk_functions__is_replacing_the_method_chat_completion(
@@ -645,12 +684,16 @@ class TestOpenAITracker(unittest.TestCase):
         mocked_nebuly_queue.put.assert_called_once()
         _, kwargs = mocked_nebuly_queue.put.call_args
         queue_object = kwargs["item"]
-        self.assertEqual(first=queue_object._request_kwargs, second=self.mocked_kwargs)
         self.assertEqual(
-            first=queue_object._request_response,
+            first=queue_object._raw_data.request_kwargs, second=self.mocked_kwargs
+        )
+        self.assertEqual(
+            first=queue_object._raw_data.request_response,
             second=self.mocked_openai_response,
         )
-        self.assertEqual(first=queue_object._api_type, second=OpenAIAPIType.EDIT)
+        self.assertEqual(
+            first=queue_object._raw_data.api_type, second=OpenAIAPIType.EDIT
+        )
 
     @patch("nebuly.trackers.openai.openai")
     def test_replace_sdk_functions__is_replacing_the_method_edit(
@@ -680,12 +723,16 @@ class TestOpenAITracker(unittest.TestCase):
         mocked_nebuly_queue.put.assert_called_once()
         _, kwargs = mocked_nebuly_queue.put.call_args
         queue_object = kwargs["item"]
-        self.assertEqual(first=queue_object._request_kwargs, second=self.mocked_kwargs)
         self.assertEqual(
-            first=queue_object._request_response,
+            first=queue_object._raw_data.request_kwargs, second=self.mocked_kwargs
+        )
+        self.assertEqual(
+            first=queue_object._raw_data.request_response,
             second=self.mocked_openai_response,
         )
-        self.assertEqual(first=queue_object._api_type, second=OpenAIAPIType.EMBEDDING)
+        self.assertEqual(
+            first=queue_object._raw_data.api_type, second=OpenAIAPIType.EMBEDDING
+        )
 
     @patch("nebuly.trackers.openai.openai")
     def test_replace_sdk_functions__is_replacing_the_method_embedding(
@@ -715,13 +762,15 @@ class TestOpenAITracker(unittest.TestCase):
         mocked_nebuly_queue.put.assert_called_once()
         _, kwargs = mocked_nebuly_queue.put.call_args
         queue_object = kwargs["item"]
-        self.assertEqual(first=queue_object._request_kwargs, second=self.mocked_kwargs)
         self.assertEqual(
-            first=queue_object._request_response,
+            first=queue_object._raw_data.request_kwargs, second=self.mocked_kwargs
+        )
+        self.assertEqual(
+            first=queue_object._raw_data.request_response,
             second=self.mocked_openai_response,
         )
         self.assertEqual(
-            first=queue_object._api_type,
+            first=queue_object._raw_data.api_type,
             second=OpenAIAPIType.AUDIO_TRANSCRIBE,
         )
 
@@ -753,13 +802,15 @@ class TestOpenAITracker(unittest.TestCase):
         mocked_nebuly_queue.put.assert_called_once()
         _, kwargs = mocked_nebuly_queue.put.call_args
         queue_object = kwargs["item"]
-        self.assertEqual(first=queue_object._request_kwargs, second=self.mocked_kwargs)
         self.assertEqual(
-            first=queue_object._request_response,
+            first=queue_object._raw_data.request_kwargs, second=self.mocked_kwargs
+        )
+        self.assertEqual(
+            first=queue_object._raw_data.request_response,
             second=self.mocked_openai_response,
         )
         self.assertEqual(
-            first=queue_object._api_type,
+            first=queue_object._raw_data.api_type,
             second=OpenAIAPIType.AUDIO_TRANSLATE,
         )
 
@@ -791,13 +842,15 @@ class TestOpenAITracker(unittest.TestCase):
         mocked_nebuly_queue.put.assert_called_once()
         _, kwargs = mocked_nebuly_queue.put.call_args
         queue_object = kwargs["item"]
-        self.assertEqual(first=queue_object._request_kwargs, second=self.mocked_kwargs)
         self.assertEqual(
-            first=queue_object._request_response,
+            first=queue_object._raw_data.request_kwargs, second=self.mocked_kwargs
+        )
+        self.assertEqual(
+            first=queue_object._raw_data.request_response,
             second=self.mocked_openai_response,
         )
         self.assertEqual(
-            first=queue_object._api_type, second=OpenAIAPIType.IMAGE_CREATE
+            first=queue_object._raw_data.api_type, second=OpenAIAPIType.IMAGE_CREATE
         )
 
     @patch("nebuly.trackers.openai.openai")
@@ -828,12 +881,16 @@ class TestOpenAITracker(unittest.TestCase):
         mocked_nebuly_queue.put.assert_called_once()
         _, kwargs = mocked_nebuly_queue.put.call_args
         queue_object = kwargs["item"]
-        self.assertEqual(first=queue_object._request_kwargs, second=self.mocked_kwargs)
         self.assertEqual(
-            first=queue_object._request_response,
+            first=queue_object._raw_data.request_kwargs, second=self.mocked_kwargs
+        )
+        self.assertEqual(
+            first=queue_object._raw_data.request_response,
             second=self.mocked_openai_response,
         )
-        self.assertEqual(first=queue_object._api_type, second=OpenAIAPIType.IMAGE_EDIT)
+        self.assertEqual(
+            first=queue_object._raw_data.api_type, second=OpenAIAPIType.IMAGE_EDIT
+        )
 
     @patch("nebuly.trackers.openai.openai")
     def test_replace_sdk_functions__is_replacing_the_method_image_edit(
@@ -863,13 +920,15 @@ class TestOpenAITracker(unittest.TestCase):
         mocked_nebuly_queue.put.assert_called_once()
         _, kwargs = mocked_nebuly_queue.put.call_args
         queue_object = kwargs["item"]
-        self.assertEqual(first=queue_object._request_kwargs, second=self.mocked_kwargs)
         self.assertEqual(
-            first=queue_object._request_response,
+            first=queue_object._raw_data.request_kwargs, second=self.mocked_kwargs
+        )
+        self.assertEqual(
+            first=queue_object._raw_data.request_response,
             second=self.mocked_openai_response,
         )
         self.assertEqual(
-            first=queue_object._api_type,
+            first=queue_object._raw_data.api_type,
             second=OpenAIAPIType.IMAGE_VARIATION,
         )
 
@@ -903,12 +962,16 @@ class TestOpenAITracker(unittest.TestCase):
         mocked_nebuly_queue.put.assert_called_once()
         _, kwargs = mocked_nebuly_queue.put.call_args
         queue_object = kwargs["item"]
-        self.assertEqual(first=queue_object._request_kwargs, second=self.mocked_kwargs)
         self.assertEqual(
-            first=queue_object._request_response,
+            first=queue_object._raw_data.request_kwargs, second=self.mocked_kwargs
+        )
+        self.assertEqual(
+            first=queue_object._raw_data.request_response,
             second=self.mocked_openai_response,
         )
-        self.assertEqual(first=queue_object._api_type, second=OpenAIAPIType.FINETUNE)
+        self.assertEqual(
+            first=queue_object._raw_data.api_type, second=OpenAIAPIType.FINETUNE
+        )
 
     @patch("nebuly.trackers.openai.openai")
     def test_replace_sdk_functions__is_replacing_the_method_finetune(
@@ -938,12 +1001,16 @@ class TestOpenAITracker(unittest.TestCase):
         mocked_nebuly_queue.put.assert_called_once()
         _, kwargs = mocked_nebuly_queue.put.call_args
         queue_object = kwargs["item"]
-        self.assertEqual(first=queue_object._request_kwargs, second=self.mocked_kwargs)
         self.assertEqual(
-            first=queue_object._request_response,
+            first=queue_object._raw_data.request_kwargs, second=self.mocked_kwargs
+        )
+        self.assertEqual(
+            first=queue_object._raw_data.request_response,
             second=self.mocked_openai_response,
         )
-        self.assertEqual(first=queue_object._api_type, second=OpenAIAPIType.MODERATION)
+        self.assertEqual(
+            first=queue_object._raw_data.api_type, second=OpenAIAPIType.MODERATION
+        )
 
     @patch("nebuly.trackers.openai.openai")
     def test_replace_sdk_functions__is_replacing_the_method_moderation(
