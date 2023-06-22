@@ -24,7 +24,11 @@ jobs:
 
       - uses: actions/download-artifact@v3
         with:
-          name: coverage
+          name: coverage-unit
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: coverage-integration
 
       - name: Run code quality check
         uses: sonarsource/sonarcloud-github-action@master
