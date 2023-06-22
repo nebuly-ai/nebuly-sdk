@@ -12,7 +12,7 @@ on:
 
 jobs:
   CI:
-    uses: nebuly-ai/nebuly-sdk/.github/workflows/.ci-template.yaml@main
+    uses: nebuly-ai/nebuly-sdk/.github/workflows/.ci-template.yaml@feature/PierpaoloSorbellini-patch-1
 
   code-quality:
     runs-on: ubuntu-latest
