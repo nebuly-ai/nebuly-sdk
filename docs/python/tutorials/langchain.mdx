@@ -1,0 +1,153 @@
+---
+title: LangChain with OpenAI
+description: ""
+---
+
+## Adding Nebuly to your OpenAI project.
+Here is an example of a `langchain` chatbot that acts as a Linux terminal. 
+The chatbot is defined in the `chat()` method, and in the Python main, "nebuly" is initialized and tracks the calls made by the langchain chatbot to OpenAI.
+
+
+```python
+import os
+
+import nebuly
+
+from langchain import OpenAI, LLMChain, PromptTemplate
+from langchain.memory import ConversationSummaryMemory
+
+
+def chat() -> str:
+    # define chatbot template
+    template = """Assistant is a large language model trained by OpenAI.
+
+    Assistant is designed to be able to assist with a wide range of tasks, 
+    from answering simple questions to providing in-depth explanations and 
+    discussions on a wide range of topics. As a language model, Assistant 
+    is able to generate human-like text based on the input it receives, 
+    allowing it to engage in natural-sounding conversations and provide 
+    responses that are coherent and relevant to the topic at hand.
+
+    Assistant is constantly learning and improving, and its capabilities 
+    are constantly evolving. It is able to process and understand large 
+    amounts of text, and can use this knowledge to provide accurate and 
+    informative responses to a wide range of questions. 
+    Additionally, Assistant is able to generate its own text based on 
+    the input it receives, allowing it to engage in discussions and 
+    provide explanations and descriptions on a wide range of topics.
+
+    Overall, Assistant is a powerful tool that can help with a wide 
+    range of tasks and provide valuable insights and information 
+    on a wide range of topics. Whether you need help with a 
+    specific question or just want to have a conversation about 
+    a particular topic, Assistant is here to assist.
+
+    {history}
+    Human: {human_input}
+    Assistant:"""
+
+    # define prompt template for the chatbot
+    prompt = PromptTemplate(
+        input_variables=["history", "human_input"], 
+        template=template
+    )
+
+    # define the llm 
+    llm = llm=OpenAI(temperature=0)
+
+    # chatbot initialization
+    chatgpt_chain = LLMChain(
+        llm=llm, 
+        prompt=prompt, 
+        verbose=True, 
+        memory=ConversationSummaryMemory(llm=llm),
+    )
+
+    # run the chatbot
+    output: str = chatgpt_chain.predict(
+        human_input=(
+            "I want you to act as a Linux terminal. "
+            "I will type commands and you will reply with what the "
+            "terminal should show. I want you to only reply with the "
+            "terminal output inside one unique code "
+            "block, and nothing else. Do not write explanations. "
+            "Do not type commands unless I instruct you to do so. "
+            "When I need to tell you something in English I will "
+            "do so by putting text inside curly brackets {like this}. "
+            "My first command is pwd."
+        )
+    )
+    return output
+
+    
+if __name__ == "__main__":
+    # initialize nebuly -- No more code is added
+    nebuly.api_key = "a"
+    nebuly.init(
+        project="cli_chatbot",
+        phase=nebuly.DevelopmentPhase.EXPERIMENTATION,
+    )
+
+    # run your main
+    output: str = chat()
+    print(output)
+
+```
+
+Running the code the output will be
+```shell
+/home/user
+```
+
+## What is Happened
+In the background nebuly has tracked two records:
+
+<CodeGroup>
+    ```json Record 1
+    {
+        "kind": "openai",
+        "body": {
+            "project": "cli_chatbot",
+            "phase": "experimentation",
+            "task": "text_generation",
+            "timestamp": 1684912987.160759,
+            "timestamp_end": 1684912989.377452,
+            "api_type": "text_completion",
+            "api_key": "*********************",
+            "timestamp_openai": 1684920187,
+            "model": "text-davinci-003",
+            "n_prompt_tokens": 331,
+            "n_output_tokens": 12,
+            "n_output_images": null,
+            "image_size": null,
+            "audio_duration_seconds": null,
+            "training_file_id": null,
+            "training_id": null
+        }
+    }
+    ```
+
+    ```json Record 2
+    {
+        "kind": "openai",
+        "body": {
+            "project": "cli_chatbot",
+            "phase": "experimentation",
+            "task": "text_summarization",
+            "timestamp": 1684912989.384187,
+            "timestamp_end": 1684912994.412592,
+            "api_type": "text_completion", 
+            "api_key": "*********************", 
+            "timestamp_openai": 1684920189, 
+            "model": "text-davinci-003", 
+            "n_prompt_tokens": 258, 
+            "n_output_tokens": 43, 
+            "n_output_images": null, 
+            "image_size": null, 
+            "audio_duration_seconds": null, 
+            "training_file_id": null, 
+            "training_id": null
+        }
+    }
+    ```
+</CodeGroup>
