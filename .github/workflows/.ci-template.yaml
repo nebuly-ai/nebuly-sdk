@@ -28,7 +28,7 @@ jobs:
       - name: Run linter
         uses: chartboost/ruff-action@v1
         with:
-          version: 0.0.259
+          version: 0.0.275
 
 
   test:
