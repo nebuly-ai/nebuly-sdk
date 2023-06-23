@@ -3,18 +3,18 @@ from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
 from nebuly.core.queues import (
+    DataPackageConverter,
     NebulyQueue,
     QueueObject,
     RawTrackedData,
-    DataPackageConverter,
 )
 from nebuly.core.schemas import (
     DevelopmentPhase,
+    GenericProviderAttributes,
     NebulyDataPackage,
+    Provider,
     TagData,
     Task,
-    GenericProviderAttributes,
-    Provider,
 )
 
 

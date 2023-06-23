@@ -1,7 +1,8 @@
+import unittest
 from typing import Generator
 from unittest.mock import MagicMock, patch
-import unittest
 
+import tests.trackers.openai_data as test_data
 from nebuly.core.schemas import (
     DevelopmentPhase,
     Provider,
@@ -9,23 +10,21 @@ from nebuly.core.schemas import (
     Task,
 )
 from nebuly.trackers.openai import (
+    APICallWrappingStrategy,
+    AudioAPIBodyFiller,
+    ChatCompletionStrategy,
+    FineTuneAPIBodyFiller,
+    ImageAPIBodyFiller,
+    ModerationAPIBodyFiller,
     OpenAIAPIType,
     OpenAIAttributes,
     OpenAIDataPackageConverter,
     OpenAIQueueObject,
+    OpenAIRawTrackedData,
     OpenAITracker,
     TextAPIBodyFiller,
-    ImageAPIBodyFiller,
-    AudioAPIBodyFiller,
-    FineTuneAPIBodyFiller,
-    ModerationAPIBodyFiller,
-    OpenAIRawTrackedData,
-    APICallWrappingStrategy,
     TextCompletionStrategy,
-    ChatCompletionStrategy,
 )
-
-import tests.trackers.openai_data as test_data
 
 
 class TestTextAPIBodyFiller(unittest.TestCase):

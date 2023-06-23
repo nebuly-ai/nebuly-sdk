@@ -1,5 +1,5 @@
-from typing import Optional
 import os
+from typing import Optional
 
 from nebuly.core.apis import init, tracker  # noqa 401
 from nebuly.core.schemas import DevelopmentPhase, Task  # noqa 401

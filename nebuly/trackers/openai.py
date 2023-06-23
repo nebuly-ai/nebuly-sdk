@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
 from functools import partial
-from typing import Dict, Tuple, Optional, Any, Callable, Generator
+from typing import Any, Callable, Dict, Generator, Optional, Tuple
 
 import openai
 import tiktoken as tiktoken
@@ -12,8 +12,8 @@ from nebuly.core.queues import (
     DataPackageConverter,
     NebulyQueue,
     QueueObject,
-    Tracker,
     RawTrackedData,
+    Tracker,
 )
 from nebuly.core.schemas import (
     GenericProviderAttributes,

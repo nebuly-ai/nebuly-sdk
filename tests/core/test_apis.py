@@ -1,5 +1,5 @@
-from unittest.mock import MagicMock, patch
 import unittest
+from unittest.mock import MagicMock, patch
 
 import nebuly.core.apis as nebuly
 from nebuly.core.queues import NebulyQueue
