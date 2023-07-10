@@ -67,6 +67,7 @@ class OpenAIAttributes(GenericProviderAttributes):
     training_file_id: Optional[str] = None
     training_id: Optional[str] = None
     n_epochs: Optional[int] = None
+    user: Optional[str] = None
 
 
 @dataclass
@@ -124,6 +125,10 @@ class TextAPIBodyFiller(APITypeBodyFiller):
         request_response: Dict[str, Any],
     ):
         try:
+            body.user = request_kwargs["user"]
+        except KeyError:
+            pass
+        try:
             body.model = request_kwargs["model"]
         except KeyError:
             pass
@@ -148,6 +153,10 @@ class TextAPIBodyFiller(APITypeBodyFiller):
         request_kwargs: Dict[str, Any],
         request_response: Dict[str, Any],
     ):
+        try:
+            body.user = request_kwargs["user"]
+        except KeyError:
+            pass
         try:
             body.model = request_kwargs["model"]
         except KeyError:
@@ -198,6 +207,10 @@ class ImageAPIBodyFiller(APITypeBodyFiller):
         request_response: Dict[str, Any],
     ):
         try:
+            body.user = request_kwargs["user"]
+        except KeyError:
+            pass
+        try:
             body.model = request_kwargs["model"]
         except KeyError:
             body.model = "dall-e"
@@ -223,6 +236,10 @@ class AudioAPIBodyFiller(APITypeBodyFiller):
         request_response: Dict[str, Any],
     ):
         try:
+            body.user = request_kwargs["user"]
+        except KeyError:
+            pass
+        try:
             body.model = request_kwargs["model"]
         except KeyError:
             pass
@@ -242,6 +259,10 @@ class FineTuneAPIBodyFiller(APITypeBodyFiller):
         request_kwargs: Dict[str, Any],
         request_response: Dict[str, Any],
     ):
+        try:
+            body.user = request_kwargs["user"]
+        except KeyError:
+            pass
         try:
             body.model = request_response["model"]
         except KeyError:
@@ -271,6 +292,10 @@ class ModerationAPIBodyFiller(APITypeBodyFiller):
         request_kwargs: Dict[str, Any],
         request_response: Dict[str, Any],
     ):
+        try:
+            body.user = request_kwargs["user"]
+        except KeyError:
+            pass
         try:
             body.model = request_response["model"]
         except KeyError:
