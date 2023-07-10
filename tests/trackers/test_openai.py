@@ -80,6 +80,7 @@ class TestTextAPIBodyFiller(unittest.TestCase):
         )
 
         self.assertEqual(body.model, request_kwargs["model"])
+        self.assertEqual(body.user, request_kwargs["user"])
         self.assertEqual(
             body.n_completion_tokens, request_response["usage"]["completion_tokens"]
         )
@@ -110,6 +111,7 @@ class TestTextAPIBodyFiller(unittest.TestCase):
         )
 
         self.assertEqual(body.model, request_kwargs["model"])
+        self.assertEqual(body.user, request_kwargs["user"])
         self.assertEqual(
             body.n_completion_tokens, request_response["usage"]["completion_tokens"]
         )
@@ -139,6 +141,7 @@ class TestTextAPIBodyFiller(unittest.TestCase):
         )
 
         self.assertEqual(body.model, request_kwargs["model"])
+        self.assertEqual(body.user, request_kwargs["user"])
         self.assertEqual(
             body.n_completion_tokens, request_response["usage"]["completion_tokens"]
         )
@@ -168,6 +171,7 @@ class TestTextAPIBodyFiller(unittest.TestCase):
         )
 
         self.assertEqual(body.model, request_kwargs["model"])
+        self.assertEqual(body.user, request_kwargs["user"])
         self.assertEqual(
             body.n_completion_tokens, request_response["usage"]["completion_tokens"]
         )
@@ -198,6 +202,7 @@ class TestTextAPIBodyFiller(unittest.TestCase):
         )
 
         self.assertEqual(body.model, request_kwargs["model"])
+        self.assertEqual(body.user, request_kwargs["user"])
         self.assertEqual(
             body.n_prompt_tokens, request_response["usage"]["prompt_tokens"]
         )
@@ -226,6 +231,7 @@ class TestImageAPIBodyFiller(unittest.TestCase):
         )
 
         self.assertEqual(body.model, "dall-e")
+        self.assertEqual(body.user, request_kwargs["user"])
         self.assertEqual(body.timestamp_openai, request_response["created"])
         self.assertEqual(body.n_output_images, request_kwargs["n"])
         self.assertEqual(body.image_size, request_kwargs["size"])
@@ -256,6 +262,7 @@ class TestAudioAPIBodyFiller(unittest.TestCase):
         )
 
         self.assertEqual(body.model, request_kwargs["model"])
+        self.assertEqual(body.user, request_kwargs["user"])
         self.assertEqual(body.audio_duration_seconds, 10)
 
 
@@ -282,6 +289,7 @@ class TestFineTuneBodyFiller(unittest.TestCase):
         )
 
         self.assertEqual(body.model, request_response["model"])
+        self.assertEqual(body.user, request_kwargs["user"])
         self.assertEqual(body.training_id, request_response["id"])
         self.assertEqual(body.training_file_id, request_kwargs["training_file"])
         self.assertEqual(body.timestamp_openai, request_response["created_at"])
@@ -311,6 +319,7 @@ class TestModerationAPIBodyFiller(unittest.TestCase):
         )
 
         self.assertEqual(body.model, request_response["model"])
+        self.assertEqual(body.user, request_kwargs["user"])
 
 
 class TestOpenAIDataPackageConverter(unittest.TestCase):
