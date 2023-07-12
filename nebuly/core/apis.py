@@ -54,6 +54,7 @@ def init(
     global _nebuly_queue
     _nebuly_queue = NebulyQueue(tag_data=tag_data)
 
+    # TODO: Add info about the job_id
     nebuly_tracking_thread = NebulyTrackingDataThread(
         queue=_nebuly_queue, nebuly_client=NebulyClient(api_key=api_key)
     )
@@ -111,8 +112,10 @@ def _instantiate_trackers(nebuly_queue: NebulyQueue) -> List[Tracker]:
     tracker_list = []
     try:
         from nebuly.trackers.openai import OpenAITracker
+        from nebuly.trackers.pytorch import PyTorchTracker
 
         tracker_list.append(OpenAITracker(nebuly_queue=nebuly_queue))
+        tracker_list.append(PyTorchTracker(nebuly_queue=nebuly_queue))
     except ImportError:
         pass
 

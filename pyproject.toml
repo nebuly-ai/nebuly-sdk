@@ -21,6 +21,8 @@ openai = "^0.27.6"
 mutagen = "^1.46.0"
 tenacity = "^8.2.2"
 tiktoken = "^0.4.0"
+torch = "^2.0.1"
+torchvision = "^0.15.2"
 
 
 [tool.poetry.group.dev.dependencies]
