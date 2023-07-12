@@ -80,12 +80,61 @@ class TestTextAPIBodyFiller(unittest.TestCase):
         )
 
         self.assertEqual(body.model, request_kwargs["model"])
+        self.assertEqual(body.user, request_kwargs["user"])
         self.assertEqual(
             body.n_completion_tokens, request_response["usage"]["completion_tokens"]
         )
         self.assertEqual(
             body.n_prompt_tokens, request_response["usage"]["prompt_tokens"]
         )
+
+    def test_fill_body_with_request_data__no_data_provided(self):
+        filler = TextAPIBodyFiller()
+
+        # STANDARD API
+        request_kwargs = {}
+        request_response = test_data.text_completion.request_response
+
+        body = OpenAIAttributes(
+            project="test_project",
+            phase=DevelopmentPhase.EXPERIMENTATION,
+            task=Task.TEXT_GENERATION,
+            api_type=OpenAIAPIType.TEXT_COMPLETION,
+            api_key="test_api_key",
+            timestamp=111111,
+            timestamp_end=222222,
+        )
+        filler.fill_body_with_request_data(
+            body=body,
+            request_kwargs=request_kwargs,
+            request_response=request_response,
+        )
+
+        self.assertIsNone(body.model)
+        self.assertIsNone(body.user)
+
+        # STREAM API
+        stream_request_kwargs = {}
+        stream_request_response = test_data.text_completion_stream.request_response
+
+        body = OpenAIAttributes(
+            project="test_project",
+            phase=DevelopmentPhase.EXPERIMENTATION,
+            task=Task.TEXT_GENERATION,
+            api_type=OpenAIAPIType.TEXT_COMPLETION,
+            api_key="test_api_key",
+            timestamp=111111,
+            timestamp_end=222222,
+        )
+
+        filler.fill_body_with_request_data(
+            body=body,
+            request_kwargs=stream_request_kwargs,
+            request_response=stream_request_response,
+        )
+
+        self.assertIsNone(body.model)
+        self.assertIsNone(body.user)
 
     def test_fill_body_with_request_data__is_filling_chat_request(self):
         filler = TextAPIBodyFiller()
@@ -110,6 +159,7 @@ class TestTextAPIBodyFiller(unittest.TestCase):
         )
 
         self.assertEqual(body.model, request_kwargs["model"])
+        self.assertEqual(body.user, request_kwargs["user"])
         self.assertEqual(
             body.n_completion_tokens, request_response["usage"]["completion_tokens"]
         )
@@ -139,6 +189,7 @@ class TestTextAPIBodyFiller(unittest.TestCase):
         )
 
         self.assertEqual(body.model, request_kwargs["model"])
+        self.assertEqual(body.user, request_kwargs["user"])
         self.assertEqual(
             body.n_completion_tokens, request_response["usage"]["completion_tokens"]
         )
@@ -168,6 +219,7 @@ class TestTextAPIBodyFiller(unittest.TestCase):
         )
 
         self.assertEqual(body.model, request_kwargs["model"])
+        self.assertEqual(body.user, request_kwargs["user"])
         self.assertEqual(
             body.n_completion_tokens, request_response["usage"]["completion_tokens"]
         )
@@ -198,6 +250,7 @@ class TestTextAPIBodyFiller(unittest.TestCase):
         )
 
         self.assertEqual(body.model, request_kwargs["model"])
+        self.assertEqual(body.user, request_kwargs["user"])
         self.assertEqual(
             body.n_prompt_tokens, request_response["usage"]["prompt_tokens"]
         )
@@ -226,9 +279,35 @@ class TestImageAPIBodyFiller(unittest.TestCase):
         )
 
         self.assertEqual(body.model, "dall-e")
+        self.assertEqual(body.user, request_kwargs["user"])
         self.assertEqual(body.timestamp_openai, request_response["created"])
         self.assertEqual(body.n_output_images, request_kwargs["n"])
         self.assertEqual(body.image_size, request_kwargs["size"])
+
+    def test_is_filling_body_with_request_data__no_data_provided(self):
+        filler = ImageAPIBodyFiller()
+
+        request_kwargs = {}
+        request_response = test_data.image.request_response
+
+        body = OpenAIAttributes(
+            project="test_project",
+            phase=DevelopmentPhase.EXPERIMENTATION,
+            task=Task.IMAGE_GENERATION,
+            api_type=OpenAIAPIType.IMAGE_CREATE,
+            api_key="test_api_key",
+            timestamp=111111,
+            timestamp_end=222222,
+        )
+
+        filler.fill_body_with_request_data(
+            body=body,
+            request_kwargs=request_kwargs,
+            request_response=request_response,
+        )
+
+        self.assertEqual(body.model, "dall-e")
+        self.assertIsNone(body.user)
 
 
 class TestAudioAPIBodyFiller(unittest.TestCase):
@@ -256,7 +335,34 @@ class TestAudioAPIBodyFiller(unittest.TestCase):
         )
 
         self.assertEqual(body.model, request_kwargs["model"])
+        self.assertEqual(body.user, request_kwargs["user"])
         self.assertEqual(body.audio_duration_seconds, 10)
+
+    @patch("nebuly.trackers.openai.get_media_file_length_in_seconds")
+    def test_fill_body_with_request_data__no_data_provided(self, mocked_method):
+        filler = AudioAPIBodyFiller()
+        mocked_method.return_value = 10
+
+        request_kwargs = {}
+        request_response = test_data.audio.request_response
+
+        body = OpenAIAttributes(
+            project="test_project",
+            phase=DevelopmentPhase.EXPERIMENTATION,
+            task=Task.AUDIO_TRANSLATION,
+            api_type=OpenAIAPIType.AUDIO_TRANSLATE,
+            api_key="test_api_key",
+            timestamp=111111,
+            timestamp_end=222222,
+        )
+        filler.fill_body_with_request_data(
+            body=body,
+            request_kwargs=request_kwargs,
+            request_response=request_response,
+        )
+
+        self.assertIsNone(body.model)
+        self.assertIsNone(body.user)
 
 
 class TestFineTuneBodyFiller(unittest.TestCase):
@@ -282,10 +388,35 @@ class TestFineTuneBodyFiller(unittest.TestCase):
         )
 
         self.assertEqual(body.model, request_response["model"])
+        self.assertEqual(body.user, request_kwargs["user"])
         self.assertEqual(body.training_id, request_response["id"])
         self.assertEqual(body.training_file_id, request_kwargs["training_file"])
         self.assertEqual(body.timestamp_openai, request_response["created_at"])
         self.assertEqual(body.n_epochs, request_response["hyperparams"]["n_epochs"])
+
+    def test_fill_body_with_request_data__no_data_provided(self):
+        filler = FineTuneAPIBodyFiller()
+
+        request_kwargs = {}
+        request_response = {}
+
+        body = OpenAIAttributes(
+            project="test_project",
+            phase=DevelopmentPhase.EXPERIMENTATION,
+            task=Task.FINETUNING,
+            api_type=OpenAIAPIType.FINETUNE,
+            api_key="test_api_key",
+            timestamp=111111,
+            timestamp_end=222222,
+        )
+        filler.fill_body_with_request_data(
+            body=body,
+            request_kwargs=request_kwargs,
+            request_response=request_response,
+        )
+
+        self.assertIsNone(body.model)
+        self.assertIsNone(body.user)
 
 
 class TestModerationAPIBodyFiller(unittest.TestCase):
@@ -311,6 +442,31 @@ class TestModerationAPIBodyFiller(unittest.TestCase):
         )
 
         self.assertEqual(body.model, request_response["model"])
+        self.assertEqual(body.user, request_kwargs["user"])
+
+    def test_fill_body_with_request_data__no_data_provided(self):
+        filler = ModerationAPIBodyFiller()
+
+        request_kwargs = {}
+        request_response = {}
+
+        body = OpenAIAttributes(
+            project="test_project",
+            phase=DevelopmentPhase.EXPERIMENTATION,
+            task=Task.TEXT_MODERATION,
+            api_type=OpenAIAPIType.MODERATION,
+            api_key="test_api_key",
+            timestamp=111111,
+            timestamp_end=222222,
+        )
+        filler.fill_body_with_request_data(
+            body=body,
+            request_kwargs=request_kwargs,
+            request_response=request_response,
+        )
+
+        self.assertIsNone(body.model)
+        self.assertIsNone(body.user)
 
 
 class TestOpenAIDataPackageConverter(unittest.TestCase):

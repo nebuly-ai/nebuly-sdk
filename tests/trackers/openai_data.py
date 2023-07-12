@@ -18,6 +18,7 @@ text_completion = TestData(
         "stream": False,
         "logprobs": None,
         "stop": "\n",
+        "user": "user-123",
     },
     request_response={
         "id": "cmpl-uqkvlQyYK7bGYrRHQ0eXlWi7",
@@ -47,6 +48,7 @@ text_completion_stream = TestData(
         "stream": True,
         "logprobs": None,
         "stop": "\n",
+        "user": "user-123",
     },
     request_response={
         "output_text": "\n\nThis is indeed a test",
@@ -59,12 +61,14 @@ text_completion_generator_response = {
     "id": "cmpl-7Q80uDV1zpqrUhEd5LDUou0jiLmMz",
     "model": "text-davinci-003",
     "object": "text_completion",
+    "user": "user-123",
 }
 
 chat_completion = TestData(
     request_kwargs={
         "model": "gpt-3.5-turbo",
         "messages": [{"role": "user", "content": "Hello!"}],
+        "user": "user-123",
     },
     request_response={
         "id": "chatcmpl-123",
@@ -89,6 +93,7 @@ chat_completion_stream = TestData(
         "model": "gpt-3.5-turbo",
         "messages": [{"role": "user", "content": "Hello!"}],
         "stream": True,
+        "user": "user-123",
     },
     request_response={
         "output_text": "\n\nHello there, how may I assist you today?",
@@ -108,6 +113,7 @@ edit = TestData(
         "model": "text-davinci-edit-001",
         "input": "What day of the wek is it?",
         "instruction": "Fix the spelling mistakes",
+        "user": "user-123",
     },
     request_response={
         "object": "edit",
@@ -123,7 +129,12 @@ edit = TestData(
 )
 
 image = TestData(
-    request_kwargs={"prompt": "A cute baby sea otter", "n": 2, "size": "1024x1024"},
+    request_kwargs={
+        "prompt": "A cute baby sea otter",
+        "n": 2,
+        "size": "1024x1024",
+        "user": "user-123",
+    },
     request_response={
         "created": 1589478378,
         "data": [{"url": "https://..."}, {"url": "https://..."}],
@@ -134,6 +145,7 @@ embedding = TestData(
     request_kwargs={
         "model": "text-embedding-ada-002",
         "input": "The food was delicious and the waiter...",
+        "user": "user-123",
     },
     request_response={
         "object": "list",
@@ -154,7 +166,11 @@ embedding = TestData(
 )
 
 audio = TestData(
-    request_kwargs={"file": "audio.mp3", "model": "whisper-1"},
+    request_kwargs={
+        "file": "audio.mp3",
+        "model": "whisper-1",
+        "user": "user-123",
+    },
     request_response={
         "text": """
         Imagine the wildest idea that you've ever had,
@@ -166,7 +182,10 @@ audio = TestData(
 )
 
 finetune = TestData(
-    request_kwargs={"training_file": "file-XGinujblHPwGLSztz8cPS8XY"},
+    request_kwargs={
+        "training_file": "file-XGinujblHPwGLSztz8cPS8XY",
+        "user": "user-123",
+    },
     request_response={
         "id": "ft-AF1WoRqd3aJAHsqc9NY7iL8F",
         "object": "fine-tune",
@@ -208,7 +227,10 @@ finetune = TestData(
 )
 
 moderation = TestData(
-    request_kwargs={"input": "I want to kill them."},
+    request_kwargs={
+        "input": "Some test input.",
+        "user": "user-123",
+    },
     request_response={
         "id": "modr-5MWoLO",
         "model": "text-moderation-001",

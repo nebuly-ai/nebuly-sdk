@@ -54,6 +54,7 @@ class OpenAIAttributes(GenericProviderAttributes):
     api_key: str
     organization: Optional[str] = None
     timestamp_openai: Optional[int] = None
+    user: Optional[str] = None
 
     model: Optional[str] = None
     n_prompt_tokens: Optional[int] = None
@@ -99,10 +100,7 @@ class TextAPIBodyFiller(APITypeBodyFiller):
         request_kwargs: Dict[str, Any],
         request_response: Dict[str, Any],
     ):
-        try:
-            stream = request_kwargs["stream"]
-        except KeyError:
-            stream = False
+        stream = request_kwargs.get("stream", False)
 
         if stream is False:
             TextAPIBodyFiller._fill_body_for_standard_api_call(
@@ -123,24 +121,19 @@ class TextAPIBodyFiller(APITypeBodyFiller):
         request_kwargs: Dict[str, Any],
         request_response: Dict[str, Any],
     ):
-        try:
-            body.model = request_kwargs["model"]
-        except KeyError:
-            pass
-        try:
-            body.n_prompt_tokens = int(request_response["usage"]["prompt_tokens"])
-        except KeyError:
-            pass
-        try:
-            body.n_completion_tokens = int(
-                request_response["usage"]["completion_tokens"]
-            )
-        except KeyError:
-            pass
-        try:
-            body.timestamp_openai = int(request_response["created"])
-        except KeyError:
-            pass
+        body.user = request_kwargs.get("user")
+        body.model = request_kwargs.get("model")
+
+        timestamp_openai = request_response.get("created")
+        body.timestamp_openai = int(timestamp_openai) if timestamp_openai else None
+
+        n_prompt_tokens = request_response.get("usage", {}).get("prompt_tokens")
+        body.n_prompt_tokens = int(n_prompt_tokens) if n_prompt_tokens else None
+
+        n_completion_tokens = request_response.get("usage", {}).get("completion_tokens")
+        body.n_completion_tokens = (
+            int(n_completion_tokens) if n_completion_tokens else None
+        )
 
     @staticmethod
     def _fill_body_for_stream_api_call(
@@ -148,15 +141,17 @@ class TextAPIBodyFiller(APITypeBodyFiller):
         request_kwargs: Dict[str, Any],
         request_response: Dict[str, Any],
     ):
-        try:
-            body.model = request_kwargs["model"]
-        except KeyError:
+        body.user = request_kwargs.get("user")
+        body.model = request_kwargs.get("model")
+
+        if body.model is None:
             return
+
         try:
             if body.api_type == OpenAIAPIType.CHAT:
                 input_text = request_kwargs["messages"][0]["content"]
             elif body.api_type == OpenAIAPIType.TEXT_COMPLETION:
-                input_text = request_kwargs["prompt"]
+                input_text = request_kwargs.get("prompt", "")
             else:
                 input_text = ""
             body.n_prompt_tokens = TextAPIBodyFiller._num_tokens_from_text(
@@ -164,13 +159,13 @@ class TextAPIBodyFiller(APITypeBodyFiller):
             )
         except (KeyError, IndexError):
             pass
-        try:
-            output_text = request_response["output_text"]
+
+        output_text = request_response.get("output_text")
+        if output_text is not None:
             body.n_completion_tokens = TextAPIBodyFiller._num_tokens_from_text(
                 string=output_text, encoding_name=body.model
             )
-        except KeyError:
-            pass
+
         if body.api_type == OpenAIAPIType.CHAT:
             # OpenAI adds some tokens to the ones provided to and by the user.
             if body.n_prompt_tokens is not None:
@@ -197,22 +192,15 @@ class ImageAPIBodyFiller(APITypeBodyFiller):
         request_kwargs: Dict[str, Any],
         request_response: Dict[str, Any],
     ):
-        try:
-            body.model = request_kwargs["model"]
-        except KeyError:
-            body.model = "dall-e"
-        try:
-            body.n_output_images = int(request_kwargs["n"])
-        except KeyError:
-            pass
-        try:
-            body.image_size = request_kwargs["size"]
-        except KeyError:
-            pass
-        try:
-            body.timestamp_openai = int(request_response["created"])
-        except KeyError:
-            pass
+        body.user = request_kwargs.get("user")
+        body.model = request_kwargs.get("model", "dall-e")
+        body.image_size = request_kwargs.get("size")
+
+        n_output_images = request_kwargs.get("n")
+        body.n_output_images = int(n_output_images) if n_output_images else None
+
+        timestamp_openai = request_response.get("created")
+        body.timestamp_openai = int(timestamp_openai) if timestamp_openai else None
 
 
 class AudioAPIBodyFiller(APITypeBodyFiller):
@@ -222,12 +210,10 @@ class AudioAPIBodyFiller(APITypeBodyFiller):
         request_kwargs: Dict[str, Any],
         request_response: Dict[str, Any],
     ):
+        body.user = request_kwargs.get("user")
+        body.model = request_kwargs.get("model")
         try:
-            body.model = request_kwargs["model"]
-        except KeyError:
-            pass
-        try:
-            file_name = request_kwargs["file"]
+            file_name = request_kwargs.get("file")
             body.audio_duration_seconds = get_media_file_length_in_seconds(
                 file_path=file_name
             )
@@ -242,26 +228,14 @@ class FineTuneAPIBodyFiller(APITypeBodyFiller):
         request_kwargs: Dict[str, Any],
         request_response: Dict[str, Any],
     ):
-        try:
-            body.model = request_response["model"]
-        except KeyError:
-            pass
-        try:
-            body.training_file_id = request_kwargs["training_file"]
-        except KeyError:
-            pass
-        try:
-            body.training_id = request_response["id"]
-        except KeyError:
-            pass
-        try:
-            body.n_epochs = request_response["hyperparams"]["n_epochs"]
-        except KeyError:
-            pass
-        try:
-            body.timestamp_openai = int(request_response["created_at"])
-        except KeyError:
-            pass
+        body.user = request_kwargs.get("user")
+        body.model = request_response.get("model")
+        body.n_epochs = request_response.get("hyperparams", {}).get("n_epochs")
+        body.training_file_id = request_kwargs.get("training_file")
+        body.training_id = request_response.get("id")
+
+        timestamp_openai = request_response.get("created_at")
+        body.timestamp_openai = int(timestamp_openai) if timestamp_openai else None
 
 
 class ModerationAPIBodyFiller(APITypeBodyFiller):
@@ -271,10 +245,8 @@ class ModerationAPIBodyFiller(APITypeBodyFiller):
         request_kwargs: Dict[str, Any],
         request_response: Dict[str, Any],
     ):
-        try:
-            body.model = request_response["model"]
-        except KeyError:
-            pass
+        body.user = request_kwargs.get("user")
+        body.model = request_response.get("model")
         # is free now 19/05/2023: I don't have usage data
 
 
