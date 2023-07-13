@@ -2,6 +2,7 @@ import atexit
 import contextlib
 import copy
 import logging
+import time
 from typing import Any, Generator, List, Optional
 
 from nebuly.core.clients import NebulyClient
@@ -110,6 +111,8 @@ def tracker(
 
 def _instantiate_trackers(nebuly_queue: NebulyQueue) -> List[Tracker]:
     tracker_list = []
+    start_script_timestamp = time.time()
+
     try:
         from nebuly.trackers.openai import OpenAITracker
 
@@ -119,7 +122,11 @@ def _instantiate_trackers(nebuly_queue: NebulyQueue) -> List[Tracker]:
     try:
         from nebuly.trackers.pytorch import PyTorchTracker
 
-        tracker_list.append(PyTorchTracker(nebuly_queue=nebuly_queue))
+        tracker_list.append(
+            PyTorchTracker(
+                nebuly_queue=nebuly_queue, start_script_timestamp=start_script_timestamp
+            )
+        )
     except ImportError:
         pass
     return tracker_list

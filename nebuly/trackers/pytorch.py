@@ -1,3 +1,4 @@
+import atexit
 import time
 import uuid
 from dataclasses import dataclass
@@ -144,8 +145,11 @@ class PyTorchTrainingOpInfo:
 
 
 class PyTorchTracker(Tracker):
-    def __init__(self, nebuly_queue: NebulyQueue) -> None:
+    def __init__(
+        self, nebuly_queue: NebulyQueue, start_script_timestamp: float
+    ) -> None:
         self._nebuly_queue: NebulyQueue = nebuly_queue
+        self._start_script_timestamp = start_script_timestamp
         self._is_inside_forward = False
         self._is_training_started = False
         self._iteration_start_time = None
@@ -189,7 +193,11 @@ class PyTorchTracker(Tracker):
 
     def _setup_start_events(self, start_timestamp: float):
         if not self._is_training_started:
-            self._track_start_training(start_timestamp)
+            self._track_event(
+                PyTorchJobOperation.START_SCRIPT, self._start_script_timestamp
+            )
+            atexit.register(self._track_event, PyTorchJobOperation.END_SCRIPT)
+            self._track_event(PyTorchJobOperation.START_TRAINING, start_timestamp)
             self._is_training_started = True
         if self._iteration_start_time is None:
             self._iteration_start_time = start_timestamp
@@ -202,6 +210,22 @@ class PyTorchTracker(Tracker):
                 job_operation=PyTorchJobOperation.START_ITERATION,
             )
             self._track(raw_data=data)
+
+    def _track_event(
+        self, job_operation: PyTorchJobOperation, timestamp: Optional[float] = None
+    ):
+        if timestamp is None:
+            timestamp = time.time()
+        data = PyTorchRawTrackedData(
+            job_id=self._job_id,
+            timestamp=timestamp,
+            duration=None,
+            device=None,
+            job_mode=PyTorchJobMode.TRAINING,
+            job_operation=job_operation,
+        )
+
+        self._track(raw_data=data)
 
     def _replace_tensor_move_to_device(self):
         original_to = torch.Tensor.to
@@ -262,7 +286,7 @@ class PyTorchTracker(Tracker):
                 res = original_iter(data_loader, *args, **kwargs)
             except StopIteration:
                 end_training_time = time.time()
-                self._track_end_training(end_training_time)
+                self._track_event(PyTorchJobOperation.END_TRAINING, end_training_time)
                 raise StopIteration
             end_time = time.time()
             self._setup_start_events(start_timestamp)
@@ -464,29 +488,6 @@ class PyTorchTracker(Tracker):
 
         register_optimizer_step_pre_hook(_pre_hook)
         register_optimizer_step_post_hook(_post_hook)
-
-    def _track_start_training(self, start_timestamp: float):
-        data = PyTorchRawTrackedData(
-            job_id=self._job_id,
-            timestamp=start_timestamp,
-            duration=None,
-            device=None,
-            job_mode=PyTorchJobMode.TRAINING,
-            job_operation=PyTorchJobOperation.START_TRAINING,
-        )
-
-        self._track(raw_data=data)
-
-    def _track_end_training(self, end_timestamp: float):
-        data = PyTorchRawTrackedData(
-            job_id=self._job_id,
-            timestamp=end_timestamp,
-            duration=None,
-            device=None,
-            job_mode=PyTorchJobMode.TRAINING,
-            job_operation=PyTorchJobOperation.END_TRAINING,
-        )
-        self._track(raw_data=data)
 
     def _track(self, raw_data: PyTorchRawTrackedData) -> None:
         queue_object = PyTorchQueueObject(raw_data)
