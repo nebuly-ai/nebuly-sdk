@@ -55,7 +55,6 @@ def init(
     global _nebuly_queue
     _nebuly_queue = NebulyQueue(tag_data=tag_data)
 
-    # TODO: Add info about the job_id
     nebuly_tracking_thread = NebulyTrackingDataThread(
         queue=_nebuly_queue, nebuly_client=NebulyClient(api_key=api_key)
     )

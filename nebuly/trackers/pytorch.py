@@ -89,6 +89,7 @@ class PyTorchRawTrackedData(RawTrackedData):
 
 
 class PyTorchAttributes(GenericProviderAttributes):
+    job_id: uuid.UUID
     job_mode: Optional[PyTorchJobMode]
     job_operation: Optional[PyTorchJobOperation]
     device: Optional[Device]
@@ -111,6 +112,7 @@ class PyTorchDataPackageConverter(DataPackageConverter):
             job_mode=raw_data.job_mode,
             job_operation=raw_data.job_operation,
             device=raw_data.device,
+            job_id=raw_data.job_id,
         )
         return NebulyDataPackage(kind=provider, body=body)
 
@@ -163,7 +165,7 @@ class PyTorchTracker(Tracker):
         self._replace_forward_function()
         self._replace_backward_function()
         self._replace_optimizer_zero_grad_function()
-        self._replace_optimizer_step_function()
+        self._track_optimizer_step_function()
         self._replace_tensor_move_to_device()
 
     @property
@@ -440,7 +442,7 @@ class PyTorchTracker(Tracker):
 
         torch.optim.Optimizer.zero_grad = new_zero_grad
 
-    def _replace_optimizer_step_function(self):
+    def _track_optimizer_step_function(self):
         def _pre_hook(*args, **kwargs):
             if self._has_cuda:
                 start_event = torch.cuda.Event(enable_timing=True)
