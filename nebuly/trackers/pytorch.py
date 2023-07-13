@@ -2,8 +2,7 @@ import time
 import uuid
 from dataclasses import dataclass
 from enum import Enum
-from functools import cached_property
-from typing import Dict, Optional
+from typing import Any, Callable, Dict, Optional, Tuple
 
 import torch
 import torchvision
@@ -57,6 +56,26 @@ class Device:
     device_type: DeviceType
     device_id: Optional[int]
 
+    @classmethod
+    def from_torch_device(cls, device: torch.device) -> "Device":
+        device_type = DeviceType.CPU
+        device_id = None
+        if "cuda" in device.type:
+            device_type = DeviceType.GPU
+            device_id = device.index
+
+        return cls(device_type=device_type, device_id=device_id)
+
+    @classmethod
+    def from_str(cls, device_str: str) -> "Device":
+        device_type = DeviceType.CPU
+        device_id = None
+        if "cuda" in device_str:
+            device_type = DeviceType.GPU
+            device_id = int(device_str.split(":")[1]) if ":" in device_str else 0
+
+        return cls(device_type=device_type, device_id=device_id)
+
 
 @dataclass
 class PyTorchRawTrackedData(RawTrackedData):
@@ -109,18 +128,19 @@ class PyTorchQueueObject(QueueObject):
 @dataclass
 class PyTorchTrainingOpInfo:
     iteration_start_time: float
+    device: Optional[Device] = None
     _start_event: Optional[torch.cuda.Event] = None
-    _end_event: Optional[torch.cuda.Event] = None
-    _end_time: Optional[float] = None
+    end_event: Optional[torch.cuda.Event] = None
+    end_time: Optional[float] = None
 
     @property
     def duration(self):
-        if self._end_time is None:
+        if self.end_time is None:
             torch.cuda.synchronize()
-            duration = self._start_event.elapsed_time(self._end_event) / 1000
+            duration = self._start_event.elapsed_time(self.end_event) / 1000
             return duration
         else:
-            return self._end_time - self.iteration_start_time
+            return self.end_time - self.iteration_start_time
 
 
 class PyTorchTracker(Tracker):
@@ -134,19 +154,6 @@ class PyTorchTracker(Tracker):
         ] = {}
         self._job_id = uuid.uuid4()
 
-    @cached_property
-    def has_cuda(self):
-        return torch.cuda.is_available()
-
-    @staticmethod
-    def is_model(model: torch.nn.Module) -> bool:
-        if isinstance(model, _Loss):
-            return False
-        elif model.__class__.__name__ in torchvision.transforms.transforms.__all__:
-            return False
-
-        return True
-
     def replace_sdk_functions(self) -> None:
         self._replace_data_loader()
         self._replace_forward_function()
@@ -154,6 +161,31 @@ class PyTorchTracker(Tracker):
         self._replace_optimizer_zero_grad_function()
         self._replace_optimizer_step_function()
         self._replace_tensor_move_to_device()
+
+    @property
+    def _has_cuda(self):
+        return torch.cuda.is_available()
+
+    @staticmethod
+    def _is_model(model: torch.nn.Module) -> bool:
+        if isinstance(model, _Loss):
+            return False
+        elif model.__class__.__name__ in torchvision.transforms.transforms.__all__:
+            return False
+
+        return True
+
+    @staticmethod
+    def _track_method_on_gpu(
+        original_method: Callable, *args, **kwargs
+    ) -> Tuple[Any, torch.cuda.Event, torch.cuda.Event]:
+        start_event = torch.cuda.Event(enable_timing=True)
+        end_event = torch.cuda.Event(enable_timing=True)
+        start_event.record()
+        out = original_method(*args, **kwargs)
+        end_event.record()
+
+        return out, start_event, end_event
 
     def _setup_start_events(self, start_timestamp: float):
         if not self._is_training_started:
@@ -176,7 +208,7 @@ class PyTorchTracker(Tracker):
 
         def new_to(tensor, *args, **kwargs):
             if (
-                not self.has_cuda
+                not self._has_cuda
                 or len(args) < 1
                 or not (
                     isinstance(args[0], torch.device)
@@ -186,39 +218,27 @@ class PyTorchTracker(Tracker):
                 tensor = original_to(tensor, *args, **kwargs)
             else:
                 start_timestamp = time.time()
-                start_event = torch.cuda.Event(enable_timing=True)
-                end_event = torch.cuda.Event(enable_timing=True)
-                start_event.record()
-                tensor = original_to(tensor, *args, **kwargs)
-                end_event.record()
+                tensor, start_event, end_event = self._track_method_on_gpu(
+                    original_to, tensor, *args, **kwargs
+                )
+
+                if isinstance(args[0], torch.device):
+                    device = Device.from_torch_device(args[0])
+                else:
+                    device = Device.from_str(args[0])
+
                 if self._iteration_start_time is not None:
                     self._training_step_cuda_storage[
                         PyTorchJobOperation.MOVE_TO_DEVICE
                     ] = PyTorchTrainingOpInfo(
                         iteration_start_time=self._iteration_start_time,
                         _start_event=start_event,
-                        _end_event=end_event,
+                        end_event=end_event,
+                        device=device,
                     )
                 else:
                     torch.cuda.synchronize()
                     duration = start_event.elapsed_time(end_event) / 1000
-                    if isinstance(args[0], torch.device):
-                        device_type = (
-                            DeviceType.GPU if "cuda" in args[0].type else DeviceType.CPU
-                        )
-                        index = args[0].index
-                    else:
-                        device_type = (
-                            DeviceType.GPU if "cuda" in args[0] else DeviceType.CPU
-                        )
-                        index_split_list = args[0].split(":")
-                        index = None
-                        if len(index_split_list) > 1:
-                            index = int(index_split_list[1])
-                        elif device_type is DeviceType.GPU:
-                            index = 0
-                    device = Device(device_type=device_type, device_id=index)
-
                     data = PyTorchRawTrackedData(
                         job_id=self._job_id,
                         timestamp=start_timestamp,
@@ -246,14 +266,12 @@ class PyTorchTracker(Tracker):
                 raise StopIteration
             end_time = time.time()
             self._setup_start_events(start_timestamp)
-            device = None
-            job_mode = None
             data = PyTorchRawTrackedData(
                 job_id=self._job_id,
                 timestamp=self._iteration_start_time,
                 duration=end_time - self._iteration_start_time,
-                device=device,
-                job_mode=job_mode,
+                device=None,
+                job_mode=None,
                 job_operation=PyTorchJobOperation.DATA_LOADER,
             )
             self._track(raw_data=data)
@@ -266,45 +284,51 @@ class PyTorchTracker(Tracker):
         original_forward = torch.nn.Module.__call__
 
         def new_forward(model, *args, **kwargs):
-            # Track the start orf the training
+            # Track the start of the training/iteration
             if model.training:
                 self._setup_start_events(time.time())
 
-            if self.is_model(model) and not self._is_inside_forward:
-                self._is_inside_forward = True
+            if self._is_model(model) and not self._is_inside_forward:
+                self._is_inside_forward = True  # prevent internal calls to be tracked
                 if not model.training:
                     start = time.time()
                 else:
                     start = self._iteration_start_time
 
-                # If the model is on GPU:
-                if self.has_cuda:
-                    start_event = torch.cuda.Event(enable_timing=True)
-                    end_event = torch.cuda.Event(enable_timing=True)
-                    start_event.record()
-                    out = original_forward(model, *args, **kwargs)
-                    end_event.record()
+                # Get model device
+                device = next(model.parameters()).device
 
+                if self._has_cuda:
+                    # GPU is available, we need to track the forward pass
+                    # duration using CUDA events
+                    out, start_event, end_event = self._track_method_on_gpu(
+                        original_forward, model, *args, **kwargs
+                    )
+
+                    duration = None
                     if not model.training:
+                        # Inference time, we need to wait for the end event and
+                        # compute the duration
                         torch.cuda.synchronize()
                         duration = start_event.elapsed_time(end_event) / 1000
                     else:
+                        # Training time, we can store the events and compute the
+                        # duration later in the step function
                         self._training_step_cuda_storage[
                             PyTorchJobOperation.FORWARD
                         ] = PyTorchTrainingOpInfo(
                             iteration_start_time=start,
                             _start_event=start_event,
-                            _end_event=end_event,
+                            end_event=end_event,
+                            device=Device.from_torch_device(device),
                         )
                 else:
+                    # GPU is not available, we can track the forward pass duration
+                    # using time.time()
                     out = original_forward(model, *args, **kwargs)
                     duration = time.time() - start
 
-                if not model.training or not self.has_cuda:
-                    device = next(model.parameters()).device
-                    device_type = (
-                        DeviceType.GPU if device.type == "cuda" else DeviceType.CPU
-                    )
+                if not model.training or not self._has_cuda:
                     job_mode = (
                         PyTorchJobMode.TRAINING
                         if model.training
@@ -314,7 +338,7 @@ class PyTorchTracker(Tracker):
                         job_id=self._job_id,
                         timestamp=start,
                         duration=duration,
-                        device=Device(device_type=device_type, device_id=device.index),
+                        device=Device.from_torch_device(device),
                         job_mode=job_mode,
                         job_operation=PyTorchJobOperation.FORWARD,
                     )
@@ -331,32 +355,27 @@ class PyTorchTracker(Tracker):
         original_backward = torch.Tensor.backward
 
         def new_backward(tensor, *args, **kwargs):
-            if self.has_cuda:
-                start_event = torch.cuda.Event(enable_timing=True)
-                end_event = torch.cuda.Event(enable_timing=True)
-                start_event.record()
-                out = original_backward(tensor, *args, **kwargs)
-                end_event.record()
+            if self._has_cuda:
+                out, start_event, end_event = self._track_method_on_gpu(
+                    original_backward, tensor, *args, **kwargs
+                )
                 self._training_step_cuda_storage[
                     PyTorchJobOperation.BACKWARD
                 ] = PyTorchTrainingOpInfo(
                     iteration_start_time=self._iteration_start_time,
                     _start_event=start_event,
-                    _end_event=end_event,
+                    end_event=end_event,
+                    device=Device.from_torch_device(tensor.device),
                 )
             else:
                 out = original_backward(tensor, *args, **kwargs)
                 end_time = time.time()
-                device = tensor.device
-                device_type = (
-                    DeviceType.GPU if device.type == "cuda" else DeviceType.CPU
-                )
                 job_mode = PyTorchJobMode.TRAINING
                 data = PyTorchRawTrackedData(
                     job_id=self._job_id,
                     timestamp=self._iteration_start_time,
                     duration=end_time - self._iteration_start_time,
-                    device=Device(device_type=device_type, device_id=device.index),
+                    device=Device.from_torch_device(tensor.device),
                     job_mode=job_mode,
                     job_operation=PyTorchJobOperation.BACKWARD,
                 )
@@ -370,18 +389,16 @@ class PyTorchTracker(Tracker):
 
         def new_zero_grad(optimizer, *args, **kwargs):
             self._setup_start_events(time.time())
-            if self.has_cuda:
-                start_event = torch.cuda.Event(enable_timing=True)
-                end_event = torch.cuda.Event(enable_timing=True)
-                start_event.record()
-                original_zero_grad(optimizer, *args, **kwargs)
-                end_event.record()
+            if self._has_cuda:
+                _, start_event, end_event = self._track_method_on_gpu(
+                    original_zero_grad, optimizer, *args, **kwargs
+                )
                 self._training_step_cuda_storage[
                     PyTorchJobOperation.OPTIMIZER_ZERO_GRAD
                 ] = PyTorchTrainingOpInfo(
                     iteration_start_time=self._iteration_start_time,
                     _start_event=start_event,
-                    _end_event=end_event,
+                    end_event=end_event,
                 )
             else:
                 original_zero_grad(optimizer, *args, **kwargs)
@@ -401,7 +418,7 @@ class PyTorchTracker(Tracker):
 
     def _replace_optimizer_step_function(self):
         def _pre_hook(*args, **kwargs):
-            if self.has_cuda:
+            if self._has_cuda:
                 start_event = torch.cuda.Event(enable_timing=True)
                 start_event.record()
                 self._training_step_cuda_storage[
@@ -417,18 +434,18 @@ class PyTorchTracker(Tracker):
                     iteration_start_time=self._iteration_start_time,
                 )
 
-        def _post_hook(model, *args, **kwargs):
-            if self.has_cuda:
+        def _post_hook(*args, **kwargs):
+            if self._has_cuda:
                 end_event = torch.cuda.Event(enable_timing=True)
                 end_event.record()
                 self._training_step_cuda_storage[
                     PyTorchJobOperation.OPTIMIZER_STEP
-                ]._end_event = end_event
+                ].end_event = end_event
             else:
                 end_time = time.time()
                 self._training_step_cuda_storage[
                     PyTorchJobOperation.OPTIMIZER_STEP
-                ]._end_time = end_time
+                ].end_time = end_time
 
             job_mode = PyTorchJobMode.TRAINING
 
@@ -437,7 +454,7 @@ class PyTorchTracker(Tracker):
                     job_id=self._job_id,
                     timestamp=value.iteration_start_time,
                     duration=value.duration,
-                    device=None,
+                    device=value.device,
                     job_mode=job_mode,
                     job_operation=key,
                 )
@@ -466,12 +483,11 @@ class PyTorchTracker(Tracker):
             timestamp=end_timestamp,
             duration=None,
             device=None,
-            job_mode=None,
+            job_mode=PyTorchJobMode.TRAINING,
             job_operation=PyTorchJobOperation.END_TRAINING,
         )
         self._track(raw_data=data)
 
     def _track(self, raw_data: PyTorchRawTrackedData) -> None:
         queue_object = PyTorchQueueObject(raw_data)
-        # print(queue_object._raw_data)
         self._nebuly_queue.put(item=queue_object, timeout=0)
