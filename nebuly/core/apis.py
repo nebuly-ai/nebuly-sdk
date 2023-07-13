@@ -112,13 +112,16 @@ def _instantiate_trackers(nebuly_queue: NebulyQueue) -> List[Tracker]:
     tracker_list = []
     try:
         from nebuly.trackers.openai import OpenAITracker
-        from nebuly.trackers.pytorch import PyTorchTracker
 
         tracker_list.append(OpenAITracker(nebuly_queue=nebuly_queue))
+    except ImportError:
+        pass
+    try:
+        from nebuly.trackers.pytorch import PyTorchTracker
+
         tracker_list.append(PyTorchTracker(nebuly_queue=nebuly_queue))
     except ImportError:
         pass
-
     return tracker_list
 
 

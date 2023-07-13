@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
+from typing import Optional
 
 from pydantic import BaseModel
 
@@ -49,7 +50,7 @@ class GenericProviderAttributes(BaseModel):
     phase: DevelopmentPhase
     task: Task
     timestamp: float
-    timestamp_end: float
+    timestamp_end: Optional[float] = None
 
 
 class NebulyDataPackage(BaseModel):
