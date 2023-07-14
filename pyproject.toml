@@ -28,6 +28,7 @@ pytest = "^7.2.1"
 coverage = "^7.2.1"
 ruff = "^0.0.275"
 black = "^23.3.0"
+faker = "^19.1.0"
 
 
 [tool.pytest.ini_options]

@@ -51,7 +51,6 @@ class OpenAIAPIType(Enum):
 
 class OpenAIAttributes(GenericProviderAttributes):
     api_type: OpenAIAPIType
-    api_key: str
     organization: Optional[str] = None
     timestamp_openai: Optional[int] = None
     user: Optional[str] = None
@@ -297,12 +296,12 @@ class OpenAIDataPackageConverter(DataPackageConverter):
             raw_data.api_type,
             raw_data.request_kwargs,
         )
+        api_key = raw_data.api_key
         body = OpenAIAttributes(
             project=tag_data.project,
             phase=tag_data.phase,
             task=detected_task,
             api_type=raw_data.api_type,
-            api_key=raw_data.api_key,
             timestamp=raw_data.timestamp,
             timestamp_end=raw_data.timestamp_end,
             organization=raw_data.organization,
@@ -312,7 +311,7 @@ class OpenAIDataPackageConverter(DataPackageConverter):
             request_kwargs=raw_data.request_kwargs,
             request_response=raw_data.request_response,
         )
-        return NebulyDataPackage(provider=provider, body=body)
+        return NebulyDataPackage(provider=provider, api_key=api_key, body=body)
 
     def _get_task(
         self,

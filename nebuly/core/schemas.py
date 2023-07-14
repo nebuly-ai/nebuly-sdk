@@ -53,4 +53,5 @@ class GenericProviderAttributes(BaseModel):
 
 class NebulyDataPackage(BaseModel):
     provider: Provider
+    api_key: str
     body: GenericProviderAttributes

@@ -3,6 +3,8 @@ from typing import Dict
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
+from faker import Faker
+
 from nebuly.core.clients import NebulyClient
 from nebuly.core.queues import NebulyTrackingDataThread
 from nebuly.core.schemas import (
@@ -13,10 +15,13 @@ from nebuly.core.schemas import (
     Task,
 )
 
+fake = Faker()
+
 
 class TestNebulyClient(TestCase):
     mocked_data_package = NebulyDataPackage(
         provider=Provider.OPENAI,
+        api_key=fake.word(),
         body=GenericProviderAttributes(
             project="test_project",
             phase=DevelopmentPhase.EXPERIMENTATION,
