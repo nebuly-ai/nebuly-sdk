@@ -75,7 +75,7 @@ class ImplementedDatapackageConverter(DataPackageConverter):
             timestamp_end=1234567890.1234567890,
         )
         return NebulyDataPackage(
-            kind=Provider.OPENAI,
+            provider=Provider.OPENAI,
             body=body,
         )
 

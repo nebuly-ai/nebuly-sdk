@@ -312,7 +312,7 @@ class OpenAIDataPackageConverter(DataPackageConverter):
             request_kwargs=raw_data.request_kwargs,
             request_response=raw_data.request_response,
         )
-        return NebulyDataPackage(kind=provider, body=body)
+        return NebulyDataPackage(provider=provider, body=body)
 
     def _get_task(
         self,

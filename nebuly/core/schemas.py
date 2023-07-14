@@ -52,5 +52,5 @@ class GenericProviderAttributes(BaseModel):
 
 
 class NebulyDataPackage(BaseModel):
-    kind: Provider
+    provider: Provider
     body: GenericProviderAttributes

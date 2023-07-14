@@ -16,7 +16,7 @@ from nebuly.core.schemas import (
 
 class TestNebulyClient(TestCase):
     mocked_data_package = NebulyDataPackage(
-        kind=Provider.OPENAI,
+        provider=Provider.OPENAI,
         body=GenericProviderAttributes(
             project="test_project",
             phase=DevelopmentPhase.EXPERIMENTATION,
