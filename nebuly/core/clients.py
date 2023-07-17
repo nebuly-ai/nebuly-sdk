@@ -50,6 +50,7 @@ class NebulyClient:
             request_data (NebulyDataPackage): The request data.
         """
         headers = {"Authorization": f"Bearer {self._api_key}"}
+
         try:
             self._post_nebuly_event_ingestion_endpoint(
                 headers=headers,
