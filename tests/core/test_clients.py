@@ -21,7 +21,6 @@ fake = Faker()
 class TestNebulyClient(TestCase):
     mocked_data_package = NebulyDataPackage(
         provider=Provider.OPENAI,
-        api_key=fake.word(),
         body=GenericProviderAttributes(
             project="test_project",
             phase=DevelopmentPhase.EXPERIMENTATION,
