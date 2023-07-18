@@ -484,11 +484,11 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
         tag_data = TagData()
         converter = OpenAIDataPackageConverter()
         data_package = converter.get_data_package(raw_data, tag_data)
-        self.assertEqual(data_package.kind, Provider.OPENAI)
+        self.assertEqual(data_package.provider, Provider.OPENAI)
 
         raw_data.api_provider = "azure"
         data_package = converter.get_data_package(raw_data, tag_data)
-        self.assertEqual(data_package.kind, Provider.AZURE_OPENAI)
+        self.assertEqual(data_package.provider, Provider.AZURE_OPENAI)
 
     def test_get_data_package__is_detecting_the_task(self):
         raw_data = OpenAIRawTrackedData(
@@ -564,6 +564,7 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
         )
         converter = OpenAIDataPackageConverter()
         data_package = converter.get_data_package(raw_data, tag_data)
+
         self.assertEqual(data_package.body.project, tag_data.project)
         self.assertEqual(data_package.body.phase, tag_data.phase)
         self.assertEqual(data_package.body.task, tag_data.task)
@@ -593,7 +594,8 @@ class TestOpenAIQueueObject(unittest.TestCase):
         queue_object = OpenAIQueueObject(raw_data)
         queue_object.tag(tag_data)
         data_package = queue_object.as_data_package()
-        self.assertEqual(data_package.kind, Provider.OPENAI)
+
+        self.assertEqual(data_package.provider, Provider.OPENAI)
         self.assertEqual(data_package.body.api_type, raw_data.api_type)
         self.assertEqual(data_package.body.api_key, raw_data.api_key)
         self.assertEqual(data_package.body.timestamp, raw_data.timestamp)
