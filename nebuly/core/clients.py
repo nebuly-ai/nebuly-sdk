@@ -38,7 +38,9 @@ class RetryHTTPException(Exception):
 class NebulyClient:
     def __init__(self, api_key: str) -> None:
         self._api_key = api_key
-        self._nebuly_event_ingestion_url = "https://backend.nebuly.com/events"
+        self._nebuly_event_ingestion_url = (
+            "https://dev.backend.nebuly.com/event-ingestion/api/v1/events"
+        )
 
     def send_request_to_nebuly_server(
         self,
