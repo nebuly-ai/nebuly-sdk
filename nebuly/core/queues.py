@@ -1,4 +1,5 @@
 import copy
+import time
 from abc import ABC, abstractmethod
 from queue import Empty, Queue
 from threading import Thread
@@ -180,6 +181,7 @@ class NebulyTrackingDataThread(Thread):
             try:
                 queue_object = self._queue.get(timeout=0)
             except Empty:
+                time.sleep(1)
                 continue
 
             request_data = queue_object.as_data_package()

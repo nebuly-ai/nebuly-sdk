@@ -411,15 +411,15 @@ class GeneratorWrappingStrategy(WrappingStrategy, ABC):
         return wrapped_response
 
     def _create_wrapped_generator(self, request_response: Generator) -> Generator:
-        output_text_list = []
+        # output_text_list = []
 
         def wrapped_generator():
+            output_text = ""
             for element in request_response:
-                self._track_generator_element(element, output_text_list)
+                output_text = self._track_generator_element(element, output_text)
                 yield element
 
             timestamp_end = get_current_timestamp()
-            output_text = "".join(output_text_list)
             mocked_request_response = {
                 "output_text": output_text,
             }
@@ -446,26 +446,29 @@ class GeneratorWrappingStrategy(WrappingStrategy, ABC):
 
 class TextCompletionStrategy(GeneratorWrappingStrategy):
     @staticmethod
-    def _track_generator_element(element: Any, output_text) -> None:
+    def _track_generator_element(element: Any, output_text: str) -> str:
         try:
             text = element["choices"][0]["text"]
-            output_text.append(text)
+            output_text += text
         except (KeyError, IndexError):
             pass
+        return output_text
 
 
 class ChatCompletionStrategy(GeneratorWrappingStrategy):
     @staticmethod
-    def _track_generator_element(element: Any, output_text) -> None:
+    def _track_generator_element(element: Any, output_text: str) -> str:
         try:
             delta = element["choices"][0]["delta"]
         except (KeyError, IndexError):
-            return
+            return output_text
         try:
             text = delta["content"]
-            output_text.append(text)
+            output_text += text
         except KeyError:
             pass
+
+        return output_text
 
 
 class OpenAITracker(Tracker):
