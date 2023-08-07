@@ -440,7 +440,7 @@ class GeneratorWrappingStrategy(WrappingStrategy, ABC):
 
     @staticmethod
     @abstractmethod
-    def _track_generator_element(element: Any, output_text) -> None:
+    def _track_generator_element(element: Any, output_text: str) -> str:
         ...
 
 
