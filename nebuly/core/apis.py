@@ -70,7 +70,7 @@ def init(
 @contextlib.contextmanager
 def tracker(
     project: str = "unknown",
-    phase: DevelopmentPhase = DevelopmentPhase.UNKNOWN,
+    development_phase: DevelopmentPhase = DevelopmentPhase.UNKNOWN,
     task: Task = Task.UNKNOWN,
 ) -> Generator[None, Any, None]:
     """Context manager to temporarily replace the tracker info.
@@ -81,7 +81,7 @@ def tracker(
     Args:
         project (str, optional): Name of the project.
             Defaults to "unknown".
-        phase (DevelopmentPhase, optional): Development development_phase of
+        development_phase (DevelopmentPhase, optional): Development development_phase of
             the project. Defaults to DevelopmentPhase.UNKNOWN.
         task (Task, optional): Task being performed.
             Defaults to Task.UNKNOWN.
@@ -91,7 +91,7 @@ def tracker(
         TypeError: If development_phase is not of type DevelopmentPhase
         TypeError: If task is not of type Task
     """
-    _check_input_types(project=project, phase=phase, task=task)
+    _check_input_types(project=project, phase=development_phase, task=task)
 
     if _nebuly_queue is None:
         raise RuntimeError("Please call nebuly.init() before using nebuly.tracker()")
@@ -99,7 +99,7 @@ def tracker(
     old_tag_data = copy.deepcopy(x=_nebuly_queue.tag_data)
     new_tag_data = TagData(
         project=project,
-        development_phase=phase,
+        development_phase=development_phase,
         task=task,
     )
     _nebuly_queue.patch_tag_data(tag_data=new_tag_data)

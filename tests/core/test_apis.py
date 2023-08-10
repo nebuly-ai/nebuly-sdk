@@ -129,7 +129,7 @@ class TestAPIs(unittest.TestCase):
 
         with nebuly.tracker(
             project="test_project_2",
-            phase=DevelopmentPhase.PRODUCTION,
+            development_phase=DevelopmentPhase.PRODUCTION,
             task=Task.CHAT,
         ):
             tag_data = nebuly._nebuly_queue.tag_data
@@ -152,7 +152,7 @@ class TestAPIs(unittest.TestCase):
         with self.assertRaises(expected_exception=RuntimeError) as context:
             with nebuly.tracker(
                 project="test_project_2",
-                phase=DevelopmentPhase.PRODUCTION,
+                development_phase=DevelopmentPhase.PRODUCTION,
                 task=Task.CHAT,
             ):
                 pass
@@ -164,7 +164,7 @@ class TestAPIs(unittest.TestCase):
         with self.assertRaises(expected_exception=TypeError) as context:
             with nebuly.tracker(
                 project=1,
-                phase=DevelopmentPhase.EXPERIMENTATION,
+                development_phase=DevelopmentPhase.EXPERIMENTATION,
             ):
                 pass
 
@@ -175,7 +175,7 @@ class TestAPIs(unittest.TestCase):
         with self.assertRaises(expected_exception=TypeError) as context:
             with nebuly.tracker(
                 project="test_project",
-                phase=1,
+                development_phase=1,
             ):
                 pass
 
@@ -186,7 +186,7 @@ class TestAPIs(unittest.TestCase):
         with self.assertRaises(expected_exception=TypeError) as context:
             with nebuly.tracker(
                 project="test_project",
-                phase=DevelopmentPhase.EXPERIMENTATION,
+                development_phase=DevelopmentPhase.EXPERIMENTATION,
                 task=1,
             ):
                 pass
