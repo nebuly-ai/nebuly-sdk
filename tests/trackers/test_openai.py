@@ -1,4 +1,6 @@
+import datetime as dt
 import unittest
+from datetime import datetime
 from typing import Generator
 from unittest.mock import MagicMock, patch
 
@@ -37,12 +39,12 @@ class TestTextAPIBodyFiller(unittest.TestCase):
 
         body = OpenAIAttributes(
             project="test_project",
-            phase=DevelopmentPhase.EXPERIMENTATION,
+            development_phase=DevelopmentPhase.EXPERIMENTATION,
             task=Task.TEXT_GENERATION,
             api_type=OpenAIAPIType.TEXT_COMPLETION,
             api_key="test_api_key",
-            timestamp=111111,
-            timestamp_end=222222,
+            timestamp=datetime.fromtimestamp(111111, tz=dt.timezone.utc),
+            timestamp_end=datetime.fromtimestamp(222222, tz=dt.timezone.utc),
         )
         filler.fill_body_with_request_data(
             body=body,
@@ -52,12 +54,15 @@ class TestTextAPIBodyFiller(unittest.TestCase):
 
         self.assertEqual(body.model, request_kwargs["model"])
         self.assertEqual(
-            body.n_completion_tokens, request_response["usage"]["completion_tokens"]
+            body.n_output_tokens, request_response["usage"]["completion_tokens"]
         )
         self.assertEqual(
-            body.n_prompt_tokens, request_response["usage"]["prompt_tokens"]
+            body.n_input_tokens, request_response["usage"]["prompt_tokens"]
         )
-        self.assertEqual(body.timestamp_openai, request_response["created"])
+        self.assertEqual(
+            body.timestamp_openai,
+            datetime.fromtimestamp(request_response["created"], tz=dt.timezone.utc),
+        )
 
         # STREAM API
         stream_request_kwargs = test_data.text_completion_stream.request_kwargs
@@ -65,12 +70,12 @@ class TestTextAPIBodyFiller(unittest.TestCase):
 
         body = OpenAIAttributes(
             project="test_project",
-            phase=DevelopmentPhase.EXPERIMENTATION,
+            development_phase=DevelopmentPhase.EXPERIMENTATION,
             task=Task.TEXT_GENERATION,
             api_type=OpenAIAPIType.TEXT_COMPLETION,
             api_key="test_api_key",
-            timestamp=111111,
-            timestamp_end=222222,
+            timestamp=datetime.fromtimestamp(111111, tz=dt.timezone.utc),
+            timestamp_end=datetime.fromtimestamp(222222, tz=dt.timezone.utc),
         )
 
         filler.fill_body_with_request_data(
@@ -82,10 +87,10 @@ class TestTextAPIBodyFiller(unittest.TestCase):
         self.assertEqual(body.model, request_kwargs["model"])
         self.assertEqual(body.user, request_kwargs["user"])
         self.assertEqual(
-            body.n_completion_tokens, request_response["usage"]["completion_tokens"]
+            body.n_output_tokens, request_response["usage"]["completion_tokens"]
         )
         self.assertEqual(
-            body.n_prompt_tokens, request_response["usage"]["prompt_tokens"]
+            body.n_input_tokens, request_response["usage"]["prompt_tokens"]
         )
 
     def test_fill_body_with_request_data__no_data_provided(self):
@@ -97,12 +102,12 @@ class TestTextAPIBodyFiller(unittest.TestCase):
 
         body = OpenAIAttributes(
             project="test_project",
-            phase=DevelopmentPhase.EXPERIMENTATION,
+            development_phase=DevelopmentPhase.EXPERIMENTATION,
             task=Task.TEXT_GENERATION,
             api_type=OpenAIAPIType.TEXT_COMPLETION,
             api_key="test_api_key",
-            timestamp=111111,
-            timestamp_end=222222,
+            timestamp=datetime.fromtimestamp(111111, tz=dt.timezone.utc),
+            timestamp_end=datetime.fromtimestamp(222222, tz=dt.timezone.utc),
         )
         filler.fill_body_with_request_data(
             body=body,
@@ -119,12 +124,12 @@ class TestTextAPIBodyFiller(unittest.TestCase):
 
         body = OpenAIAttributes(
             project="test_project",
-            phase=DevelopmentPhase.EXPERIMENTATION,
+            development_phase=DevelopmentPhase.EXPERIMENTATION,
             task=Task.TEXT_GENERATION,
             api_type=OpenAIAPIType.TEXT_COMPLETION,
             api_key="test_api_key",
-            timestamp=111111,
-            timestamp_end=222222,
+            timestamp=datetime.fromtimestamp(111111, tz=dt.timezone.utc),
+            timestamp_end=datetime.fromtimestamp(222222, tz=dt.timezone.utc),
         )
 
         filler.fill_body_with_request_data(
@@ -145,12 +150,12 @@ class TestTextAPIBodyFiller(unittest.TestCase):
 
         body = OpenAIAttributes(
             project="test_project",
-            phase=DevelopmentPhase.EXPERIMENTATION,
+            development_phase=DevelopmentPhase.EXPERIMENTATION,
             task=Task.TEXT_GENERATION,
             api_type=OpenAIAPIType.CHAT,
             api_key="test_api_key",
-            timestamp=111111,
-            timestamp_end=222222,
+            timestamp=datetime.fromtimestamp(111111, tz=dt.timezone.utc),
+            timestamp_end=datetime.fromtimestamp(222222, tz=dt.timezone.utc),
         )
         filler.fill_body_with_request_data(
             body=body,
@@ -161,12 +166,15 @@ class TestTextAPIBodyFiller(unittest.TestCase):
         self.assertEqual(body.model, request_kwargs["model"])
         self.assertEqual(body.user, request_kwargs["user"])
         self.assertEqual(
-            body.n_completion_tokens, request_response["usage"]["completion_tokens"]
+            body.n_output_tokens, request_response["usage"]["completion_tokens"]
         )
         self.assertEqual(
-            body.n_prompt_tokens, request_response["usage"]["prompt_tokens"]
+            body.n_input_tokens, request_response["usage"]["prompt_tokens"]
         )
-        self.assertEqual(body.timestamp_openai, request_response["created"])
+        self.assertEqual(
+            body.timestamp_openai,
+            datetime.fromtimestamp(request_response["created"], tz=dt.timezone.utc),
+        )
 
         # STREAM API
         stream_request_kwargs = test_data.chat_completion_stream.request_kwargs
@@ -174,12 +182,12 @@ class TestTextAPIBodyFiller(unittest.TestCase):
 
         body = OpenAIAttributes(
             project="test_project",
-            phase=DevelopmentPhase.EXPERIMENTATION,
+            development_phase=DevelopmentPhase.EXPERIMENTATION,
             task=Task.CHAT,
             api_type=OpenAIAPIType.CHAT,
             api_key="test_api_key",
-            timestamp=111111,
-            timestamp_end=222222,
+            timestamp=datetime.fromtimestamp(111111, tz=dt.timezone.utc),
+            timestamp_end=datetime.fromtimestamp(222222, tz=dt.timezone.utc),
         )
 
         filler.fill_body_with_request_data(
@@ -191,10 +199,10 @@ class TestTextAPIBodyFiller(unittest.TestCase):
         self.assertEqual(body.model, request_kwargs["model"])
         self.assertEqual(body.user, request_kwargs["user"])
         self.assertEqual(
-            body.n_completion_tokens, request_response["usage"]["completion_tokens"]
+            body.n_output_tokens, request_response["usage"]["completion_tokens"]
         )
         self.assertEqual(
-            body.n_prompt_tokens, request_response["usage"]["prompt_tokens"]
+            body.n_input_tokens, request_response["usage"]["prompt_tokens"]
         )
 
     def test_fill_body_with_request_data__is_filling_edit_request(self):
@@ -205,12 +213,12 @@ class TestTextAPIBodyFiller(unittest.TestCase):
 
         body = OpenAIAttributes(
             project="test_project",
-            phase=DevelopmentPhase.EXPERIMENTATION,
+            development_phase=DevelopmentPhase.EXPERIMENTATION,
             task=Task.TEXT_EDITING,
             api_type=OpenAIAPIType.EDIT,
             api_key="test_api_key",
-            timestamp=111111,
-            timestamp_end=222222,
+            timestamp=datetime.fromtimestamp(111111, tz=dt.timezone.utc),
+            timestamp_end=datetime.fromtimestamp(222222, tz=dt.timezone.utc),
         )
         filler.fill_body_with_request_data(
             body=body,
@@ -221,12 +229,15 @@ class TestTextAPIBodyFiller(unittest.TestCase):
         self.assertEqual(body.model, request_kwargs["model"])
         self.assertEqual(body.user, request_kwargs["user"])
         self.assertEqual(
-            body.n_completion_tokens, request_response["usage"]["completion_tokens"]
+            body.n_output_tokens, request_response["usage"]["completion_tokens"]
         )
         self.assertEqual(
-            body.n_prompt_tokens, request_response["usage"]["prompt_tokens"]
+            body.n_input_tokens, request_response["usage"]["prompt_tokens"]
         )
-        self.assertEqual(body.timestamp_openai, request_response["created"])
+        self.assertEqual(
+            body.timestamp_openai,
+            datetime.fromtimestamp(request_response["created"], tz=dt.timezone.utc),
+        )
 
     def test_fill_body_with_request_data__is_filling_embedding_request(self):
         filler = TextAPIBodyFiller()
@@ -236,12 +247,12 @@ class TestTextAPIBodyFiller(unittest.TestCase):
 
         body = OpenAIAttributes(
             project="test_project",
-            phase=DevelopmentPhase.EXPERIMENTATION,
+            development_phase=DevelopmentPhase.EXPERIMENTATION,
             task=Task.TEXT_EMBEDDING,
             api_type=OpenAIAPIType.EMBEDDING,
             api_key="test_api_key",
-            timestamp=111111,
-            timestamp_end=222222,
+            timestamp=datetime.fromtimestamp(111111, tz=dt.timezone.utc),
+            timestamp_end=datetime.fromtimestamp(222222, tz=dt.timezone.utc),
         )
         filler.fill_body_with_request_data(
             body=body,
@@ -252,7 +263,7 @@ class TestTextAPIBodyFiller(unittest.TestCase):
         self.assertEqual(body.model, request_kwargs["model"])
         self.assertEqual(body.user, request_kwargs["user"])
         self.assertEqual(
-            body.n_prompt_tokens, request_response["usage"]["prompt_tokens"]
+            body.n_input_tokens, request_response["usage"]["prompt_tokens"]
         )
 
 
@@ -265,12 +276,12 @@ class TestImageAPIBodyFiller(unittest.TestCase):
 
         body = OpenAIAttributes(
             project="test_project",
-            phase=DevelopmentPhase.EXPERIMENTATION,
+            development_phase=DevelopmentPhase.EXPERIMENTATION,
             task=Task.IMAGE_GENERATION,
             api_type=OpenAIAPIType.IMAGE_CREATE,
             api_key="test_api_key",
-            timestamp=111111,
-            timestamp_end=222222,
+            timestamp=datetime.fromtimestamp(111111, tz=dt.timezone.utc),
+            timestamp_end=datetime.fromtimestamp(222222, tz=dt.timezone.utc),
         )
         filler.fill_body_with_request_data(
             body=body,
@@ -280,7 +291,10 @@ class TestImageAPIBodyFiller(unittest.TestCase):
 
         self.assertEqual(body.model, "dall-e")
         self.assertEqual(body.user, request_kwargs["user"])
-        self.assertEqual(body.timestamp_openai, request_response["created"])
+        self.assertEqual(
+            body.timestamp_openai,
+            datetime.fromtimestamp(request_response["created"], tz=dt.timezone.utc),
+        )
         self.assertEqual(body.n_output_images, request_kwargs["n"])
         self.assertEqual(body.image_size, request_kwargs["size"])
 
@@ -292,12 +306,12 @@ class TestImageAPIBodyFiller(unittest.TestCase):
 
         body = OpenAIAttributes(
             project="test_project",
-            phase=DevelopmentPhase.EXPERIMENTATION,
+            development_phase=DevelopmentPhase.EXPERIMENTATION,
             task=Task.IMAGE_GENERATION,
             api_type=OpenAIAPIType.IMAGE_CREATE,
             api_key="test_api_key",
-            timestamp=111111,
-            timestamp_end=222222,
+            timestamp=datetime.fromtimestamp(111111, tz=dt.timezone.utc),
+            timestamp_end=datetime.fromtimestamp(222222, tz=dt.timezone.utc),
         )
 
         filler.fill_body_with_request_data(
@@ -321,12 +335,12 @@ class TestAudioAPIBodyFiller(unittest.TestCase):
 
         body = OpenAIAttributes(
             project="test_project",
-            phase=DevelopmentPhase.EXPERIMENTATION,
+            development_phase=DevelopmentPhase.EXPERIMENTATION,
             task=Task.AUDIO_TRANSLATION,
             api_type=OpenAIAPIType.AUDIO_TRANSLATE,
             api_key="test_api_key",
-            timestamp=111111,
-            timestamp_end=222222,
+            timestamp=datetime.fromtimestamp(111111, tz=dt.timezone.utc),
+            timestamp_end=datetime.fromtimestamp(222222, tz=dt.timezone.utc),
         )
         filler.fill_body_with_request_data(
             body=body,
@@ -348,12 +362,12 @@ class TestAudioAPIBodyFiller(unittest.TestCase):
 
         body = OpenAIAttributes(
             project="test_project",
-            phase=DevelopmentPhase.EXPERIMENTATION,
+            development_phase=DevelopmentPhase.EXPERIMENTATION,
             task=Task.AUDIO_TRANSLATION,
             api_type=OpenAIAPIType.AUDIO_TRANSLATE,
             api_key="test_api_key",
-            timestamp=111111,
-            timestamp_end=222222,
+            timestamp=datetime.fromtimestamp(111111, tz=dt.timezone.utc),
+            timestamp_end=datetime.fromtimestamp(222222, tz=dt.timezone.utc),
         )
         filler.fill_body_with_request_data(
             body=body,
@@ -374,12 +388,12 @@ class TestFineTuneBodyFiller(unittest.TestCase):
 
         body = OpenAIAttributes(
             project="test_project",
-            phase=DevelopmentPhase.EXPERIMENTATION,
+            development_phase=DevelopmentPhase.EXPERIMENTATION,
             task=Task.FINETUNING,
             api_type=OpenAIAPIType.FINETUNE,
             api_key="test_api_key",
-            timestamp=111111,
-            timestamp_end=222222,
+            timestamp=datetime.fromtimestamp(111111, tz=dt.timezone.utc),
+            timestamp_end=datetime.fromtimestamp(222222, tz=dt.timezone.utc),
         )
         filler.fill_body_with_request_data(
             body=body,
@@ -391,7 +405,10 @@ class TestFineTuneBodyFiller(unittest.TestCase):
         self.assertEqual(body.user, request_kwargs["user"])
         self.assertEqual(body.training_id, request_response["id"])
         self.assertEqual(body.training_file_id, request_kwargs["training_file"])
-        self.assertEqual(body.timestamp_openai, request_response["created_at"])
+        self.assertEqual(
+            body.timestamp_openai,
+            datetime.fromtimestamp(request_response["created_at"], tz=dt.timezone.utc),
+        )
         self.assertEqual(body.n_epochs, request_response["hyperparams"]["n_epochs"])
 
     def test_fill_body_with_request_data__no_data_provided(self):
@@ -402,12 +419,12 @@ class TestFineTuneBodyFiller(unittest.TestCase):
 
         body = OpenAIAttributes(
             project="test_project",
-            phase=DevelopmentPhase.EXPERIMENTATION,
+            development_phase=DevelopmentPhase.EXPERIMENTATION,
             task=Task.FINETUNING,
             api_type=OpenAIAPIType.FINETUNE,
             api_key="test_api_key",
-            timestamp=111111,
-            timestamp_end=222222,
+            timestamp=datetime.fromtimestamp(111111, tz=dt.timezone.utc),
+            timestamp_end=datetime.fromtimestamp(222222, tz=dt.timezone.utc),
         )
         filler.fill_body_with_request_data(
             body=body,
@@ -428,12 +445,12 @@ class TestModerationAPIBodyFiller(unittest.TestCase):
 
         body = OpenAIAttributes(
             project="test_project",
-            phase=DevelopmentPhase.EXPERIMENTATION,
+            development_phase=DevelopmentPhase.EXPERIMENTATION,
             task=Task.TEXT_MODERATION,
             api_type=OpenAIAPIType.MODERATION,
             api_key="test_api_key",
-            timestamp=111111,
-            timestamp_end=222222,
+            timestamp=datetime.fromtimestamp(111111, tz=dt.timezone.utc),
+            timestamp_end=datetime.fromtimestamp(222222, tz=dt.timezone.utc),
         )
         filler.fill_body_with_request_data(
             body=body,
@@ -452,12 +469,12 @@ class TestModerationAPIBodyFiller(unittest.TestCase):
 
         body = OpenAIAttributes(
             project="test_project",
-            phase=DevelopmentPhase.EXPERIMENTATION,
+            development_phase=DevelopmentPhase.EXPERIMENTATION,
             task=Task.TEXT_MODERATION,
             api_type=OpenAIAPIType.MODERATION,
             api_key="test_api_key",
-            timestamp=111111,
-            timestamp_end=222222,
+            timestamp=datetime.fromtimestamp(111111, tz=dt.timezone.utc),
+            timestamp_end=datetime.fromtimestamp(222222, tz=dt.timezone.utc),
         )
         filler.fill_body_with_request_data(
             body=body,
@@ -559,19 +576,27 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
         )
         tag_data = TagData(
             project="test_project",
-            phase=DevelopmentPhase.EXPERIMENTATION,
+            development_phase=DevelopmentPhase.EXPERIMENTATION,
             task=Task.TEXT_GENERATION,
         )
         converter = OpenAIDataPackageConverter()
         data_package = converter.get_data_package(raw_data, tag_data)
 
         self.assertEqual(data_package.body.project, tag_data.project)
-        self.assertEqual(data_package.body.phase, tag_data.phase)
+        self.assertEqual(
+            data_package.body.development_phase, tag_data.development_phase
+        )
         self.assertEqual(data_package.body.task, tag_data.task)
         self.assertEqual(data_package.body.api_type, raw_data.api_type)
         self.assertEqual(data_package.body.api_key, raw_data.api_key)
-        self.assertEqual(data_package.body.timestamp, raw_data.timestamp)
-        self.assertEqual(data_package.body.timestamp_end, raw_data.timestamp_end)
+        self.assertEqual(
+            data_package.body.timestamp,
+            datetime.fromtimestamp(raw_data.timestamp, tz=dt.timezone.utc),
+        )
+        self.assertEqual(
+            data_package.body.timestamp_end,
+            datetime.fromtimestamp(raw_data.timestamp_end, tz=dt.timezone.utc),
+        )
 
 
 class TestOpenAIQueueObject(unittest.TestCase):
@@ -588,7 +613,7 @@ class TestOpenAIQueueObject(unittest.TestCase):
         )
         tag_data = TagData(
             project="test_project",
-            phase=DevelopmentPhase.EXPERIMENTATION,
+            development_phase=DevelopmentPhase.EXPERIMENTATION,
             task=Task.TEXT_GENERATION,
         )
         queue_object = OpenAIQueueObject(raw_data)
@@ -598,22 +623,33 @@ class TestOpenAIQueueObject(unittest.TestCase):
         self.assertEqual(data_package.provider, Provider.OPENAI)
         self.assertEqual(data_package.body.api_type, raw_data.api_type)
         self.assertEqual(data_package.body.api_key, raw_data.api_key)
-        self.assertEqual(data_package.body.timestamp, raw_data.timestamp)
-        self.assertEqual(data_package.body.timestamp_end, raw_data.timestamp_end)
+        self.assertEqual(
+            data_package.body.timestamp,
+            datetime.fromtimestamp(raw_data.timestamp, tz=dt.timezone.utc),
+        )
+        self.assertEqual(
+            data_package.body.timestamp_end,
+            datetime.fromtimestamp(raw_data.timestamp_end, tz=dt.timezone.utc),
+        )
         self.assertEqual(data_package.body.project, tag_data.project)
-        self.assertEqual(data_package.body.phase, tag_data.phase)
+        self.assertEqual(
+            data_package.body.development_phase, tag_data.development_phase
+        )
         self.assertEqual(data_package.body.task, tag_data.task)
         self.assertEqual(data_package.body.model, raw_data.request_kwargs["model"])
         self.assertEqual(
-            data_package.body.n_prompt_tokens,
+            data_package.body.n_input_tokens,
             raw_data.request_response["usage"]["prompt_tokens"],
         )
         self.assertEqual(
-            data_package.body.n_completion_tokens,
+            data_package.body.n_output_tokens,
             raw_data.request_response["usage"]["completion_tokens"],
         )
         self.assertEqual(
-            data_package.body.timestamp_openai, raw_data.request_response["created"]
+            data_package.body.timestamp_openai,
+            datetime.fromtimestamp(
+                raw_data.request_response["created"], tz=dt.timezone.utc
+            ),
         )
         self.assertEqual(data_package.body.organization, raw_data.organization)
 

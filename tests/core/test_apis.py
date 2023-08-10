@@ -97,7 +97,7 @@ class TestAPIs(unittest.TestCase):
         self.assertTrue(expr=error_text in str(object=context.exception))
 
     def test_init__is_detecting_wrong_phase_type(self) -> None:
-        error_text = "phase must be of type DevelopmentPhase"
+        error_text = "development_phase must be of type DevelopmentPhase"
         with self.assertRaises(expected_exception=TypeError) as context:
             nebuly.init(
                 project="test_project",
@@ -122,24 +122,28 @@ class TestAPIs(unittest.TestCase):
     ) -> None:
         tag_data = TagData(
             project="test_project",
-            phase=DevelopmentPhase.EXPERIMENTATION,
+            development_phase=DevelopmentPhase.EXPERIMENTATION,
             task=Task.TEXT_GENERATION,
         )
         nebuly._nebuly_queue = NebulyQueue(tag_data=tag_data)
 
         with nebuly.tracker(
             project="test_project_2",
-            phase=DevelopmentPhase.PRODUCTION,
+            development_phase=DevelopmentPhase.PRODUCTION,
             task=Task.CHAT,
         ):
             tag_data = nebuly._nebuly_queue.tag_data
             self.assertEqual(first=tag_data.project, second="test_project_2")
-            self.assertEqual(first=tag_data.phase, second=DevelopmentPhase.PRODUCTION)
+            self.assertEqual(
+                first=tag_data.development_phase, second=DevelopmentPhase.PRODUCTION
+            )
             self.assertEqual(first=tag_data.task, second=Task.CHAT)
 
         tag_data: TagData = nebuly._nebuly_queue.tag_data
         self.assertEqual(first=tag_data.project, second="test_project")
-        self.assertEqual(first=tag_data.phase, second=DevelopmentPhase.EXPERIMENTATION)
+        self.assertEqual(
+            first=tag_data.development_phase, second=DevelopmentPhase.EXPERIMENTATION
+        )
         self.assertEqual(first=tag_data.task, second=Task.TEXT_GENERATION)
 
     def test_context_manger__is_detecting_missing_init(self) -> None:
@@ -148,7 +152,7 @@ class TestAPIs(unittest.TestCase):
         with self.assertRaises(expected_exception=RuntimeError) as context:
             with nebuly.tracker(
                 project="test_project_2",
-                phase=DevelopmentPhase.PRODUCTION,
+                development_phase=DevelopmentPhase.PRODUCTION,
                 task=Task.CHAT,
             ):
                 pass
@@ -160,18 +164,18 @@ class TestAPIs(unittest.TestCase):
         with self.assertRaises(expected_exception=TypeError) as context:
             with nebuly.tracker(
                 project=1,
-                phase=DevelopmentPhase.EXPERIMENTATION,
+                development_phase=DevelopmentPhase.EXPERIMENTATION,
             ):
                 pass
 
         self.assertTrue(expr=error_text in str(object=context.exception))
 
     def test_context_manager__is_detecting_wrong_phase_type(self):
-        error_text = "phase must be of type DevelopmentPhase"
+        error_text = "development_phase must be of type DevelopmentPhase"
         with self.assertRaises(expected_exception=TypeError) as context:
             with nebuly.tracker(
                 project="test_project",
-                phase=1,
+                development_phase=1,
             ):
                 pass
 
@@ -182,7 +186,7 @@ class TestAPIs(unittest.TestCase):
         with self.assertRaises(expected_exception=TypeError) as context:
             with nebuly.tracker(
                 project="test_project",
-                phase=DevelopmentPhase.EXPERIMENTATION,
+                development_phase=DevelopmentPhase.EXPERIMENTATION,
                 task=1,
             ):
                 pass

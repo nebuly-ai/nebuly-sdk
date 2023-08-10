@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 
 from pydantic import BaseModel
@@ -39,16 +40,16 @@ class Provider(Enum):
 @dataclass
 class TagData:
     project: str = "unknown"
-    phase: DevelopmentPhase = DevelopmentPhase.UNKNOWN
+    development_phase: DevelopmentPhase = DevelopmentPhase.UNKNOWN
     task: Task = Task.UNKNOWN
 
 
 class GenericProviderAttributes(BaseModel):
     project: str
-    phase: DevelopmentPhase
+    development_phase: DevelopmentPhase
     task: Task
-    timestamp: float
-    timestamp_end: float
+    timestamp: datetime
+    timestamp_end: datetime
 
 
 class NebulyDataPackage(BaseModel):
