@@ -446,11 +446,7 @@ class GeneratorWrappingStrategy(WrappingStrategy, ABC):
             timestamp_end = get_current_timestamp()
             mocked_request_response = {
                 "output_text": output_text,
-                "timestamp_openai": datetime.fromtimestamp(
-                    timestamp_openai, tz=dt.timezone.utc
-                )
-                if timestamp_openai is not None
-                else timestamp_openai,
+                "timestamp_openai": timestamp_openai,
             }
             raw_data = OpenAIRawTrackedData(
                 request_kwargs=self._request_kwargs,
