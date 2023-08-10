@@ -1,3 +1,4 @@
+import datetime as dt
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -127,7 +128,11 @@ class TextAPIBodyFiller(APITypeBodyFiller):
         body.model = request_kwargs.get("model")
 
         timestamp_openai = request_response.get("created")
-        body.timestamp_openai = datetime.utcfromtimestamp(timestamp_openai) if timestamp_openai else None
+        body.timestamp_openai = (
+            datetime.fromtimestamp(timestamp_openai, tz=dt.timezone.utc)
+            if timestamp_openai
+            else None
+        )
 
         n_prompt_tokens = request_response.get("usage", {}).get("prompt_tokens")
         body.n_input_tokens = int(n_prompt_tokens) if n_prompt_tokens else None
@@ -168,7 +173,9 @@ class TextAPIBodyFiller(APITypeBodyFiller):
 
         timestamp_openai = request_response.get("timestamp_openai")
         if timestamp_openai is not None:
-            body.timestamp_openai = datetime.utcfromtimestamp(timestamp_openai)
+            body.timestamp_openai = datetime.fromtimestamp(
+                timestamp_openai, tz=dt.timezone.utc
+            )
 
         if body.api_type == OpenAIAPIType.CHAT:
             # OpenAI adds some tokens to the ones provided to and by the user.
@@ -204,7 +211,11 @@ class ImageAPIBodyFiller(APITypeBodyFiller):
         body.n_output_images = int(n_output_images) if n_output_images else None
 
         timestamp_openai = request_response.get("created")
-        body.timestamp_openai = datetime.utcfromtimestamp(timestamp_openai) if timestamp_openai else None
+        body.timestamp_openai = (
+            datetime.fromtimestamp(timestamp_openai, tz=dt.timezone.utc)
+            if timestamp_openai
+            else None
+        )
 
 
 class AudioAPIBodyFiller(APITypeBodyFiller):
@@ -239,7 +250,11 @@ class FineTuneAPIBodyFiller(APITypeBodyFiller):
         body.training_id = request_response.get("id")
 
         timestamp_openai = request_response.get("created_at")
-        body.timestamp_openai = datetime.utcfromtimestamp(timestamp_openai) if timestamp_openai else None
+        body.timestamp_openai = (
+            datetime.fromtimestamp(timestamp_openai, tz=dt.timezone.utc)
+            if timestamp_openai
+            else None
+        )
 
 
 class ModerationAPIBodyFiller(APITypeBodyFiller):
@@ -307,8 +322,10 @@ class OpenAIDataPackageConverter(DataPackageConverter):
             task=detected_task,
             api_type=raw_data.api_type,
             api_key=raw_data.api_key,
-            timestamp=datetime.utcfromtimestamp(raw_data.timestamp),
-            timestamp_end=datetime.utcfromtimestamp(raw_data.timestamp_end),
+            timestamp=datetime.fromtimestamp(raw_data.timestamp, tz=dt.timezone.utc),
+            timestamp_end=datetime.fromtimestamp(
+                raw_data.timestamp_end, tz=dt.timezone.utc
+            ),
             organization=raw_data.organization,
         )
         filler.fill_body_with_request_data(
@@ -429,7 +446,11 @@ class GeneratorWrappingStrategy(WrappingStrategy, ABC):
             timestamp_end = get_current_timestamp()
             mocked_request_response = {
                 "output_text": output_text,
-                "timestamp_openai": datetime.utcfromtimestamp(timestamp_openai) if timestamp_openai is not None else timestamp_openai,
+                "timestamp_openai": datetime.fromtimestamp(
+                    timestamp_openai, tz=dt.timezone.utc
+                )
+                if timestamp_openai is not None
+                else timestamp_openai,
             }
             raw_data = OpenAIRawTrackedData(
                 request_kwargs=self._request_kwargs,
