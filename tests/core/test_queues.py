@@ -21,7 +21,7 @@ from nebuly.core.schemas import (
 class TestNebulyQueue(TestCase):
     default_tag_data: TagData = TagData(
         project="project",
-        phase=DevelopmentPhase.PRODUCTION,
+        development_phase=DevelopmentPhase.PRODUCTION,
         task=Task.TEXT_CLASSIFICATION,
     )
 
@@ -29,7 +29,7 @@ class TestNebulyQueue(TestCase):
         nebuly_queue = NebulyQueue(tag_data=self.default_tag_data)
         new_tag_data: TagData = TagData(
             project="new_project",
-            phase=DevelopmentPhase.EXPERIMENTATION,
+            development_phase=DevelopmentPhase.EXPERIMENTATION,
             task=Task.TEXT_EDITING,
         )
 
@@ -99,7 +99,7 @@ class TestQueueObject(TestCase):
         )
         tag_data = TagData(
             project="project",
-            phase=DevelopmentPhase.PRODUCTION,
+            development_phase=DevelopmentPhase.PRODUCTION,
             task=Task.TEXT_CLASSIFICATION,
         )
 
@@ -114,7 +114,7 @@ class TestQueueObject(TestCase):
         )
         tag_data = TagData(
             project="project",
-            phase=DevelopmentPhase.PRODUCTION,
+            development_phase=DevelopmentPhase.PRODUCTION,
             task=Task.TEXT_CLASSIFICATION,
         )
 
@@ -128,7 +128,7 @@ class TestQueueObject(TestCase):
             raw_data=RawTrackedData(),
         )
 
-        tag_data = TagData(phase=DevelopmentPhase.PRODUCTION)
+        tag_data = TagData(development_phase=DevelopmentPhase.PRODUCTION)
 
         with self.assertRaises(expected_exception=ValueError) as context:
             queue_object.tag(tag_data=tag_data)
@@ -146,4 +146,6 @@ class TestQueueObject(TestCase):
         with self.assertRaises(expected_exception=ValueError) as context:
             queue_object.tag(tag_data=tag_data)
 
-        self.assertTrue(expr="Development phase" in str(object=context.exception))
+        self.assertTrue(
+            expr="Development development_phase" in str(object=context.exception)
+        )

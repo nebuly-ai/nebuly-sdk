@@ -19,7 +19,7 @@ class TestNebulyClient(TestCase):
         provider=Provider.OPENAI,
         body=GenericProviderAttributes(
             project="test_project",
-            phase=DevelopmentPhase.EXPERIMENTATION,
+            development_phase=DevelopmentPhase.EXPERIMENTATION,
             task=Task.UNKNOWN,
             timestamp=1620000000,
             timestamp_end=1620000001,

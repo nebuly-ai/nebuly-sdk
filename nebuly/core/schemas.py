@@ -39,13 +39,13 @@ class Provider(Enum):
 @dataclass
 class TagData:
     project: str = "unknown"
-    phase: DevelopmentPhase = DevelopmentPhase.UNKNOWN
+    development_phase: DevelopmentPhase = DevelopmentPhase.UNKNOWN
     task: Task = Task.UNKNOWN
 
 
 class GenericProviderAttributes(BaseModel):
     project: str
-    phase: DevelopmentPhase
+    development_phase: DevelopmentPhase
     task: Task
     timestamp: float
     timestamp_end: float

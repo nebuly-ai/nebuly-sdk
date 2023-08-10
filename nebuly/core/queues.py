@@ -51,7 +51,7 @@ class DataPackageConverter(ABC):
             raw_data (RawTrackedData): The data package info used to
                 create the data package.
             tag_data (TagData): The data that contains information about
-                project, phase and task.
+                project, development_phase and task.
 
         Returns:
             NebulyDataPackage: The data package.
@@ -77,12 +77,12 @@ class QueueObject:
 
         Raises:
             ValueError: If project name is not set.
-            ValueError: If Development phase is not set.
+            ValueError: If Development development_phase is not set.
         """
         if tag_data.project == "unknown":
             raise ValueError("Project name is not set.")
-        if tag_data.phase == DevelopmentPhase.UNKNOWN:
-            raise ValueError("Development phase is not set.")
+        if tag_data.development_phase == DevelopmentPhase.UNKNOWN:
+            raise ValueError("Development development_phase is not set.")
 
         self._tag_data: TagData = self._clone(item=tag_data)
 
@@ -122,8 +122,8 @@ class NebulyQueue(Queue):
         """
         if tag_data.project != "unknown":
             self.tag_data.project = tag_data.project
-        if tag_data.phase != DevelopmentPhase.UNKNOWN:
-            self.tag_data.phase = tag_data.phase
+        if tag_data.development_phase != DevelopmentPhase.UNKNOWN:
+            self.tag_data.development_phase = tag_data.development_phase
         if tag_data.task != Task.UNKNOWN:
             self.tag_data.task = tag_data.task
 

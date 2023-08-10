@@ -57,8 +57,8 @@ class OpenAIAttributes(GenericProviderAttributes):
     user: Optional[str] = None
 
     model: Optional[str] = None
-    n_prompt_tokens: Optional[int] = None
-    n_completion_tokens: Optional[int] = None
+    n_input_tokens: Optional[int] = None
+    n_output_tokens: Optional[int] = None
 
     n_output_images: Optional[int] = None
     image_size: Optional[str] = None
@@ -80,6 +80,7 @@ class OpenAIRawTrackedData(RawTrackedData):
     api_key: Optional[str]
     api_provider: str
     organization: Optional[str]
+    timestamp_openai: Optional[int] = None
 
 
 class APITypeBodyFiller(ABC):
@@ -128,12 +129,10 @@ class TextAPIBodyFiller(APITypeBodyFiller):
         body.timestamp_openai = int(timestamp_openai) if timestamp_openai else None
 
         n_prompt_tokens = request_response.get("usage", {}).get("prompt_tokens")
-        body.n_prompt_tokens = int(n_prompt_tokens) if n_prompt_tokens else None
+        body.n_input_tokens = int(n_prompt_tokens) if n_prompt_tokens else None
 
         n_completion_tokens = request_response.get("usage", {}).get("completion_tokens")
-        body.n_completion_tokens = (
-            int(n_completion_tokens) if n_completion_tokens else None
-        )
+        body.n_output_tokens = int(n_completion_tokens) if n_completion_tokens else None
 
     @staticmethod
     def _fill_body_for_stream_api_call(
@@ -154,7 +153,7 @@ class TextAPIBodyFiller(APITypeBodyFiller):
                 input_text = request_kwargs.get("prompt", "")
             else:
                 input_text = ""
-            body.n_prompt_tokens = TextAPIBodyFiller._num_tokens_from_text(
+            body.n_input_tokens = TextAPIBodyFiller._num_tokens_from_text(
                 string=input_text, encoding_name=body.model
             )
         except (KeyError, IndexError):
@@ -162,18 +161,20 @@ class TextAPIBodyFiller(APITypeBodyFiller):
 
         output_text = request_response.get("output_text")
         if output_text is not None:
-            body.n_completion_tokens = TextAPIBodyFiller._num_tokens_from_text(
+            body.n_output_tokens = TextAPIBodyFiller._num_tokens_from_text(
                 string=output_text, encoding_name=body.model
             )
 
+        body.timestamp_openai = request_response.get("timestamp_openai")
+
         if body.api_type == OpenAIAPIType.CHAT:
             # OpenAI adds some tokens to the ones provided to and by the user.
-            if body.n_prompt_tokens is not None:
-                body.n_prompt_tokens += (
+            if body.n_input_tokens is not None:
+                body.n_input_tokens += (
                     ADDITIONAL_PROMPT_TOKENS_FOR_CHAT_COMPLETION_GENERATION
                 )
-            if body.n_completion_tokens is not None:
-                body.n_completion_tokens += (
+            if body.n_output_tokens is not None:
+                body.n_output_tokens += (
                     ADDITIONAL_COMPLETION_TOKENS_FOR_CHAT_COMPLETION_GENERATION
                 )
 
@@ -299,7 +300,7 @@ class OpenAIDataPackageConverter(DataPackageConverter):
         )
         body = OpenAIAttributes(
             project=tag_data.project,
-            phase=tag_data.phase,
+            development_phase=tag_data.development_phase,
             task=detected_task,
             api_type=raw_data.api_type,
             api_key=raw_data.api_key,
@@ -415,13 +416,17 @@ class GeneratorWrappingStrategy(WrappingStrategy, ABC):
 
         def wrapped_generator():
             output_text = ""
+            timestamp_openai = None
             for element in request_response:
-                output_text = self._track_generator_element(element, output_text)
+                output_text, timestamp_openai = self._track_generator_element(
+                    element, output_text, timestamp_openai
+                )
                 yield element
 
             timestamp_end = get_current_timestamp()
             mocked_request_response = {
                 "output_text": output_text,
+                "timestamp_openai": timestamp_openai,
             }
             raw_data = OpenAIRawTrackedData(
                 request_kwargs=self._request_kwargs,
@@ -440,35 +445,45 @@ class GeneratorWrappingStrategy(WrappingStrategy, ABC):
 
     @staticmethod
     @abstractmethod
-    def _track_generator_element(element: Any, output_text: str) -> str:
+    def _track_generator_element(
+        element: Any, output_text: str, timestamp_openai: Optional[int]
+    ) -> Tuple[str, int]:
         ...
 
 
 class TextCompletionStrategy(GeneratorWrappingStrategy):
     @staticmethod
-    def _track_generator_element(element: Any, output_text: str) -> str:
+    def _track_generator_element(
+        element: Any, output_text: str, timestamp_openai: Optional[int]
+    ) -> Tuple[str, int]:
         try:
             text = element["choices"][0]["text"]
             output_text += text
+            if timestamp_openai is None:
+                timestamp_openai = int(element["created"])
         except (KeyError, IndexError):
             pass
-        return output_text
+        return output_text, timestamp_openai
 
 
 class ChatCompletionStrategy(GeneratorWrappingStrategy):
     @staticmethod
-    def _track_generator_element(element: Any, output_text: str) -> str:
+    def _track_generator_element(
+        element: Any, output_text: str, timestamp_openai: Optional[int]
+    ) -> Tuple[str, int]:
         try:
             delta = element["choices"][0]["delta"]
+            if timestamp_openai is None:
+                timestamp_openai = int(element["created"])
         except (KeyError, IndexError):
-            return output_text
+            return output_text, timestamp_openai
         try:
             text = delta["content"]
             output_text += text
         except KeyError:
             pass
 
-        return output_text
+        return output_text, timestamp_openai
 
 
 class OpenAITracker(Tracker):
