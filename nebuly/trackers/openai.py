@@ -32,7 +32,7 @@ from nebuly.utils.functions import (
 
 nebuly_logger = logging.getLogger(name=__name__)
 
-ADDITIONAL_PROMPT_TOKENS_FOR_CHAT_COMPLETION_GENERATION = 7
+ADDITIONAL_PROMPT_TOKENS_FOR_CHAT_COMPLETION_GENERATION = 0
 ADDITIONAL_COMPLETION_TOKENS_FOR_CHAT_COMPLETION_GENERATION = 1
 
 
@@ -125,7 +125,10 @@ class TextAPIBodyFiller(APITypeBodyFiller):
         request_response: Dict[str, Any],
     ):
         body.user = request_kwargs.get("user")
-        body.model = request_kwargs.get("model")
+        if "model" in request_response:
+            body.model = request_response["model"]
+        else:
+            body.model = request_kwargs.get("model")
 
         timestamp_openai = request_response.get("created")
         body.timestamp_openai = (
@@ -147,21 +150,26 @@ class TextAPIBodyFiller(APITypeBodyFiller):
         request_response: Dict[str, Any],
     ):
         body.user = request_kwargs.get("user")
-        body.model = request_kwargs.get("model")
+        if "model" in request_response:
+            body.model = request_response["model"]
+        else:
+            body.model = request_kwargs.get("model")
 
         if body.model is None:
             return
 
         try:
             if body.api_type == OpenAIAPIType.CHAT:
-                input_text = request_kwargs["messages"][0]["content"]
+                input_tokens = TextAPIBodyFiller._num_tokens_from_messages(
+                    request_kwargs["messages"], model=body.model
+                )
             elif body.api_type == OpenAIAPIType.TEXT_COMPLETION:
-                input_text = request_kwargs.get("prompt", "")
+                input_tokens = TextAPIBodyFiller._num_tokens_from_text(
+                    string=request_kwargs.get("prompt", ""), encoding_name=body.model
+                )
             else:
-                input_text = ""
-            body.n_input_tokens = TextAPIBodyFiller._num_tokens_from_text(
-                string=input_text, encoding_name=body.model
-            )
+                input_tokens = None
+            body.n_input_tokens = input_tokens
         except (KeyError, IndexError):
             pass
 
@@ -193,6 +201,25 @@ class TextAPIBodyFiller(APITypeBodyFiller):
         """Returns the number of tokens in a text string."""
         encoding = tiktoken.encoding_for_model(encoding_name)
         num_tokens = len(encoding.encode(string))
+        return num_tokens
+
+    @staticmethod
+    def _num_tokens_from_messages(messages: list, model: str):
+        """Returns the number of tokens used by a list of messages."""
+        try:
+            encoding = tiktoken.encoding_for_model(model)
+        except KeyError:
+            encoding = tiktoken.get_encoding("cl100k_base")
+        num_tokens = 0
+        for message in messages:
+            num_tokens += (
+                4  # every message follows <im_start>{role/name}\n{content}<im_end>\n
+            )
+            for key, value in message.items():
+                num_tokens += len(encoding.encode(value))
+                if key == "name":  # if there's a name, the role is omitted
+                    num_tokens += -1  # role is always required and always 1 token
+        num_tokens += 2  # every reply is primed with <im_start>assistant
         return num_tokens
 
 
@@ -437,9 +464,14 @@ class GeneratorWrappingStrategy(WrappingStrategy, ABC):
         def wrapped_generator():
             output_text = ""
             timestamp_openai = None
+            used_model = None
             for element in request_response:
-                output_text, timestamp_openai = self._track_generator_element(
-                    element, output_text, timestamp_openai
+                (
+                    output_text,
+                    timestamp_openai,
+                    used_model,
+                ) = self._track_generator_element(
+                    element, output_text, timestamp_openai, used_model
                 )
                 yield element
 
@@ -447,6 +479,7 @@ class GeneratorWrappingStrategy(WrappingStrategy, ABC):
             mocked_request_response = {
                 "output_text": output_text,
                 "timestamp_openai": timestamp_openai,
+                "model": used_model,
             }
             raw_data = OpenAIRawTrackedData(
                 request_kwargs=self._request_kwargs,
@@ -466,44 +499,57 @@ class GeneratorWrappingStrategy(WrappingStrategy, ABC):
     @staticmethod
     @abstractmethod
     def _track_generator_element(
-        element: Any, output_text: str, timestamp_openai: Optional[int]
-    ) -> Tuple[str, int]:
+        element: Any,
+        output_text: str,
+        timestamp_openai: Optional[int],
+        used_model: Optional[str],
+    ) -> Tuple[str, int, str]:
         ...
 
 
 class TextCompletionStrategy(GeneratorWrappingStrategy):
     @staticmethod
     def _track_generator_element(
-        element: Any, output_text: str, timestamp_openai: Optional[int]
-    ) -> Tuple[str, int]:
+        element: Any,
+        output_text: str,
+        timestamp_openai: Optional[int],
+        used_model: Optional[str],
+    ) -> Tuple[str, int, str]:
         try:
             text = element["choices"][0]["text"]
             output_text += text
             if timestamp_openai is None:
                 timestamp_openai = int(element["created"])
+            if used_model is None:
+                used_model = element["model"]
         except (KeyError, IndexError):
             pass
-        return output_text, timestamp_openai
+        return output_text, timestamp_openai, used_model
 
 
 class ChatCompletionStrategy(GeneratorWrappingStrategy):
     @staticmethod
     def _track_generator_element(
-        element: Any, output_text: str, timestamp_openai: Optional[int]
-    ) -> Tuple[str, int]:
+        element: Any,
+        output_text: str,
+        timestamp_openai: Optional[int],
+        used_model: Optional[str],
+    ) -> Tuple[str, int, str]:
         try:
             delta = element["choices"][0]["delta"]
             if timestamp_openai is None:
                 timestamp_openai = int(element["created"])
+            if used_model is None:
+                used_model = element["model"]
         except (KeyError, IndexError):
-            return output_text, timestamp_openai
+            return output_text, timestamp_openai, used_model
         try:
             text = delta["content"]
             output_text += text
         except KeyError:
             pass
 
-        return output_text, timestamp_openai
+        return output_text, timestamp_openai, used_model
 
 
 class OpenAITracker(Tracker):

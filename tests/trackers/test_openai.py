@@ -98,7 +98,11 @@ class TestTextAPIBodyFiller(unittest.TestCase):
 
         # STANDARD API
         request_kwargs = {}
-        request_response = test_data.text_completion.request_response
+        request_response = {
+            key: value
+            for key, value in test_data.text_completion.request_response.items()
+            if key != "model"
+        }
 
         body = OpenAIAttributes(
             project="test_project",
@@ -120,7 +124,11 @@ class TestTextAPIBodyFiller(unittest.TestCase):
 
         # STREAM API
         stream_request_kwargs = {}
-        stream_request_response = test_data.text_completion_stream.request_response
+        stream_request_response = {
+            key: value
+            for key, value in test_data.text_completion_stream.request_response.items()
+            if key != "model"
+        }
 
         body = OpenAIAttributes(
             project="test_project",

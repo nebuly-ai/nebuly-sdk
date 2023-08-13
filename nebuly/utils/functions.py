@@ -1,5 +1,5 @@
+import datetime
 import inspect
-from datetime import datetime
 from typing import Any, Dict, Optional, Tuple
 
 import mutagen
@@ -62,4 +62,4 @@ def get_current_timestamp() -> float:
     Returns:
         float: The current timestamp using UTC as timezone.
     """
-    return datetime.utcnow().timestamp()
+    return datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
