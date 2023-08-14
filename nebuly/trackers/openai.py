@@ -158,20 +158,9 @@ class TextAPIBodyFiller(APITypeBodyFiller):
         if body.model is None:
             return
 
-        try:
-            if body.api_type == OpenAIAPIType.CHAT:
-                input_tokens = TextAPIBodyFiller._num_tokens_from_messages(
-                    request_kwargs["messages"], model=body.model
-                )
-            elif body.api_type == OpenAIAPIType.TEXT_COMPLETION:
-                input_tokens = TextAPIBodyFiller._num_tokens_from_text(
-                    string=request_kwargs.get("prompt", ""), encoding_name=body.model
-                )
-            else:
-                input_tokens = None
-            body.n_input_tokens = input_tokens
-        except (KeyError, IndexError):
-            pass
+        body.n_input_tokens = TextAPIBodyFiller._compute_input_tokens(
+            body=body, request_kwargs=request_kwargs
+        )
 
         output_text = request_response.get("output_text")
         if output_text is not None:
@@ -195,6 +184,24 @@ class TextAPIBodyFiller(APITypeBodyFiller):
                 body.n_output_tokens += (
                     ADDITIONAL_COMPLETION_TOKENS_FOR_CHAT_COMPLETION_GENERATION
                 )
+
+    @staticmethod
+    def _compute_input_tokens(
+        body: OpenAIAttributes, request_kwargs: Dict[str, Any]
+    ) -> Optional[int]:
+        input_tokens = None
+        try:
+            if body.api_type == OpenAIAPIType.CHAT:
+                input_tokens = TextAPIBodyFiller._num_tokens_from_messages(
+                    request_kwargs["messages"], model=body.model
+                )
+            elif body.api_type == OpenAIAPIType.TEXT_COMPLETION:
+                input_tokens = TextAPIBodyFiller._num_tokens_from_text(
+                    string=request_kwargs.get("prompt", ""), encoding_name=body.model
+                )
+        except (KeyError, IndexError):
+            pass
+        return input_tokens
 
     @staticmethod
     def _num_tokens_from_text(string: str, encoding_name: str) -> int:
