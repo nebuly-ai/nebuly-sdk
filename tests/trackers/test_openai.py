@@ -1,3 +1,4 @@
+import copy
 import datetime as dt
 import unittest
 from datetime import datetime
@@ -152,66 +153,86 @@ class TestTextAPIBodyFiller(unittest.TestCase):
     def test_fill_body_with_request_data__is_filling_chat_request(self):
         filler = TextAPIBodyFiller()
 
-        # STANDARD API
-        request_kwargs = test_data.chat_completion.request_kwargs
-        request_response = test_data.chat_completion.request_response
+        for model in [
+            "gpt-3.5-turbo-0301",
+            "gpt-3.5-turbo-0613",
+            "gpt-3.5-turbo",
+            "gpt-4-0314",
+            "gpt-4-0613",
+            "gpt-4",
+        ]:
+            # STANDARD API
+            request_kwargs = test_data.chat_completion.request_kwargs
+            request_response = copy.deepcopy(test_data.chat_completion.request_response)
 
-        body = OpenAIAttributes(
-            project="test_project",
-            development_phase=DevelopmentPhase.EXPERIMENTATION,
-            task=Task.TEXT_GENERATION,
-            api_type=OpenAIAPIType.CHAT,
-            api_key="test_api_key",
-            timestamp=datetime.fromtimestamp(111111, tz=dt.timezone.utc),
-            timestamp_end=datetime.fromtimestamp(222222, tz=dt.timezone.utc),
-        )
-        filler.fill_body_with_request_data(
-            body=body,
-            request_kwargs=request_kwargs,
-            request_response=request_response,
-        )
+            request_kwargs["model"] = model
 
-        self.assertEqual(body.model, request_kwargs["model"])
-        self.assertEqual(body.user, request_kwargs["user"])
-        self.assertEqual(
-            body.n_output_tokens, request_response["usage"]["completion_tokens"]
-        )
-        self.assertEqual(
-            body.n_input_tokens, request_response["usage"]["prompt_tokens"]
-        )
-        self.assertEqual(
-            body.timestamp_openai,
-            datetime.fromtimestamp(request_response["created"], tz=dt.timezone.utc),
-        )
+            if model == "gpt-3.5-turbo-0301":
+                # gpt-3.5-turbo-0301 is the only model that has a different
+                # number of tokens for prompt and completion
+                request_response["usage"]["completion_tokens"] = 9
+                request_response["usage"]["prompt_tokens"] = 10
+                request_response["usage"]["total_tokens"] = 19
 
-        # STREAM API
-        stream_request_kwargs = test_data.chat_completion_stream.request_kwargs
-        stream_request_response = test_data.chat_completion_stream.request_response
+            body = OpenAIAttributes(
+                project="test_project",
+                development_phase=DevelopmentPhase.EXPERIMENTATION,
+                task=Task.TEXT_GENERATION,
+                api_type=OpenAIAPIType.CHAT,
+                api_key="test_api_key",
+                timestamp=datetime.fromtimestamp(111111, tz=dt.timezone.utc),
+                timestamp_end=datetime.fromtimestamp(222222, tz=dt.timezone.utc),
+            )
 
-        body = OpenAIAttributes(
-            project="test_project",
-            development_phase=DevelopmentPhase.EXPERIMENTATION,
-            task=Task.CHAT,
-            api_type=OpenAIAPIType.CHAT,
-            api_key="test_api_key",
-            timestamp=datetime.fromtimestamp(111111, tz=dt.timezone.utc),
-            timestamp_end=datetime.fromtimestamp(222222, tz=dt.timezone.utc),
-        )
+            filler.fill_body_with_request_data(
+                body=body,
+                request_kwargs=request_kwargs,
+                request_response=request_response,
+            )
 
-        filler.fill_body_with_request_data(
-            body=body,
-            request_kwargs=stream_request_kwargs,
-            request_response=stream_request_response,
-        )
+            self.assertEqual(body.model, request_kwargs["model"])
+            self.assertEqual(body.user, request_kwargs["user"])
+            self.assertEqual(
+                body.n_output_tokens, request_response["usage"]["completion_tokens"]
+            )
+            self.assertEqual(
+                body.n_input_tokens, request_response["usage"]["prompt_tokens"]
+            )
+            self.assertEqual(
+                body.timestamp_openai,
+                datetime.fromtimestamp(request_response["created"], tz=dt.timezone.utc),
+            )
 
-        self.assertEqual(body.model, request_kwargs["model"])
-        self.assertEqual(body.user, request_kwargs["user"])
-        self.assertEqual(
-            body.n_output_tokens, request_response["usage"]["completion_tokens"]
-        )
-        self.assertEqual(
-            body.n_input_tokens, request_response["usage"]["prompt_tokens"]
-        )
+            # STREAM API
+            stream_request_kwargs = test_data.chat_completion_stream.request_kwargs
+            stream_request_response = test_data.chat_completion_stream.request_response
+
+            stream_request_kwargs["model"] = model
+
+            body = OpenAIAttributes(
+                project="test_project",
+                development_phase=DevelopmentPhase.EXPERIMENTATION,
+                task=Task.CHAT,
+                api_type=OpenAIAPIType.CHAT,
+                api_key="test_api_key",
+                timestamp=datetime.fromtimestamp(111111, tz=dt.timezone.utc),
+                timestamp_end=datetime.fromtimestamp(222222, tz=dt.timezone.utc),
+            )
+
+            filler.fill_body_with_request_data(
+                body=body,
+                request_kwargs=stream_request_kwargs,
+                request_response=stream_request_response,
+            )
+
+            self.assertEqual(body.model, request_kwargs["model"])
+            self.assertEqual(body.user, request_kwargs["user"])
+            self.assertEqual(
+                body.n_output_tokens, request_response["usage"]["completion_tokens"]
+            )
+            self.assertEqual(
+                body.n_input_tokens, request_response["usage"]["prompt_tokens"]
+            )
 
     def test_fill_body_with_request_data__is_filling_edit_request(self):
         filler = TextAPIBodyFiller()

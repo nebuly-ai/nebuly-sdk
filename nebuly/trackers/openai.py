@@ -32,9 +32,6 @@ from nebuly.utils.functions import (
 
 nebuly_logger = logging.getLogger(name=__name__)
 
-ADDITIONAL_PROMPT_TOKENS_FOR_CHAT_COMPLETION_GENERATION = 0
-ADDITIONAL_COMPLETION_TOKENS_FOR_CHAT_COMPLETION_GENERATION = 1
-
 
 class OpenAIAPIType(Enum):
     TEXT_COMPLETION = "text_completion"
@@ -165,7 +162,7 @@ class TextAPIBodyFiller(APITypeBodyFiller):
         output_text = request_response.get("output_text")
         if output_text is not None:
             body.n_output_tokens = TextAPIBodyFiller._num_tokens_from_text(
-                string=output_text, encoding_name=body.model
+                string=output_text, model=body.model
             )
 
         timestamp_openai = request_response.get("timestamp_openai")
@@ -173,17 +170,6 @@ class TextAPIBodyFiller(APITypeBodyFiller):
             body.timestamp_openai = datetime.fromtimestamp(
                 timestamp_openai, tz=dt.timezone.utc
             )
-
-        if body.api_type == OpenAIAPIType.CHAT:
-            # OpenAI adds some tokens to the ones provided to and by the user.
-            if body.n_input_tokens is not None:
-                body.n_input_tokens += (
-                    ADDITIONAL_PROMPT_TOKENS_FOR_CHAT_COMPLETION_GENERATION
-                )
-            if body.n_output_tokens is not None:
-                body.n_output_tokens += (
-                    ADDITIONAL_COMPLETION_TOKENS_FOR_CHAT_COMPLETION_GENERATION
-                )
 
     @staticmethod
     def _compute_input_tokens(
@@ -197,16 +183,16 @@ class TextAPIBodyFiller(APITypeBodyFiller):
                 )
             elif body.api_type == OpenAIAPIType.TEXT_COMPLETION:
                 input_tokens = TextAPIBodyFiller._num_tokens_from_text(
-                    string=request_kwargs.get("prompt", ""), encoding_name=body.model
+                    string=request_kwargs.get("prompt", ""), model=body.model
                 )
         except (KeyError, IndexError):
             pass
         return input_tokens
 
     @staticmethod
-    def _num_tokens_from_text(string: str, encoding_name: str) -> int:
+    def _num_tokens_from_text(string: str, model: str) -> int:
         """Returns the number of tokens in a text string."""
-        encoding = tiktoken.encoding_for_model(encoding_name)
+        encoding = tiktoken.encoding_for_model(model)
         num_tokens = len(encoding.encode(string))
         return num_tokens
 
@@ -217,16 +203,39 @@ class TextAPIBodyFiller(APITypeBodyFiller):
             encoding = tiktoken.encoding_for_model(model)
         except KeyError:
             encoding = tiktoken.get_encoding("cl100k_base")
+        if model in {
+            "gpt-3.5-turbo-0613",
+            "gpt-3.5-turbo-16k-0613",
+            "gpt-4-0314",
+            "gpt-4-32k-0314",
+            "gpt-4-0613",
+            "gpt-4-32k-0613",
+        }:
+            tokens_per_message = 3
+            tokens_per_name = 1
+        elif model == "gpt-3.5-turbo-0301":
+            tokens_per_message = 4  # every message follows <|start|>{role/name}\n{content}<|end|>\n  # noqa: E501
+            tokens_per_name = -1  # if there's a name, the role is omitted
+        elif "gpt-3.5-turbo" in model:
+            return TextAPIBodyFiller._num_tokens_from_messages(
+                messages, model="gpt-3.5-turbo-0613"
+            )
+        elif "gpt-4" in model:
+            return TextAPIBodyFiller._num_tokens_from_messages(
+                messages, model="gpt-4-0613"
+            )
+        else:
+            raise NotImplementedError(
+                f"num_tokens_from_messages() is not implemented for model {model}."
+            )
         num_tokens = 0
         for message in messages:
-            num_tokens += (
-                4  # every message follows <im_start>{role/name}\n{content}<im_end>\n
-            )
+            num_tokens += tokens_per_message
             for key, value in message.items():
                 num_tokens += len(encoding.encode(value))
-                if key == "name":  # if there's a name, the role is omitted
-                    num_tokens += -1  # role is always required and always 1 token
-        num_tokens += 2  # every reply is primed with <im_start>assistant
+                if key == "name":
+                    num_tokens += tokens_per_name
+        num_tokens += 3  # every reply is primed with <|start|>assistant<|message|>
         return num_tokens
 
 

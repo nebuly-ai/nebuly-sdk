@@ -73,18 +73,18 @@ chat_completion = TestData(
     request_response={
         "id": "chatcmpl-123",
         "object": "chat.completion",
-        "created": 1677652288,
+        "created": 1692172116,
         "choices": [
             {
                 "index": 0,
                 "message": {
                     "role": "assistant",
-                    "content": "\n\nHello there, how may I assist you today?",
+                    "content": "Hello! How can I help you today?",
                 },
                 "finish_reason": "stop",
             }
         ],
-        "usage": {"prompt_tokens": 9, "completion_tokens": 12, "total_tokens": 21},
+        "usage": {"prompt_tokens": 9, "completion_tokens": 9, "total_tokens": 18},
     },
 )
 
@@ -96,7 +96,7 @@ chat_completion_stream = TestData(
         "user": "user-123",
     },
     request_response={
-        "output_text": "\n\nHello there, how may I assist you today?",
+        "output_text": "Hello! How can I help you today?",
     },
 )
 

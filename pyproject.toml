@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "nebuly-sdk"
+name = "nebuly"
 version = "0.1.0"
 description = "Nebuly SDK"
 authors = [
