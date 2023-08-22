@@ -1,3 +1,4 @@
+import copy
 import datetime as dt
 import logging
 from abc import ABC, abstractmethod
@@ -701,8 +702,8 @@ class OpenAITracker(Tracker):
     ) -> Dict[str, Any]:
         request_kwargs = transform_args_to_kwargs(
             func=original_method,
-            func_args=request_args,
-            func_kwargs=request_kwargs,
+            func_args=copy.deepcopy(request_args),
+            func_kwargs=copy.deepcopy(request_kwargs),
             specific_keyword="params",
         )
         api_type = self.FROM_METHOD_TO_API_TYPE[original_method]
