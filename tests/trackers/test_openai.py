@@ -17,6 +17,7 @@ from nebuly.trackers.openai import (
     AudioAPIBodyFiller,
     ChatCompletionStrategy,
     FineTuneAPIBodyFiller,
+    FineTuningJobAPIBodyFiller,
     ImageAPIBodyFiller,
     ModerationAPIBodyFiller,
     OpenAIAPIType,
@@ -465,12 +466,69 @@ class TestFineTuneBodyFiller(unittest.TestCase):
         self.assertIsNone(body.user)
 
 
+class TestFineTuningJobBodyFiller(unittest.TestCase):
+    def test_fill_body_with_request_data__is_filling_finetuning_job_request(self):
+        filler = FineTuningJobAPIBodyFiller()
+
+        request_kwargs = test_data.finetuning_job.request_kwargs
+        request_response = test_data.finetuning_job.request_response
+
+        body = OpenAIAttributes(
+            project="test_project",
+            development_phase=DevelopmentPhase.EXPERIMENTATION,
+            task=Task.FINETUNING,
+            api_type=OpenAIAPIType.FINETUNING_JOB,
+            api_key="test_api_key",
+            timestamp=datetime.fromtimestamp(111111, tz=dt.timezone.utc),
+            timestamp_end=datetime.fromtimestamp(222222, tz=dt.timezone.utc),
+        )
+        filler.fill_body_with_request_data(
+            body=body,
+            request_kwargs=request_kwargs,
+            request_response=request_response,
+        )
+
+        self.assertEqual(body.model, request_response["model"])
+        self.assertEqual(body.user, request_kwargs["user"])
+        self.assertEqual(body.training_id, request_response["id"])
+        self.assertEqual(body.training_file_id, request_kwargs["training_file"])
+        self.assertEqual(
+            body.timestamp_openai,
+            datetime.fromtimestamp(request_response["created_at"], tz=dt.timezone.utc),
+        )
+        self.assertEqual(body.n_epochs, request_response["hyperparameters"]["n_epochs"])
+
+    def test_fill_body_with_request_data__no_data_provided(self):
+        filler = FineTuningJobAPIBodyFiller()
+
+        request_kwargs = {}
+        request_response = {}
+
+        body = OpenAIAttributes(
+            project="test_project",
+            development_phase=DevelopmentPhase.EXPERIMENTATION,
+            task=Task.FINETUNING,
+            api_type=OpenAIAPIType.FINETUNING_JOB,
+            api_key="test_api_key",
+            timestamp=datetime.fromtimestamp(111111, tz=dt.timezone.utc),
+            timestamp_end=datetime.fromtimestamp(222222, tz=dt.timezone.utc),
+        )
+        filler.fill_body_with_request_data(
+            body=body,
+            request_kwargs=request_kwargs,
+            request_response=request_response,
+        )
+
+        self.assertIsNone(body.model)
+        self.assertIsNone(body.user)
+
+
 class TestModerationAPIBodyFiller(unittest.TestCase):
     def test_fill_body_with_request_data__is_filling_moderation_request(self):
         filler = ModerationAPIBodyFiller()
 
-        request_kwargs = test_data.finetune.request_kwargs
-        request_response = test_data.finetune.request_response
+        request_kwargs = test_data.finetuning_job.request_kwargs
+        request_response = test_data.finetuning_job.request_response
 
         body = OpenAIAttributes(
             project="test_project",
@@ -585,6 +643,10 @@ class TestOpenAIDataPackageConverter(unittest.TestCase):
         self.assertEqual(data_package.body.task, Task.AUDIO_TRANSCRIPTION)
 
         raw_data.api_type = OpenAIAPIType.FINETUNE
+        data_package = converter.get_data_package(raw_data, tag_data)
+        self.assertEqual(data_package.body.task, Task.FINETUNING)
+
+        raw_data.api_type = OpenAIAPIType.FINETUNING_JOB
         data_package = converter.get_data_package(raw_data, tag_data)
         self.assertEqual(data_package.body.task, Task.FINETUNING)
 
@@ -1206,6 +1268,45 @@ class TestOpenAITracker(unittest.TestCase):
         openai_tracker.replace_sdk_functions()
 
         self.assertNotIsInstance(obj=mocked_openai.FineTune.create, cls=MagicMock)
+
+    @patch("nebuly.trackers.openai.openai")
+    def test_replace_sdk_functions__is_issuing_the_track_request_for_finetuning_job(
+        self,
+        mocked_openai: MagicMock,
+    ) -> None:
+        mocked_openai.api_type = "open_ai"
+        mocked_nebuly_queue = MagicMock()
+        mocked_openai.FineTuningJob.create.return_value = self.mocked_openai_response
+
+        openai_tracker = OpenAITracker(nebuly_queue=mocked_nebuly_queue)
+        openai_tracker.replace_sdk_functions()
+        mocked_openai.FineTuningJob.create(**self.mocked_kwargs)
+
+        mocked_nebuly_queue.put.assert_called_once()
+        _, kwargs = mocked_nebuly_queue.put.call_args
+        queue_object = kwargs["item"]
+        self.assertEqual(
+            first=queue_object._raw_data.request_kwargs, second=self.mocked_kwargs
+        )
+        self.assertEqual(
+            first=queue_object._raw_data.request_response,
+            second=self.mocked_openai_response,
+        )
+        self.assertEqual(
+            first=queue_object._raw_data.api_type, second=OpenAIAPIType.FINETUNING_JOB
+        )
+
+    @patch("nebuly.trackers.openai.openai")
+    def test_replace_sdk_functions__is_replacing_the_method_finetuning_job(
+        self,
+        mocked_openai: MagicMock,
+    ) -> None:
+        mocked_nebuly_queue = MagicMock()
+
+        openai_tracker = OpenAITracker(nebuly_queue=mocked_nebuly_queue)
+        openai_tracker.replace_sdk_functions()
+
+        self.assertNotIsInstance(obj=mocked_openai.FineTuningJob.create, cls=MagicMock)
 
     @patch("nebuly.trackers.openai.openai")
     def test_replace_sdk_functions__is_issuing_the_track_request_for_moderation(

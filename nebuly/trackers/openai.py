@@ -45,6 +45,7 @@ class OpenAIAPIType(Enum):
     AUDIO_TRANSLATE = "audio_translate"
     EMBEDDING = "embedding"
     FINETUNE = "finetune"
+    FINETUNING_JOB = "finetuning_job"
     MODERATION = "moderation"
     UNKNOWN = None
 
@@ -301,6 +302,27 @@ class FineTuneAPIBodyFiller(APITypeBodyFiller):
         )
 
 
+class FineTuningJobAPIBodyFiller(APITypeBodyFiller):
+    def fill_body_with_request_data(
+        self,
+        body: OpenAIAttributes,
+        request_kwargs: Dict[str, Any],
+        request_response: Dict[str, Any],
+    ):
+        body.user = request_kwargs.get("user")
+        body.model = request_response.get("model")
+        body.n_epochs = request_response.get("hyperparameters", {}).get("n_epochs")
+        body.training_file_id = request_kwargs.get("training_file")
+        body.training_id = request_response.get("id")
+
+        timestamp_openai = request_response.get("created_at")
+        body.timestamp_openai = (
+            datetime.fromtimestamp(timestamp_openai, tz=dt.timezone.utc)
+            if timestamp_openai
+            else None
+        )
+
+
 class ModerationAPIBodyFiller(APITypeBodyFiller):
     def fill_body_with_request_data(
         self,
@@ -319,6 +341,7 @@ FROM_API_TO_FILLER = {
     OpenAIAPIType.EDIT: TextAPIBodyFiller(),
     OpenAIAPIType.EMBEDDING: TextAPIBodyFiller(),
     OpenAIAPIType.FINETUNE: FineTuneAPIBodyFiller(),
+    OpenAIAPIType.FINETUNING_JOB: FineTuningJobAPIBodyFiller(),
     OpenAIAPIType.MODERATION: ModerationAPIBodyFiller(),
     OpenAIAPIType.IMAGE_CREATE: ImageAPIBodyFiller(),
     OpenAIAPIType.IMAGE_EDIT: ImageAPIBodyFiller(),
@@ -337,6 +360,7 @@ FROM_API_TO_TASK = {
     OpenAIAPIType.AUDIO_TRANSLATE: Task.AUDIO_TRANSLATION,
     OpenAIAPIType.EMBEDDING: Task.TEXT_EMBEDDING,
     OpenAIAPIType.FINETUNE: Task.FINETUNING,
+    OpenAIAPIType.FINETUNING_JOB: Task.FINETUNING,
     OpenAIAPIType.MODERATION: Task.TEXT_MODERATION,
     OpenAIAPIType.TEXT_COMPLETION: Task.TEXT_GENERATION,
 }
@@ -581,6 +605,7 @@ class OpenAITracker(Tracker):
     _original_audio_translate = None
     _original_moderation_create = None
     _original_finetune = None
+    _original_finetuning_job = None
 
     FROM_METHOD_TO_API_TYPE = {}
 
@@ -596,6 +621,7 @@ class OpenAITracker(Tracker):
         self._replace_embedding()
         self._replace_audio()
         self._replace_finetune()
+        self._replace_finetuning_job()
         self._replace_moderation()
         self.FROM_METHOD_TO_API_TYPE = {
             self._original_completion_create: OpenAIAPIType.TEXT_COMPLETION,
@@ -609,6 +635,7 @@ class OpenAITracker(Tracker):
             self._original_audio_translate: OpenAIAPIType.AUDIO_TRANSLATE,
             self._original_moderation_create: OpenAIAPIType.MODERATION,
             self._original_finetune: OpenAIAPIType.FINETUNE,
+            self._original_finetuning_job: OpenAIAPIType.FINETUNING_JOB,
         }
 
     def _replace_text_completion(self) -> None:
@@ -685,6 +712,14 @@ class OpenAITracker(Tracker):
             self._original_finetune,
         )
         openai.FineTune.create = new_tracked_method
+
+    def _replace_finetuning_job(self) -> None:
+        self._original_finetuning_job = openai.FineTuningJob.create
+        new_tracked_method = partial(
+            self._track_method,
+            self._original_finetuning_job,
+        )
+        openai.FineTuningJob.create = new_tracked_method
 
     def _replace_moderation(self) -> None:
         self._original_moderation_create = openai.Moderation.create

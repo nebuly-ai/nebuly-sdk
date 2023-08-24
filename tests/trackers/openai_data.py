@@ -226,6 +226,28 @@ finetune = TestData(
     },
 )
 
+finetuning_job = TestData(
+    request_kwargs={
+        "training_file": "file-XGinujblHPwGLSztz8cPS8XY",
+        "user": "user-123",
+    },
+    request_response={
+        "object": "fine_tuning.job",
+        "id": "ftjob-QT9iUqkfnpLMiBr8sxeQLAT8",
+        "model": "gpt-3.5-turbo-0613",
+        "created_at": 1692866659,
+        "finished_at": None,
+        "fine_tuned_model": None,
+        "organization_id": "org-uatESKrY86f7lQPIt4FJxSrt",
+        "result_files": [],
+        "status": "created",
+        "validation_file": None,
+        "training_file": "file-xVAP4rqLW0eWWPz5x6crxKic",
+        "hyperparameters": {"n_epochs": 8},
+        "trained_tokens": None,
+    },
+)
+
 moderation = TestData(
     request_kwargs={
         "input": "Some test input.",
