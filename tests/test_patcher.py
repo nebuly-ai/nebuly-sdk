@@ -1,5 +1,5 @@
 from unittest.mock import Mock
-from nebuly.patcher import patcher
+from nebuly.patcher import Watched, patcher
 from hypothesis import strategies as st
 from hypothesis import given
 
@@ -33,10 +33,22 @@ def test_patcher_calls_observer(args, kwargs):
         """This is the docstring to be tested"""
         return args, kwargs
 
-    observer = Mock()
+    class Observer:
+        def __init__(self):
+            self.watched = []
+
+        def __call__(self, watched: Watched):
+            self.watched.append(watched)
+
+    observer = Observer()
 
     patched = patcher(observer)(to_patched)
 
     patched(*args, **kwargs)
 
-    observer.assert_called_once_with((to_patched, args, kwargs, (args, kwargs)))
+    assert len(observer.watched) == 1
+    watched = observer.watched[0]
+    assert watched.function == to_patched
+    assert watched.called_with_args == args
+    assert watched.called_with_kwargs == kwargs
+    assert watched.returned == to_patched(*args, **kwargs)
