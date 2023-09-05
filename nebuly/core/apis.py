@@ -120,16 +120,14 @@ def _instantiate_trackers(nebuly_queue: NebulyQueue) -> List[Tracker]:
     return tracker_list
 
 
-def _check_input_types(
-    project: str, phase: DevelopmentPhase, task: Optional[Task]
-) -> None:
-    if isinstance(project, str) is False:  # type: ignore
+def _check_input_types(project: str, phase: DevelopmentPhase, task: Task) -> None:
+    if not isinstance(project, str):
         raise TypeError(f"project must be of type str, not {type(project)}")
-    if isinstance(phase, DevelopmentPhase) is False:  # type: ignore
+    if not isinstance(phase, DevelopmentPhase):
         raise TypeError(
             f"development_phase must be of type DevelopmentPhase, not {type(phase)}"
         )
-    if isinstance(task, Task) is False:  # type: ignore
+    if not isinstance(task, Task):
         raise TypeError(f"task must be of type Task, not {type([task])}")
 
 

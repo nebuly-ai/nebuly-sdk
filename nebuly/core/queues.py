@@ -174,8 +174,8 @@ class NebulyTrackingDataThread(Thread):
         """Continuously takes elements from the queue and sends them to the
         Nebuly server.
         """
-        while self.thread_running is True or self._queue.empty() is False:
-            if self.force_exit is True:
+        while self.thread_running or not self._queue.empty():
+            if self.force_exit:
                 break
 
             try:

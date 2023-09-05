@@ -103,7 +103,7 @@ class TextAPIBodyFiller(APITypeBodyFiller):
     ):
         stream = request_kwargs.get("stream", False)
 
-        if stream is False:
+        if not stream:
             TextAPIBodyFiller._fill_body_for_standard_api_call(
                 body=body,
                 request_kwargs=request_kwargs,
@@ -710,7 +710,7 @@ class OpenAITracker(Tracker):
 
         wrap_strategy = APICallWrappingStrategy()
         try:
-            if request_kwargs["stream"] is True:
+            if request_kwargs["stream"]:
                 if api_type == OpenAIAPIType.CHAT:
                     wrap_strategy = ChatCompletionStrategy()
                 elif api_type == OpenAIAPIType.TEXT_COMPLETION:
