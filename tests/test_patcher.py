@@ -1,6 +1,7 @@
 from nebuly.patcher import Watched, patcher
 from hypothesis import strategies as st
 from hypothesis import given
+from datetime import datetime, timezone
 
 
 any = st.one_of(
@@ -42,11 +43,14 @@ def test_patcher_calls_observer(args, kwargs):
 
     patched = patcher(observer)(to_patched)
 
+    before = datetime.now(timezone.utc)
     patched(*args, **kwargs)
+    after = datetime.now(timezone.utc)
 
     assert len(observer.watched) == 1
     watched = observer.watched[0]
     assert watched.function == to_patched
+    assert before <= watched.called_at <= after
     assert watched.called_with_args == args
     assert watched.called_with_kwargs == kwargs
     assert watched.returned == to_patched(*args, **kwargs)
