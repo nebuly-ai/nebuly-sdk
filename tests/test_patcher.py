@@ -10,15 +10,15 @@ any = st.one_of(
 
 
 class Observer:
-    def __init__(self):
-        self.watched = []
+    def __init__(self) -> None:
+        self.watched: list[Watched] = []
 
-    def __call__(self, watched: Watched):
+    def __call__(self, watched: Watched) -> None:
         self.watched.append(watched)
 
 
 @given(args=st.tuples(any), kwargs=st.dictionaries(st.text(), any))
-def test_patcher_doesnt_change_any_behavior(args, kwargs):
+def test_patcher_doesnt_change_any_behavior(args, kwargs) -> None:
     def to_patched(*args: int, **kwargs: str):
         """This is the docstring to be tested"""
         return args, kwargs
@@ -34,7 +34,7 @@ def test_patcher_doesnt_change_any_behavior(args, kwargs):
 
 
 @given(args=st.tuples(any), kwargs=st.dictionaries(st.text(), any))
-def test_patcher_calls_observer(args, kwargs):
+def test_patcher_calls_observer(args, kwargs) -> None:
     def to_patched(*args: int, **kwargs: str):
         """This is the docstring to be tested"""
         return args, kwargs
@@ -56,13 +56,13 @@ def test_patcher_calls_observer(args, kwargs):
     assert watched.returned == to_patched(*args, **kwargs)
 
 
-def test_watched_is_immutable():
-    def to_patched(mutable: list):
+def test_watched_is_immutable() -> None:
+    def to_patched(mutable: list[int]) -> list[int]:
         mutable.append(1)
         return mutable
 
     observer = Observer()
-    mutable = []
+    mutable: list[int] = []
 
     patcher(observer)(to_patched)(mutable)
 
