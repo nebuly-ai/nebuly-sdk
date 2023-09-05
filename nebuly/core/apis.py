@@ -5,6 +5,7 @@ import logging
 from typing import Any, Generator, List, Optional
 
 from nebuly.core.clients import NebulyClient
+from nebuly.core.exceptions import NebulyApiKeyRequired
 from nebuly.core.queues import NebulyQueue, NebulyTrackingDataThread, Tracker
 from nebuly.core.schemas import DevelopmentPhase, TagData, Task
 
@@ -44,7 +45,7 @@ def init(
                 "Please set NEBULY_API_KEY environment variable."
             )
         )
-        return
+        raise NebulyApiKeyRequired("Nebuly API key not found.")
 
     tag_data = TagData(
         project=project,
