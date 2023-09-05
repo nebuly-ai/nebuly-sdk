@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "nebuly-sdk"
+version = "0.1.0"
+description = "The SDK for instrumenting applications for tracking AI costs."
+authors = ["Nebuly"]
+readme = "README.md"
+packages = [{include = "nebuly"}]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
