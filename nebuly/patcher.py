@@ -14,10 +14,10 @@ class Watched:
     returned: Any
 
 
-Observer = Callable[[Watched], None]
+Observer_T = Callable[[Watched], None]
 
 
-def patcher(observer: Observer):
+def patcher(observer: Observer_T):
     def inner(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
