@@ -16,6 +16,7 @@ ruff = "^0.0.287"
 mypy = "^1.5.1"
 pytest = "^7.4.1"
 hypothesis = "^6.84.0"
+openai = "^0.28.0"
 
 [build-system]
 requires = ["poetry-core"]
