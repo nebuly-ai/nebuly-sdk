@@ -6,7 +6,7 @@ from hypothesis import strategies as st
 
 from nebuly.entities import Package, Watched
 from nebuly.exceptions import AlreadyImportedError
-from nebuly.monkey_patcher import (
+from nebuly.monkey_patching import (
     _monkey_patch,
     _patcher,
     _split_nebuly_kwargs,

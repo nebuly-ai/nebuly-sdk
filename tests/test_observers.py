@@ -1,6 +1,6 @@
 from nebuly.entities import Message
-from nebuly.monkey_patcher import _patcher
-from nebuly.observer import NebulyObserver
+from nebuly.monkey_patching import _patcher
+from nebuly.observers import NebulyObserver
 
 
 class Publisher:
@@ -24,7 +24,7 @@ def test_observer_calls_publisher_when_patched_is_called():
         publish=publisher.publish,
     )
 
-    patched = _patcher(observer.observe)(function)
+    patched = _patcher(observer.on_event_received)(function)
     result = patched(1.0, 2, c=3)
 
     assert result == 6

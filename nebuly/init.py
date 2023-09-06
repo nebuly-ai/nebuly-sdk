@@ -2,12 +2,12 @@ from dataclasses import asdict
 from queue import Queue
 
 from nebuly.entities import Message, Observer_T, Package
-from nebuly.monkey_patcher import (
+from nebuly.monkey_patching import (
     check_no_packages_already_imported,
     import_and_patch_packages,
 )
-from nebuly.observer import NebulyObserver
-from nebuly.publisher import Publisher
+from nebuly.observers import NebulyObserver
+from nebuly.consumers import ConsumerWorker
 from nebuly.requests import post_json_data
 
 PACKAGES = [
@@ -49,11 +49,11 @@ def _create_observer_and_start_publisher(
 ) -> Observer_T:
     queue: Queue[Message] = Queue()
 
-    Publisher(queue, _post_message)
+    ConsumerWorker(queue, _post_message)
     observer = NebulyObserver(
         api_key=api_key,
         project=project,
         phase=phase,
         publish=queue.put,
     )
-    return observer.observe
+    return observer.on_event_received

@@ -15,7 +15,7 @@ class NebulyObserver:
         self.phase = phase
         self.publisher = publish
 
-    def observe(self, watched: Watched) -> None:
+    def on_event_received(self, watched: Watched) -> None:
         message = Message(
             api_key=self.api_key,
             project=self.project,

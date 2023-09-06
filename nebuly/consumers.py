@@ -4,15 +4,15 @@ from threading import Thread
 from nebuly.entities import Message, Publisher_T
 
 
-class Publisher:
+class ConsumerWorker:
     def __init__(self, queue: Queue[Message], publish: Publisher_T) -> None:
         self.publish = publish
         self.queue: Queue[Message] = queue
         self.running = True
-        self.thread = Thread(target=self.worker)
+        self.thread = Thread(target=self.run)
         self.thread.start()
 
-    def worker(self) -> None:
+    def run(self) -> None:
         while self.running:
             try:
                 message = self.queue.get(timeout=0.1)

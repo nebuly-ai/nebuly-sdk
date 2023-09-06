@@ -1,6 +1,6 @@
 from queue import Queue
 
-from nebuly.publisher import Publisher
+from nebuly.consumers import ConsumerWorker
 
 
 def test_worker() -> None:
@@ -11,7 +11,7 @@ def test_worker() -> None:
     ]
     results: list[str] = []
     queue: Queue[str] = Queue()
-    publisher = Publisher(queue, results.append)  # type: ignore
+    publisher = ConsumerWorker(queue, results.append)  # type: ignore
 
     for message in messages:
         queue.put(message)
@@ -34,7 +34,7 @@ def test_worker_publish_messages_before_exit() -> None:
     for message in messages:
         queue.put(message)
 
-    publisher = Publisher(queue, results.append)  # type: ignore
+    publisher = ConsumerWorker(queue, results.append)  # type: ignore
     publisher.stop()
 
     assert results == messages
