@@ -1,4 +1,4 @@
-from nebuly.patcher import Watched, patcher
+from nebuly.patcher import Watched, patcher, split_nebuly_kwargs
 from hypothesis import strategies as st
 from hypothesis import given
 from datetime import datetime, timezone
@@ -53,6 +53,7 @@ def test_patcher_calls_observer(args, kwargs) -> None:
     assert before <= watched.called_at <= after
     assert watched.called_with_args == args
     assert watched.called_with_kwargs == kwargs
+    assert watched.called_with_nebuly_kwargs == {}
     assert watched.returned == to_patched(*args, **kwargs)
 
 
@@ -72,3 +73,37 @@ def test_watched_is_immutable() -> None:
     watched = observer.watched[0]
     assert watched.called_with_args == ([],)
     assert watched.returned == [1]
+
+
+def test_split_nebuly_kwargs():
+    original_dict = {
+        "nebuly_segment": "segment",
+        "arg1": "arg1",
+        "nebuly_project": "project",
+        "arg2": "arg2",
+    }
+    nebuly_kwargs, function_kwargs = split_nebuly_kwargs(original_dict)
+    assert nebuly_kwargs == {
+        "nebuly_segment": "segment",
+        "nebuly_project": "project",
+    }
+    assert function_kwargs == {"arg1": "arg1", "arg2": "arg2"}
+
+
+def test_nebuly_args_are_intercepted():
+    def function(a: int, b: int) -> int:
+        return a + b
+
+    observer = Observer()
+    patched = patcher(observer)(function)
+
+    patched(1, 2, nebuly_segment="segment", nebuly_project="project")
+
+    assert len(observer.watched) == 1
+    watched = observer.watched[0]
+    assert watched.called_with_args == (1, 2)
+    assert watched.called_with_nebuly_kwargs == {
+        "nebuly_segment": "segment",
+        "nebuly_project": "project",
+    }
+    assert watched.returned == 3
