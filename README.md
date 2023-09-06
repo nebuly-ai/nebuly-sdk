@@ -2,11 +2,11 @@
 
 ## TODO
 
-1. Thread for consuming events instead of calling requests from the thread that generated the event
 2. Handle args and kwargs serialization - what happen if the args are not serializable?
 3. Context manager for patching single portion of codes
    - nested context managers should have "stack" behaviour
 4. Nice to have: semantic versioning expansion in package (maybe OSS library or Poetry?)
+5. patch generators in a different way
 
 ## Current state
 
