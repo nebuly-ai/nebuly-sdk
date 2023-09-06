@@ -9,9 +9,9 @@ def test_worker() -> None:
         "test message 2",
         "test message 3",
     ]
-    results = []
-    queue = Queue()
-    publisher = Publisher(queue, results.append)
+    results: list[str] = []
+    queue: Queue[str] = Queue()
+    publisher = Publisher(queue, results.append)  # type: ignore
 
     for message in messages:
         queue.put(message)
@@ -29,12 +29,12 @@ def test_worker_publish_messages_before_exit() -> None:
         "test message 2",
         "test message 3",
     ]
-    results = []
-    queue = Queue()
+    results: list[str] = []
+    queue: Queue[str] = Queue()
     for message in messages:
         queue.put(message)
 
-    publisher = Publisher(queue, results.append)
+    publisher = Publisher(queue, results.append)  # type: ignore
     publisher.stop()
 
     assert results == messages

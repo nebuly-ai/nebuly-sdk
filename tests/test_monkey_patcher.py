@@ -6,11 +6,12 @@ from hypothesis import strategies as st
 
 from nebuly.entities import Package, Watched
 from nebuly.exceptions import AlreadyImportedError
-from nebuly.monkey_patcher import (_monkey_patch, _split_nebuly_kwargs,
+from nebuly.monkey_patcher import (_monkey_patch, _patcher,
+                                   _split_nebuly_kwargs,
                                    check_no_packages_already_imported,
-                                   import_and_patch_packages, _patcher)
+                                   import_and_patch_packages)
 
-any = st.one_of(
+st_any = st.one_of(
     st.integers(), st.floats(), st.text(), st.booleans(), st.none(), st.binary()
 )
 
@@ -23,7 +24,7 @@ class Observer:
         self.watched.append(watched)
 
 
-@given(args=st.tuples(any), kwargs=st.dictionaries(st.text(), any))
+@given(args=st.tuples(st_any), kwargs=st.dictionaries(st.text(), st_any))
 def test_patcher_doesnt_change_any_behavior(args, kwargs) -> None:
     def to_patched(*args: int, **kwargs: str):
         """This is the docstring to be tested"""
@@ -39,7 +40,7 @@ def test_patcher_doesnt_change_any_behavior(args, kwargs) -> None:
     assert patched.__annotations__ == to_patched.__annotations__
 
 
-@given(args=st.tuples(any), kwargs=st.dictionaries(st.text(), any))
+@given(args=st.tuples(st_any), kwargs=st.dictionaries(st.text(), st_any))
 def test_patcher_calls_observer(args, kwargs) -> None:
     def to_patched(*args: int, **kwargs: str):
         """This is the docstring to be tested"""
@@ -134,7 +135,7 @@ def test_monkey_patch() -> None:
 
     import_and_patch_packages([package], observer.append)
 
-    from .to_patch import ToPatch
+    from .to_patch import ToPatch  # pylint: disable=import-outside-toplevel
 
     result = ToPatch().to_patch_one(1, 2.0, c=3)
     assert result == 6
@@ -167,7 +168,7 @@ def test_monkey_patch_missing_component_doesnt_break_other_patches() -> None:
 
     _monkey_patch(package, observer.append)
 
-    from .to_patch import ToPatch
+    from .to_patch import ToPatch  # pylint: disable=import-outside-toplevel
 
     result = ToPatch().to_patch_one(1, 2.0, c=3)
     assert result == 6
