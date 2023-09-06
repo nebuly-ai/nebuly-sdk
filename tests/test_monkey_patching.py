@@ -59,7 +59,7 @@ def test_patcher_calls_observer(args, kwargs) -> None:
 
     assert len(observer.watched) == 1
     watched = observer.watched[0]
-    assert watched.function == to_patched.__name__
+    assert watched.function == to_patched
     assert before <= watched.called_at <= after
     assert watched.called_with_args == args
     assert watched.called_with_kwargs == kwargs
