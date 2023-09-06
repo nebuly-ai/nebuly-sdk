@@ -2,6 +2,11 @@ from nebuly.entities import Message, Publisher_T, Watched
 
 
 class NebulyObserver:
+    """
+    NebulyObserver is an observer that sends a message to the API when a
+    patched function is called.
+    """
+
     def __init__(
         self, *, api_key: str, project: str, phase: str, publisher: Publisher_T
     ) -> None:

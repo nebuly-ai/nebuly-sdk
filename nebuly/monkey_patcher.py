@@ -14,6 +14,9 @@ logger = logging.getLogger(__name__)
 
 
 def check_no_packages_already_imported(packages: list[Package]) -> None:
+    """
+    Check that no packages in packages have already been imported.
+    """
     for package in packages:
         if package.name in sys.modules:
             raise AlreadyImportedError(
@@ -23,6 +26,9 @@ def check_no_packages_already_imported(packages: list[Package]) -> None:
 
 
 def import_and_patch_packages(packages: list[Package], observer: Observer_T) -> None:
+    """
+    Import each package in packages and patch it with the observer.
+    """
     for package in packages:
         try:
             _monkey_patch(package, observer)
@@ -31,9 +37,6 @@ def import_and_patch_packages(packages: list[Package], observer: Observer_T) -> 
 
 
 def _monkey_patch(package: Package, observer: Observer_T) -> None:
-    """
-    Patch each attribute in package.to_patch with the observer.
-    """
     module = importlib.import_module(package.name)
     for attr in package.to_patch:
         try:
@@ -78,6 +81,9 @@ def _patcher(observer: Observer_T):
     """
     Decorator that calls observer with a Watched instance when the decorated
     function is called
+
+    kwargs that start with nebuly_ are passed to the observer and not the
+    decorated function
     """
 
     def inner(f):
