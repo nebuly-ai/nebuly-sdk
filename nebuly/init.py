@@ -1,11 +1,7 @@
 from nebuly.entities import Package
-from nebuly.monkey_patcher import (
-    check_no_packages_already_imported,
-    import_and_patch_packages,
-)
-
+from nebuly.monkey_patcher import (check_no_packages_already_imported,
+                                   import_and_patch_packages)
 from nebuly.observer import NebulyObserver
-
 
 PACKAGES = [Package("openai", ["0.10.2"], ["Completion.create"])]
 

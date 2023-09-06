@@ -1,4 +1,4 @@
-from nebuly.entities import Message, Watched, Publisher_T
+from nebuly.entities import Message, Publisher_T, Watched
 
 
 class NebulyObserver:
