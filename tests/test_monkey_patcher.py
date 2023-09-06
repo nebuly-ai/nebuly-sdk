@@ -6,10 +6,13 @@ from hypothesis import strategies as st
 
 from nebuly.entities import Package, Watched
 from nebuly.exceptions import AlreadyImportedError
-from nebuly.monkey_patcher import (_monkey_patch, _patcher,
-                                   _split_nebuly_kwargs,
-                                   check_no_packages_already_imported,
-                                   import_and_patch_packages)
+from nebuly.monkey_patcher import (
+    _monkey_patch,
+    _patcher,
+    _split_nebuly_kwargs,
+    check_no_packages_already_imported,
+    import_and_patch_packages,
+)
 
 st_any = st.one_of(
     st.integers(), st.floats(), st.text(), st.booleans(), st.none(), st.binary()

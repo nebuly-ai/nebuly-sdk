@@ -2,8 +2,10 @@ from dataclasses import asdict
 from queue import Queue
 
 from nebuly.entities import Message, Observer_T, Package
-from nebuly.monkey_patcher import (check_no_packages_already_imported,
-                                   import_and_patch_packages)
+from nebuly.monkey_patcher import (
+    check_no_packages_already_imported,
+    import_and_patch_packages,
+)
 from nebuly.observer import NebulyObserver
 from nebuly.publisher import Publisher
 from nebuly.requests import post_json_data

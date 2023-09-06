@@ -1,6 +1,6 @@
 from nebuly.entities import Message
-from nebuly.observer import NebulyObserver
 from nebuly.monkey_patcher import _patcher
+from nebuly.observer import NebulyObserver
 
 
 class Publisher:
