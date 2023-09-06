@@ -18,6 +18,11 @@ Observer_T = Callable[[Watched], None]
 
 
 def patcher(observer: Observer_T):
+    """
+    Decorator that calls observer with a Watched instance when the decorated
+    function is called
+    """
+
     def inner(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
