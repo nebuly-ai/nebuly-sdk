@@ -1,12 +1,9 @@
-from typing import Any, Callable
+from typing import Any
 from functools import wraps
 from datetime import datetime, timezone
 from copy import deepcopy
 
-from nebuly.entities import Watched
-
-
-Observer_T = Callable[[Watched], None]
+from nebuly.entities import Watched, Observer_T
 
 
 def split_nebuly_kwargs(

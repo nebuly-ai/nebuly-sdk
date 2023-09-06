@@ -1,9 +1,4 @@
-from typing import Callable
-
-from nebuly.entities import Message, Watched
-
-
-Publisher_T = Callable[[Message], None]
+from nebuly.entities import Message, Watched, Publisher_T
 
 
 class NebulyObserver:

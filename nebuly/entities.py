@@ -26,3 +26,8 @@ class Message:
     phase: str
     project: str
     watched: Watched
+
+
+Observer_T = Callable[[Watched], None]
+
+Publisher_T = Callable[[Message], None]
