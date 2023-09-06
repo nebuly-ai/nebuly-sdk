@@ -9,6 +9,5 @@ def post_json_data(url: str, data_dict: dict[str, str]) -> urllib.request.Reques
         url, data=json_data, headers={"Content-Type": "application/json"}
     )
 
-    response = urllib.request.urlopen(request, timeout=3)
-
-    return response
+    with urllib.request.urlopen(request, timeout=3) as response:
+        return response.readlines()
