@@ -21,7 +21,7 @@ def test_observer_calls_publisher_when_patched_is_called():
         api_key="test_api_key",
         project="test_project",
         phase="test_phase",
-        publisher=publisher.publish,
+        publish=publisher.publish,
     )
 
     patched = _patcher(observer.observe)(function)

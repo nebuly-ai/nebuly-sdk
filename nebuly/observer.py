@@ -8,12 +8,12 @@ class NebulyObserver:
     """
 
     def __init__(
-        self, *, api_key: str, project: str, phase: str, publisher: Publisher_T
+        self, *, api_key: str, project: str, phase: str, publish: Publisher_T
     ) -> None:
         self.api_key = api_key
         self.project = project
         self.phase = phase
-        self.publisher = publisher
+        self.publisher = publish
 
     def observe(self, watched: Watched) -> None:
         message = Message(

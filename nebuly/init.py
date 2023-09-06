@@ -31,6 +31,6 @@ def init(*, api_key: str, project: str, phase: str) -> None:
         api_key=api_key,
         project=project,
         phase=phase,
-        publisher=lambda _: None,
+        publish=lambda _: None,
     )
     import_and_patch_packages(PACKAGES, observer.observe)
