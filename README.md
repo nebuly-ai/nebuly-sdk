@@ -41,7 +41,7 @@ classDiagram
 ```mermaid
 classDiagram
     Package --> Patcher
-    Observer --* Patcher
+    Observer ..* Patcher
     Patcher --> Watched
     Observer --> Watched
     Patcher --> OpenAI

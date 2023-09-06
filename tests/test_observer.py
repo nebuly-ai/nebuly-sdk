@@ -14,7 +14,7 @@ def function(a: float, b: int, *, c: int = 0) -> int:
     return int(a + b + c)
 
 
-def test_observer():
+def test_observer_calls_publisher_when_patched_is_called():
     publisher = Publisher()
     observer = NebulyObserver(
         api_key="test_api_key",
@@ -22,8 +22,11 @@ def test_observer():
         phase="test_phase",
         publisher=publisher.publish,
     )
+
     patched = patcher(observer.observe)(function)
-    assert patched(1.0, 2, c=3) == 6
+    result = patched(1.0, 2, c=3)
+
+    assert result == 6
     assert len(publisher.messages) == 1
     message = publisher.messages[0]
     assert message.phase == "test_phase"

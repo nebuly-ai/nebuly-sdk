@@ -21,6 +21,10 @@ Observer_T = Callable[[Watched], None]
 def split_nebuly_kwargs(
     kwargs: dict[str, Any]
 ) -> tuple[dict[str, Any], dict[str, Any]]:
+    """
+    Split nebuly kwargs from function kwargs
+    """
+
     nebuly_kwargs = {}
     function_kwargs = {}
     for key in kwargs:
