@@ -101,7 +101,7 @@ def _patcher(observer: Observer_T):
 
             original_result = deepcopy(result)
             watched = Watched(
-                function=f,
+                function=f.__name__,
                 called_at=called_at,
                 called_with_args=original_args,
                 called_with_kwargs=original_kwargs,

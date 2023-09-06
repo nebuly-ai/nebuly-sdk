@@ -20,7 +20,7 @@ class Watched:
     Watched represents a call to a function that was patched.
     """
 
-    function: Callable
+    function: str
     called_at: datetime
     called_with_args: tuple
     called_with_kwargs: dict[str, Any]
