@@ -1,4 +1,5 @@
-from nebuly.patcher import Watched, patcher, split_nebuly_kwargs
+from nebuly.entities import Watched
+from nebuly.patcher import patcher, split_nebuly_kwargs
 from hypothesis import strategies as st
 from hypothesis import given
 from datetime import datetime, timezone

@@ -1,4 +1,5 @@
-from nebuly.observer import Message, NebulyObserver
+from nebuly.entities import Message
+from nebuly.observer import NebulyObserver
 from nebuly.patcher import patcher
 
 

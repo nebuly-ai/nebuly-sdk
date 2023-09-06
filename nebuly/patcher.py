@@ -1,18 +1,9 @@
 from typing import Any, Callable
 from functools import wraps
-from dataclasses import dataclass
 from datetime import datetime, timezone
 from copy import deepcopy
 
-
-@dataclass(frozen=True, slots=True)
-class Watched:
-    function: Callable
-    called_at: datetime
-    called_with_args: tuple
-    called_with_kwargs: dict[str, Any]
-    called_with_nebuly_kwargs: dict[str, Any]
-    returned: Any
+from nebuly.entities import Watched
 
 
 Observer_T = Callable[[Watched], None]

@@ -1,14 +1,6 @@
-from dataclasses import dataclass
 from typing import Callable
-from nebuly.patcher import Watched
 
-
-@dataclass
-class Message:
-    api_key: str
-    phase: str
-    project: str
-    watched: Watched
+from nebuly.entities import Message, Watched
 
 
 Publisher_T = Callable[[Message], None]
@@ -16,7 +8,7 @@ Publisher_T = Callable[[Message], None]
 
 class NebulyObserver:
     def __init__(
-        self, api_key: str, project: str, phase: str, publisher: Publisher_T
+        self, *, api_key: str, project: str, phase: str, publisher: Publisher_T
     ) -> None:
         self.api_key = api_key
         self.project = project
