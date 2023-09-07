@@ -32,7 +32,8 @@ class CustomJSONEncoder(json.JSONEncoder):
 
 def _post_message(message: Message) -> None:
     json_data = json.dumps(message, cls=CustomJSONEncoder)
-    post_json_data("http://httpbin.org/post", json_data)
+    print(json_data)
+    # post_json_data("http://httpbin.org/post", json_data)
 
 
 def _create_observer_and_start_publisher(
