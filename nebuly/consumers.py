@@ -1,3 +1,4 @@
+import atexit
 from queue import Empty, Queue
 from threading import Thread
 
@@ -11,6 +12,7 @@ class ConsumerWorker:
         self.running = True
         self.thread = Thread(target=self.run)
         self.thread.start()
+        atexit.register(self.stop)
 
     def run(self) -> None:
         while self.running:
