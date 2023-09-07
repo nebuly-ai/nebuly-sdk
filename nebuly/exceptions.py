@@ -8,3 +8,7 @@ class NebulyHTTPError(NebulyException):
 
 class AlreadyImportedError(NebulyException):
     """Exception raised when the ai package was imported before init."""
+
+
+class NebulyAlreadyInitializedError(NebulyException):
+    """Exception raised when init is called more than once."""

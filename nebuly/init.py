@@ -4,20 +4,30 @@ from queue import Queue
 from nebuly.config import PACKAGES
 from nebuly.consumers import ConsumerWorker
 from nebuly.entities import Message, Observer_T
+from nebuly.exceptions import NebulyAlreadyInitializedError
 from nebuly.monkey_patching import (
     check_no_packages_already_imported,
     import_and_patch_packages,
 )
 from nebuly.observers import NebulyObserver
-from nebuly.requests import post_json_data
+
+_initialized = False
+
+# TODO:
+# - allow to pass apikey as env variable
+# - phases is an Enum (check main)
 
 
 def init(*, api_key: str, project: str, phase: str) -> None:
+    global _initialized  # pylint: disable=global-statement
+    if _initialized:
+        raise NebulyAlreadyInitializedError("Nebuly already initialized")
     check_no_packages_already_imported(PACKAGES)
     observer = _create_observer_and_start_publisher(
         api_key=api_key, project=project, phase=phase
     )
     import_and_patch_packages(PACKAGES, observer)
+    _initialized = True
 
 
 class CustomJSONEncoder(json.JSONEncoder):
