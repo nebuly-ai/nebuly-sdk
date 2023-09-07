@@ -80,6 +80,7 @@ def _split_nebuly_kwargs(
 
 
 def watch_from_generator(  # pylint: disable=too-many-arguments
+    *,
     generator: Generator,
     observer: Observer_T,
     module: str,
@@ -150,14 +151,14 @@ def _patcher(observer: Observer_T, module: str, function_name: str) -> Callable:
             if isinstance(result, Generator):
                 logger.debug("Result is a generator")
                 return watch_from_generator(
-                    result,
-                    observer,
-                    module,
-                    function_name,
-                    called_start,
-                    original_args,
-                    nebuly_kwargs,
-                    original_kwargs,
+                    generator=result,
+                    observer=observer,
+                    module=module,
+                    function_name=function_name,
+                    called_start=called_start,
+                    original_args=original_args,
+                    original_kwargs=original_kwargs,
+                    nebuly_kwargs=nebuly_kwargs,
                 )
 
             logger.debug("Result is not a generator")
