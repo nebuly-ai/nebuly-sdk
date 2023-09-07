@@ -13,10 +13,6 @@ from nebuly.observers import NebulyObserver
 
 _initialized = False
 
-# TODO:
-# - allow to pass apikey as env variable
-# - phases is an Enum (check main)
-
 
 def init(*, api_key: str, project: str, phase: str) -> None:
     global _initialized  # pylint: disable=global-statement

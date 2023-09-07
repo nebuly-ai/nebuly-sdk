@@ -20,7 +20,6 @@ class ConsumerWorker:
                 message = self.queue.get(timeout=0.1)
             except Empty:
                 continue
-            # TODO: publish in batches instead of one by one
             self.publish(message)
             self.queue.task_done()
 

@@ -6,6 +6,8 @@
 1. Check the publisher doens't crash, and if it does re start it somehow
 1. async wrapper
 1. batch processing
+1. allow to pass apikey as env variable
+1. phases is an Enum (check main)
 
 
 ## Current state
