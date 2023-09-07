@@ -1,4 +1,4 @@
-from dataclasses import asdict
+import json
 from queue import Queue
 
 from nebuly.config import PACKAGES
@@ -20,8 +20,19 @@ def init(*, api_key: str, project: str, phase: str) -> None:
     import_and_patch_packages(PACKAGES, observer)
 
 
+class CustomJSONEncoder(json.JSONEncoder):
+    def default(self, o):
+        if hasattr(o, "to_dict"):
+            return o.to_dict()
+        try:
+            return json.JSONEncoder.default(self, o)
+        except Exception:
+            return str(o)
+
+
 def _post_message(message: Message) -> None:
-    post_json_data("http://httpbin.org/post", asdict(message))
+    json_data = json.dumps(message, cls=CustomJSONEncoder)
+    post_json_data("http://httpbin.org/post", json_data)
 
 
 def _create_observer_and_start_publisher(

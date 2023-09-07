@@ -103,6 +103,7 @@ def watch_from_generator(  # pylint: disable=too-many-arguments
         if first_element:
             first_element = False
             generator_first_element_timestamp = datetime.now(timezone.utc)
+        logger.info("Yielding %s", element)
         original_result.append(deepcopy(element))
         yield element
 
@@ -135,6 +136,7 @@ def _patcher(observer: Observer_T, module: str, function_name: str) -> Callable:
     def inner(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
+            logger.debug("Calling %s.%s", module, function_name)
             nebuly_kwargs, function_kwargs = _split_nebuly_kwargs(kwargs)
 
             original_args = deepcopy(args)
@@ -146,6 +148,7 @@ def _patcher(observer: Observer_T, module: str, function_name: str) -> Callable:
             result = f(*args, **function_kwargs)
 
             if isinstance(result, Generator):
+                logger.debug("Result is a generator")
                 return watch_from_generator(
                     result,
                     observer,
@@ -156,6 +159,8 @@ def _patcher(observer: Observer_T, module: str, function_name: str) -> Callable:
                     nebuly_kwargs,
                     original_kwargs,
                 )
+
+            logger.debug("Result is not a generator")
 
             original_result = deepcopy(result)
             called_end = datetime.now(timezone.utc)

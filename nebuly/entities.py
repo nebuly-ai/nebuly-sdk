@@ -31,6 +31,27 @@ class Watched:  # pylint: disable=too-many-instance-attributes
     generator: bool
     generator_first_element_timestamp: datetime | None
 
+    def to_dict(self) -> dict[str, Any]:
+        """
+        to_dict returns a dictionary representation of the Watched instance.
+        """
+        return {
+            "module": self.module,
+            "function": self.function,
+            "called_start": self.called_start.isoformat(),
+            "called_end": self.called_end.isoformat(),
+            "called_with_args": self.called_with_args,
+            "called_with_kwargs": self.called_with_kwargs,
+            "called_with_nebuly_kwargs": self.called_with_nebuly_kwargs,
+            "returned": self.returned,
+            "generator": self.generator,
+            "generator_first_element_timestamp": (
+                self.generator_first_element_timestamp.isoformat()
+                if self.generator_first_element_timestamp
+                else None
+            ),
+        }
+
 
 @dataclass(frozen=True, slots=True)
 class Message:
@@ -42,6 +63,17 @@ class Message:
     phase: str
     project: str
     watched: Watched
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        to_dict returns a dictionary representation of the Message instance.
+        """
+        return {
+            "api_key": self.api_key,
+            "phase": self.phase,
+            "project": self.project,
+            "watched": self.watched.to_dict(),
+        }
 
 
 Observer_T = Callable[[Watched], None]
