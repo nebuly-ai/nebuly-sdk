@@ -2,12 +2,9 @@
 
 ## TODO
 
-1. Context manager for patching single portion of codes
-   - nested context managers should have "stack" behaviour
 1. Nice to have: semantic versioning expansion in package (maybe OSS library or Poetry?)
 1. Check the publisher doens't crash, and if it does re start it somehow
 1. async wrapper
-1. exit thread when app finishes running
 
 
 ## Current state
