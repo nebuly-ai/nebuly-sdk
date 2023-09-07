@@ -10,7 +10,7 @@ class ConsumerWorker:
         self.publish = publish
         self.queue: Queue[Message] = queue
         self.running = True
-        self.thread = Thread(target=self.run)
+        self.thread = Thread(target=self.run, daemon=True)
         self.thread.start()
         atexit.register(self.stop)
 
