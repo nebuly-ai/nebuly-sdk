@@ -8,7 +8,6 @@ from types import ModuleType
 from typing import Any, Callable, Generator, Iterable
 
 from nebuly.entities import Observer_T, Package, Watched
-from nebuly.exceptions import AlreadyImportedError
 
 logger = logging.getLogger(__name__)
 
@@ -19,10 +18,7 @@ def check_no_packages_already_imported(packages: Iterable[Package]) -> None:
     """
     for package in packages:
         if package.name in sys.modules:
-            raise AlreadyImportedError(
-                f"{package.name} already imported. Make sure you initialize",
-                "Nebuly before importing any packages.",
-            )
+            logger.warning("%s already imported", package.name)
 
 
 def import_and_patch_packages(

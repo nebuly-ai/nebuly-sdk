@@ -1,11 +1,10 @@
 from datetime import datetime, timezone
+from unittest.mock import MagicMock, patch
 
-import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
 from nebuly.entities import Package, Watched
-from nebuly.exceptions import AlreadyImportedError
 from nebuly.monkey_patching import (
     _monkey_patch,
     _patcher,
@@ -120,10 +119,11 @@ def test_nebuly_args_are_intercepted():
     assert watched.returned == 3
 
 
-def test_fails_when_package_already_imported() -> None:
+@patch("nebuly.monkey_patching.logger")
+def test_logs_warning_when_package_already_imported(logger: MagicMock) -> None:
     package = Package("nebuly", ("0.1.0",), ("non_existent",))
-    with pytest.raises(AlreadyImportedError):
-        check_no_packages_already_imported([package])
+    check_no_packages_already_imported([package])
+    logger.warning.assert_called_once_with("%s already imported", "nebuly")
 
 
 def test_monkey_patch() -> None:
