@@ -15,7 +15,7 @@ class Package:
 
 
 @dataclass(frozen=True, slots=True)
-class Watched:
+class Watched:  # pylint: disable=too-many-instance-attributes
     """
     Watched represents a call to a function that was patched.
     """

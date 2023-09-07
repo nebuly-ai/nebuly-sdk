@@ -59,7 +59,7 @@ def test_patcher_calls_observer(args, kwargs) -> None:
 
     assert len(observer.watched) == 1
     watched = observer.watched[0]
-    assert watched.function == to_patched
+    assert watched.function == to_patched  # pylint: disable=comparison-with-callable
     assert before <= watched.called_start <= watched.called_end <= after
     assert watched.called_with_args == args
     assert watched.called_with_kwargs == kwargs
