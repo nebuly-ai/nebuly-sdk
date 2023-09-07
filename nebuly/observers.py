@@ -8,7 +8,12 @@ class NebulyObserver:
     """
 
     def __init__(
-        self, *, api_key: str, project: str, phase: str, publish: Publisher_T
+        self,
+        *,
+        api_key: str,
+        project: str | None,
+        phase: str | None,
+        publish: Publisher_T
     ) -> None:
         self._api_key = api_key
         self._project = project
@@ -16,9 +21,9 @@ class NebulyObserver:
         self._publisher = publish
 
     def _set_nebuly_kwargs(self, watched: Watched) -> None:
-        if "nebuly_project" not in watched.called_with_nebuly_kwargs:
+        if "nebuly_project" not in watched.called_with_nebuly_kwargs and self._project:
             watched.called_with_nebuly_kwargs["nebuly_project"] = self._project
-        if "nebuly_phase" not in watched.called_with_nebuly_kwargs:
+        if "nebuly_phase" not in watched.called_with_nebuly_kwargs and self._phase:
             watched.called_with_nebuly_kwargs["nebuly_phase"] = self._phase
 
     def on_event_received(self, watched: Watched) -> None:

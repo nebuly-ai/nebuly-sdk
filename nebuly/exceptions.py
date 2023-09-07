@@ -12,3 +12,7 @@ class AlreadyImportedError(NebulyException):
 
 class NebulyAlreadyInitializedError(NebulyException):
     """Exception raised when init is called more than once."""
+
+
+class APIKeyNotProvidedError(NebulyException):
+    """Exception raised when the API key is not provided."""
