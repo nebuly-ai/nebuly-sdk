@@ -24,7 +24,7 @@ def test_observer_calls_publisher_when_patched_is_called():
         publish=publisher.publish,
     )
 
-    patched = _patcher(observer.on_event_received)(function)
+    patched = _patcher(observer.on_event_received, "module", "function_name")(function)
     result = patched(1.0, 2, c=3)
 
     assert result == 6

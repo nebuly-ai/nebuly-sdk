@@ -2,7 +2,6 @@
 
 ## TODO
 
-1. Handle args and kwargs serialization - what happen if the args are not serializable?
 1. Context manager for patching single portion of codes
    - nested context managers should have "stack" behaviour
 1. Nice to have: semantic versioning expansion in package (maybe OSS library or Poetry?)

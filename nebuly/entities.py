@@ -20,7 +20,8 @@ class Watched:  # pylint: disable=too-many-instance-attributes
     Watched represents a call to a function that was patched.
     """
 
-    function: Callable
+    module: str
+    function: str
     called_start: datetime
     called_end: datetime
     called_with_args: tuple

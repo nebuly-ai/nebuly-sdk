@@ -56,7 +56,7 @@ def _monkey_patch_attribute(
     setattr(
         tmp_component,
         path[-1],
-        _patcher(observer)(getattr(tmp_component, path[-1])),
+        _patcher(observer, str(module), attr)(getattr(tmp_component, path[-1])),
     )
 
 
@@ -80,7 +80,8 @@ def _split_nebuly_kwargs(
 def watch_from_generator(  # pylint: disable=too-many-arguments
     generator: Generator,
     observer: Observer_T,
-    f: Callable,
+    module: str,
+    function_name: str,
     called_start: datetime,
     original_args: tuple[Any, ...],
     original_kwargs: dict[str, Any],
@@ -106,7 +107,8 @@ def watch_from_generator(  # pylint: disable=too-many-arguments
     called_end = datetime.now(timezone.utc)
 
     watched = Watched(
-        function=f,
+        module=module,
+        function=function_name,
         called_start=called_start,
         called_end=called_end,
         called_with_args=original_args,
@@ -119,7 +121,7 @@ def watch_from_generator(  # pylint: disable=too-many-arguments
     observer(watched)
 
 
-def _patcher(observer: Observer_T):
+def _patcher(observer: Observer_T, module: str, function_name: str) -> Callable:
     """
     Decorator that calls observer with a Watched instance when the decorated
     function is called
@@ -145,7 +147,8 @@ def _patcher(observer: Observer_T):
                 return watch_from_generator(
                     result,
                     observer,
-                    f,
+                    module,
+                    function_name,
                     called_start,
                     original_args,
                     nebuly_kwargs,
@@ -155,7 +158,8 @@ def _patcher(observer: Observer_T):
             original_result = deepcopy(result)
             called_end = datetime.now(timezone.utc)
             watched = Watched(
-                function=f,
+                module=module,
+                function=function_name,
                 called_start=called_start,
                 called_end=called_end,
                 called_with_args=original_args,
