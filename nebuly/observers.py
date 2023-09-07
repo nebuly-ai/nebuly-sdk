@@ -25,8 +25,6 @@ class NebulyObserver:
         self._set_nebuly_kwargs(watched)
         message = Message(
             api_key=self._api_key,
-            project=self._project,
-            phase=self._phase,
             watched=watched,
         )
         self._publisher(message)

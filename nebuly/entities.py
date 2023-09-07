@@ -60,8 +60,6 @@ class Message:
     """
 
     api_key: str
-    phase: str
-    project: str
     watched: Watched
 
     def to_dict(self) -> dict[str, Any]:
@@ -70,8 +68,6 @@ class Message:
         """
         return {
             "api_key": self.api_key,
-            "phase": self.phase,
-            "project": self.project,
             "watched": self.watched.to_dict(),
         }
 

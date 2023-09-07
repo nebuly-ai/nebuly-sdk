@@ -30,8 +30,8 @@ def test_observer_calls_publisher_when_patched_is_called():
     assert result == 6
     assert len(publisher.messages) == 1
     message = publisher.messages[0]
-    assert message.phase == "test_phase"
-    assert message.project == "test_project"
+    assert message.watched.called_with_nebuly_kwargs["nebuly_project"] == "test_project"
+    assert message.watched.called_with_nebuly_kwargs["nebuly_phase"] == "test_phase"
 
 
 def test_observer_sets_nebuly_kwargs():
