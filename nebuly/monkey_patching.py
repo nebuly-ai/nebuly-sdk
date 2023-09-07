@@ -5,7 +5,7 @@ from copy import deepcopy
 from datetime import datetime, timezone
 from functools import wraps
 from types import ModuleType
-from typing import Any, Callable, Generator
+from typing import Any, Callable, Generator, Iterable
 
 from nebuly.entities import Observer_T, Package, Watched
 from nebuly.exceptions import AlreadyImportedError
@@ -13,7 +13,7 @@ from nebuly.exceptions import AlreadyImportedError
 logger = logging.getLogger(__name__)
 
 
-def check_no_packages_already_imported(packages: list[Package]) -> None:
+def check_no_packages_already_imported(packages: Iterable[Package]) -> None:
     """
     Check that no packages in packages have already been imported.
     """
@@ -25,7 +25,9 @@ def check_no_packages_already_imported(packages: list[Package]) -> None:
             )
 
 
-def import_and_patch_packages(packages: list[Package], observer: Observer_T) -> None:
+def import_and_patch_packages(
+    packages: Iterable[Package], observer: Observer_T
+) -> None:
     """
     Import each package in packages and patch it with the observer.
     """

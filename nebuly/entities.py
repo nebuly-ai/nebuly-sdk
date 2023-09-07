@@ -10,8 +10,8 @@ class Package:
     """
 
     name: str
-    versions: list[str]
-    to_patch: list[str]
+    versions: tuple[str, ...]
+    to_patch: tuple[str, ...]
 
 
 @dataclass(frozen=True, slots=True)
