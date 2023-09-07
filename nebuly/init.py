@@ -1,13 +1,13 @@
 from dataclasses import asdict
 from queue import Queue
 
+from nebuly.consumers import ConsumerWorker
 from nebuly.entities import Message, Observer_T, Package
 from nebuly.monkey_patching import (
     check_no_packages_already_imported,
     import_and_patch_packages,
 )
 from nebuly.observers import NebulyObserver
-from nebuly.consumers import ConsumerWorker
 from nebuly.requests import post_json_data
 
 PACKAGES = [

@@ -5,7 +5,7 @@ from copy import deepcopy
 from datetime import datetime, timezone
 from functools import wraps
 from types import ModuleType
-from typing import Any
+from typing import Any, Callable, Generator
 
 from nebuly.entities import Observer_T, Package, Watched
 from nebuly.exceptions import AlreadyImportedError
@@ -77,6 +77,48 @@ def _split_nebuly_kwargs(
     return nebuly_kwargs, function_kwargs
 
 
+def watch_from_generator(  # pylint: disable=too-many-arguments
+    generator: Generator,
+    observer: Observer_T,
+    f: Callable,
+    called_start: datetime,
+    original_args: tuple[Any, ...],
+    original_kwargs: dict[str, Any],
+    nebuly_kwargs: dict[str, Any],
+) -> Generator:
+    """
+    Watch a generator
+
+    Creates the Watched object while the generator is being iterated over.
+    Waits until the iteration is done to call the observer.
+    """
+    original_result = []
+    generator_first_element_timestamp = None
+
+    first_element = True
+    for element in generator:
+        if first_element:
+            first_element = False
+            generator_first_element_timestamp = datetime.now(timezone.utc)
+        original_result.append(deepcopy(element))
+        yield element
+
+    called_end = datetime.now(timezone.utc)
+
+    watched = Watched(
+        function=f,
+        called_start=called_start,
+        called_end=called_end,
+        called_with_args=original_args,
+        called_with_kwargs=original_kwargs,
+        called_with_nebuly_kwargs=nebuly_kwargs,
+        returned=original_result,
+        generator=True,
+        generator_first_element_timestamp=generator_first_element_timestamp,
+    )
+    observer(watched)
+
+
 def _patcher(observer: Observer_T):
     """
     Decorator that calls observer with a Watched instance when the decorated
@@ -94,22 +136,36 @@ def _patcher(observer: Observer_T):
             original_args = deepcopy(args)
             nebuly_kwargs = deepcopy(nebuly_kwargs)
             original_kwargs = deepcopy(function_kwargs)
+            generator_first_element_timestamp = None
 
-            called_at = datetime.now(timezone.utc)
-
+            called_start = datetime.now(timezone.utc)
             result = f(*args, **function_kwargs)
 
+            if isinstance(result, Generator):
+                return watch_from_generator(
+                    result,
+                    observer,
+                    f,
+                    called_start,
+                    original_args,
+                    nebuly_kwargs,
+                    original_kwargs,
+                )
+
             original_result = deepcopy(result)
+            called_end = datetime.now(timezone.utc)
             watched = Watched(
                 function=f,
-                called_at=called_at,
+                called_start=called_start,
+                called_end=called_end,
                 called_with_args=original_args,
                 called_with_kwargs=original_kwargs,
                 called_with_nebuly_kwargs=nebuly_kwargs,
                 returned=original_result,
+                generator=False,
+                generator_first_element_timestamp=generator_first_element_timestamp,
             )
             observer(watched)
-
             return result
 
         return wrapper

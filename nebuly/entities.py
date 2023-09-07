@@ -21,11 +21,14 @@ class Watched:
     """
 
     function: Callable
-    called_at: datetime
+    called_start: datetime
+    called_end: datetime
     called_with_args: tuple
     called_with_kwargs: dict[str, Any]
     called_with_nebuly_kwargs: dict[str, Any]
     returned: Any
+    generator: bool
+    generator_first_element_timestamp: datetime | None
 
 
 @dataclass(frozen=True, slots=True)

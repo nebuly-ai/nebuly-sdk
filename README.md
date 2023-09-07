@@ -6,7 +6,6 @@
 3. Context manager for patching single portion of codes
    - nested context managers should have "stack" behaviour
 4. Nice to have: semantic versioning expansion in package (maybe OSS library or Poetry?)
-5. patch generators in a different way
 
 ## Current state
 

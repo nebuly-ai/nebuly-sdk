@@ -60,7 +60,7 @@ def test_patcher_calls_observer(args, kwargs) -> None:
     assert len(observer.watched) == 1
     watched = observer.watched[0]
     assert watched.function == to_patched
-    assert before <= watched.called_at <= after
+    assert before <= watched.called_start <= watched.called_end <= after
     assert watched.called_with_args == args
     assert watched.called_with_kwargs == kwargs
     assert watched.called_with_nebuly_kwargs == {}
@@ -176,3 +176,38 @@ def test_monkey_patch_missing_component_doesnt_break_other_patches() -> None:
     result = ToPatch().to_patch_one(1, 2.0, c=3)
     assert result == 6
     assert len(observer) == 1
+
+
+@given(args=st.tuples(st_any), kwargs=st.dictionaries(st.text(), st_any))
+def test_patcher_calls_observer_after_generator_has_finished(args, kwargs) -> None:
+    def to_patched_generator(
+        *args: int, **kwargs: str
+    ):  # pylint: disable=unused-argument
+        """This is the docstring to be tested"""
+        for i in range(3):
+            yield i
+
+    observer = Observer()
+
+    patched = _patcher(observer)(to_patched_generator)
+
+    before = datetime.now(timezone.utc)
+    generator = patched(*args, **kwargs)
+    datetime.now(timezone.utc)
+
+    consumed_generator = list(generator)
+    after = datetime.now(timezone.utc)
+
+    assert consumed_generator == [0, 1, 2]
+    assert len(observer.watched) == 1
+    watched = observer.watched[0]
+    assert watched.returned == [0, 1, 2]
+    assert watched.generator is True
+    assert watched.generator_first_element_timestamp is not None
+    assert (
+        before
+        <= watched.called_start
+        <= watched.generator_first_element_timestamp
+        <= watched.called_end
+        <= after
+    )
