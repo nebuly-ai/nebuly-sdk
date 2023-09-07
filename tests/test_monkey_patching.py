@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
+import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
@@ -210,3 +211,15 @@ def test_patcher_calls_observer_after_generator_has_finished(args, kwargs) -> No
         <= watched.called_end
         <= after
     )
+
+
+@pytest.mark.asyncio
+async def test_patcher_async_function():
+    async def to_patched_async_function():
+        return 1
+
+    patched = _patcher(lambda _: None, "module", "function_name")(
+        to_patched_async_function
+    )
+
+    assert await patched() == 1
