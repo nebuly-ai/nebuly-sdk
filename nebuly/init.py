@@ -26,7 +26,7 @@ class CustomJSONEncoder(json.JSONEncoder):
             return o.to_dict()
         try:
             return json.JSONEncoder.default(self, o)
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             return str(o)
 
 
