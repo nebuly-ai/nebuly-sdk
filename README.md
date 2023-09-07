@@ -5,6 +5,7 @@
 1. Nice to have: semantic versioning expansion in package (maybe OSS library or Poetry?)
 1. Check the publisher doens't crash, and if it does re start it somehow
 1. async wrapper
+1. batch processing
 
 
 ## Current state
