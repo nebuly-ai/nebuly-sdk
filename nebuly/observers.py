@@ -22,16 +22,26 @@ class NebulyObserver:
         self._phase = phase
         self._publisher = publish
 
+    def on_event_received(self, watched: Watched) -> None:
+        self._set_nebuly_kwargs(watched)
+        self._validate_phase(watched)
+        message = Message(
+            api_key=self._api_key,
+            watched=watched,
+        )
+        self._publisher(message)
+
     def _set_nebuly_kwargs(self, watched: Watched) -> None:
         if "nebuly_project" not in watched.called_with_nebuly_kwargs and self._project:
             watched.called_with_nebuly_kwargs["nebuly_project"] = self._project
         if "nebuly_phase" not in watched.called_with_nebuly_kwargs and self._phase:
             watched.called_with_nebuly_kwargs["nebuly_phase"] = self._phase
 
-    def on_event_received(self, watched: Watched) -> None:
-        self._set_nebuly_kwargs(watched)
-        message = Message(
-            api_key=self._api_key,
-            watched=watched,
-        )
-        self._publisher(message)
+    @staticmethod
+    def _validate_phase(watched: Watched) -> None:
+        if "nebuly_phase" not in watched.called_with_nebuly_kwargs:
+            raise ValueError("nebuly_phase must be set")
+        if not isinstance(
+            watched.called_with_nebuly_kwargs["nebuly_phase"], DevelopmentPhase
+        ):
+            raise ValueError("nebuly_phase must be a DevelopmentPhase")

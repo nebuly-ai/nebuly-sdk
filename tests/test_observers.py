@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from nebuly.entities import Message
+import pytest
+
+from nebuly.entities import DevelopmentPhase, Message
 from nebuly.monkey_patching import _patcher
 from nebuly.observers import NebulyObserver
 
@@ -22,7 +24,7 @@ def test_observer_calls_publisher_when_patched_is_called():
     observer = NebulyObserver(
         api_key="test_api_key",
         project="test_project",
-        phase="test_phase",
+        phase=DevelopmentPhase.EXPERIMENTATION,
         publish=publisher.publish,
     )
 
@@ -33,7 +35,10 @@ def test_observer_calls_publisher_when_patched_is_called():
     assert len(publisher.messages) == 1
     message = publisher.messages[0]
     assert message.watched.called_with_nebuly_kwargs["nebuly_project"] == "test_project"
-    assert message.watched.called_with_nebuly_kwargs["nebuly_phase"] == "test_phase"
+    assert (
+        message.watched.called_with_nebuly_kwargs["nebuly_phase"]
+        == DevelopmentPhase.EXPERIMENTATION
+    )
 
 
 def test_observer_sets_nebuly_kwargs():
@@ -41,7 +46,7 @@ def test_observer_sets_nebuly_kwargs():
     observer = NebulyObserver(
         api_key="test_api_key",
         project="test_project",
-        phase="test_phase",
+        phase=DevelopmentPhase.EXPERIMENTATION,
         publish=publisher.publish,
     )
 
@@ -52,7 +57,10 @@ def test_observer_sets_nebuly_kwargs():
     assert len(publisher.messages) == 1
     message = publisher.messages[0]
     assert message.watched.called_with_nebuly_kwargs["nebuly_project"] == "test_project"
-    assert message.watched.called_with_nebuly_kwargs["nebuly_phase"] == "test_phase"
+    assert (
+        message.watched.called_with_nebuly_kwargs["nebuly_phase"]
+        == DevelopmentPhase.EXPERIMENTATION
+    )
 
 
 def test_observer_doesnt_override_nebuly_kwargs():
@@ -60,13 +68,17 @@ def test_observer_doesnt_override_nebuly_kwargs():
     observer = NebulyObserver(
         api_key="test_api_key",
         project="test_project",
-        phase="test_phase",
+        phase=DevelopmentPhase.EXPERIMENTATION,
         publish=publisher.publish,
     )
 
     patched = _patcher(observer.on_event_received, "module", "function_name")(function)
     result = patched(
-        1.0, 2, c=3, nebuly_project="other_project", nebuly_phase="other_phase"
+        1.0,
+        2,
+        c=3,
+        nebuly_project="other_project",
+        nebuly_phase=DevelopmentPhase.PREPROCESSING,
     )
 
     assert result == 6
@@ -75,4 +87,35 @@ def test_observer_doesnt_override_nebuly_kwargs():
     assert (
         message.watched.called_with_nebuly_kwargs["nebuly_project"] == "other_project"
     )
-    assert message.watched.called_with_nebuly_kwargs["nebuly_phase"] == "other_phase"
+    assert (
+        message.watched.called_with_nebuly_kwargs["nebuly_phase"]
+        == DevelopmentPhase.PREPROCESSING
+    )
+
+
+def test_nebuly_observer_raises_exception_if_invalid_phase():
+    publisher = Publisher()
+    observer = NebulyObserver(
+        api_key="test_api_key",
+        project="test_project",
+        phase="invalid_phase",  # type: ignore
+        publish=publisher.publish,
+    )
+    patched = _patcher(observer.on_event_received, "module", "function_name")(function)
+
+    with pytest.raises(ValueError):
+        patched(1.0, 2, c=3)
+
+
+def test_nebuly_observer_raises_exception_if_invalid_phase_override():
+    publisher = Publisher()
+    observer = NebulyObserver(
+        api_key="test_api_key",
+        project="test_project",
+        phase=DevelopmentPhase.EXPERIMENTATION,
+        publish=publisher.publish,
+    )
+    patched = _patcher(observer.on_event_received, "module", "function_name")(function)
+
+    with pytest.raises(ValueError):
+        patched(1.0, 2, c=3, nebuly_phase="invalid_phase")
