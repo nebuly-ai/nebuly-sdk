@@ -243,3 +243,23 @@ async def test_patcher_async_generator():
 
     result = [i async for i in generator]
     assert result == [1, 2]
+
+
+@pytest.mark.asyncio
+async def test_patcher_async_return_generator():
+    async def async_range(n):
+        for i in range(n):
+            await sleep(0.1)
+            yield i
+
+    async def to_patched_async_generator():
+        return (i async for i in async_range(3))
+
+    patched = _patcher(lambda _: None, "module", "function_name")(
+        to_patched_async_generator
+    )
+
+    generator = await patched()
+
+    result = [i async for i in generator]
+    assert result == [0, 1, 2]
