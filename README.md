@@ -4,47 +4,19 @@
 
 1. Nice to have: semantic versioning expansion in package (maybe OSS library or Poetry?)
 1. Check the publisher doens't crash, and if it does re start it somehow
-1. async wrapper
 1. batch processing
 
+Make sure we publish all these fields
 
-## Current state
+- project name
+- user
+- provider
+- library
+- version
+- args, kwars
+- returned values
 
-```mermaid
-classDiagram
-    WrappingStrategy <|-- APICallWrappingStrategy
-    WrappingStrategy <|-- GeneratorWrappingStrategy
-    GeneratorWrappingStrategy <|-- TextCompletionStrategy
-    GeneratorWrappingStrategy <|-- ChatCompletionStrategy
-    DataPackageConverte <|-- OpenAIDataPackageConverter
-    Track --> WrappingStrategy
-    DataPackageConverte --> WrappingStrategy
-    Track <|-- OpenAITracker
-    class OpenAITracker{
-        completion_create
-        chat_completion_create
-        edit_create
-        image_create
-        image_edit
-        image_variation
-        embedding_create
-        audio_transcribe
-        audio_translate
-        moderation_create
-        finetune
-    }
-```
-
-### Issues
-
-- Logic and configs are mixed
-- Potentially lose information
-    - When new api versions
-    - When api changes
-    - When a bug is present
-
-
-## New state
+## Design
 
 ```mermaid
 classDiagram
@@ -75,22 +47,3 @@ classDiagram
         watch()
     }
 ```
-
-### Advantages
-
-- Every monkey patching is the same
-- Easier to add more libraries and support different versions
-- In case of a bug we don't lose any data, we can go back in time and reprocess
-
-
-## TODO
-
-Make sure we publish all these fields
-
-- project name
-- user
-- provider
-- library
-- version
-- args, kwars
-- returned values
