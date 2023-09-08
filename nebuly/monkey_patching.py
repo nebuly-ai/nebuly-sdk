@@ -170,19 +170,48 @@ async def watch_from_generator_async(  # pylint: disable=too-many-arguments
     observer(watched)
 
 
+def _setup_args_kwargs(
+    *args: tuple[Any, ...], **kwargs: dict[str, Any]
+) -> tuple[tuple[Any, ...], dict[str, Any], dict[str, Any], dict[str, Any]]:
+    """
+    Split nebuly kwargs from function kwargs
+
+    Returns:
+        original_args: deepcopy of args passed to the function
+        original_kwargs: deepcopy of kwargs passed to the function that are not
+            nebuly kwargs
+        function_kwargs: kwargs passed to the function that are not nebuly kwargs
+        nebuly_kwargs: kwargs passed to the function that are nebuly kwargs
+    """
+    nebuly_kwargs, function_kwargs = _split_nebuly_kwargs(kwargs)
+
+    original_args = deepcopy(args)
+    nebuly_kwargs = deepcopy(nebuly_kwargs)
+    original_kwargs = deepcopy(function_kwargs)
+
+    return original_args, original_kwargs, function_kwargs, nebuly_kwargs
+
+
 def coroutine_wrapper(f, observer, module, function_name):
     @wraps(f)
     async def wrapper(*args, **kwargs):
         logger.debug("Calling %s.%s", module, function_name)
-        nebuly_kwargs, function_kwargs = _split_nebuly_kwargs(kwargs)
 
-        original_args = deepcopy(args)
-        nebuly_kwargs = deepcopy(nebuly_kwargs)
-        original_kwargs = deepcopy(function_kwargs)
+        (
+            original_args,
+            original_kwargs,
+            function_kwargs,
+            nebuly_kwargs,
+        ) = _setup_args_kwargs(*args, **kwargs)
+
         generator_first_element_timestamp = None
 
         called_start = datetime.now(timezone.utc)
-        result = await f(*args, **function_kwargs)
+
+        if isasyncgenfunction(f):
+            result = f(*args, **function_kwargs)
+        else:
+            result = await f(*args, **function_kwargs)
 
         if isinstance(result, AsyncGenerator):
             logger.debug("Result is a generator")
@@ -219,59 +248,20 @@ def coroutine_wrapper(f, observer, module, function_name):
     return wrapper
 
 
-def async_generator_wrapper(f, observer, module, function_name):
-    @wraps(f)
-    async def wrapper(*args, **kwargs):
-        logger.debug("Calling %s.%s", module, function_name)
-        nebuly_kwargs, function_kwargs = _split_nebuly_kwargs(kwargs)
-
-        original_args = deepcopy(args)
-        nebuly_kwargs = deepcopy(nebuly_kwargs)
-        original_kwargs = deepcopy(function_kwargs)
-
-        called_start = datetime.now(timezone.utc)
-        generator = f(*args, **function_kwargs)
-
-        original_result = []
-        generator_first_element_timestamp = None
-
-        first_element = True
-        async for element in generator:
-            if first_element:
-                first_element = False
-                generator_first_element_timestamp = datetime.now(timezone.utc)
-            logger.info("Yielding %s", element)
-            original_result.append(deepcopy(element))
-            yield element
-
-        called_end = datetime.now(timezone.utc)
-
-        watched = Watched(
-            module=module,
-            function=function_name,
-            called_start=called_start,
-            called_end=called_end,
-            called_with_args=original_args,
-            called_with_kwargs=original_kwargs,
-            called_with_nebuly_kwargs=nebuly_kwargs,
-            returned=original_result,
-            generator=True,
-            generator_first_element_timestamp=generator_first_element_timestamp,
-        )
-        observer(watched)
-
-    return wrapper
-
-
-def regular_function_wrapper(f, observer, module, function_name):
+def function_wrapper(
+    f: Callable, observer: Observer_T, module: str, function_name: str
+):
     @wraps(f)
     def wrapper(*args, **kwargs):
         logger.debug("Calling %s.%s", module, function_name)
-        nebuly_kwargs, function_kwargs = _split_nebuly_kwargs(kwargs)
 
-        original_args = deepcopy(args)
-        nebuly_kwargs = deepcopy(nebuly_kwargs)
-        original_kwargs = deepcopy(function_kwargs)
+        (
+            original_args,
+            original_kwargs,
+            function_kwargs,
+            nebuly_kwargs,
+        ) = _setup_args_kwargs(*args, **kwargs)
+
         generator_first_element_timestamp = None
 
         called_start = datetime.now(timezone.utc)
@@ -322,12 +312,9 @@ def _patcher(observer: Observer_T, module: str, function_name: str) -> Callable:
     """
 
     def inner(f):
-        if iscoroutinefunction(f):
+        if iscoroutinefunction(f) or isasyncgenfunction(f):
             return coroutine_wrapper(f, observer, module, function_name)
 
-        if isasyncgenfunction(f):
-            return async_generator_wrapper(f, observer, module, function_name)
-
-        return regular_function_wrapper(f, observer, module, function_name)
+        return function_wrapper(f, observer, module, function_name)
 
     return inner
