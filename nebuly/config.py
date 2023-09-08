@@ -14,6 +14,7 @@ PACKAGES = (
             "Embedding.create",
             "FineTune.create",
             "Moderation.create",
+            "FineTunningJob.create",
         ),
     ),
 )
