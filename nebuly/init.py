@@ -13,6 +13,7 @@ from nebuly.monkey_patching import (
     import_and_patch_packages,
 )
 from nebuly.observers import NebulyObserver
+from nebuly.requests import post_json_data
 
 _initialized = False
 
@@ -61,8 +62,8 @@ class CustomJSONEncoder(json.JSONEncoder):
 
 def _post_message(message: Message) -> None:
     json_data = json.dumps(message, cls=CustomJSONEncoder)
-    print(json_data)
-    # post_json_data("http://httpbin.org/post", json_data)
+    url = "https://dev.backend.nebuly.com/event-ingestion/api/v1/events"
+    post_json_data(url, json_data)
 
 
 def _create_observer_and_start_publisher(
