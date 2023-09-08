@@ -8,8 +8,7 @@ help: ## Display this help.
 
 .PHONY: lint
 lint:
-	poetry run pre-commit install
-	poetry run pre-commit run -a
+	@poetry run pre-commit run -a
 
 .PHONY: format
 format: ## Run the auto-formatter
@@ -40,5 +39,5 @@ install-dev: ## Install CloudSurfer with all the development dependencies
 
 .PHONY: setup
 setup: poetry install-dev ## Setup the dev environment
-	@pre-commit install
-	@pre-commit install-hooks
+	@poetry run pre-commit install
+	@poetry run pre-commit install-hooks
