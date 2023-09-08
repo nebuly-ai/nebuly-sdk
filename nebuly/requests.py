@@ -5,7 +5,7 @@ import logging
 import os
 import urllib.request
 
-from nebuly.entities import Message
+from nebuly.entities import Watched
 
 logger = logging.getLogger(__name__)
 
@@ -20,19 +20,22 @@ class CustomJSONEncoder(json.JSONEncoder):
             return str(o)
 
 
-def post_message(message: Message) -> None:
+def post_message(message: Watched, api_key: str) -> None:
     json_data = json.dumps(message, cls=CustomJSONEncoder)
     url = os.environ.get(
         "NEBULY_API_URL", "https://backend.nebuly.com/event-ingestion/api/v1/events"
     )
-    post_json_data(url, json_data)
+    post_json_data(url, json_data, api_key)
 
 
-def post_json_data(url: str, json_data: str) -> str:
+def post_json_data(url: str, json_data: str, api_key: str) -> str:
     request = urllib.request.Request(
         url,
         data=json_data.encode("utf-8"),
-        headers={"Content-Type": "application/json"},
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        },
     )
 
     with urllib.request.urlopen(request, timeout=3) as response:

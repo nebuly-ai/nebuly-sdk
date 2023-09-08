@@ -18,21 +18,25 @@ classDiagram
     Init --> Observer
     Init --> Consumer
     Init --> DevelopmentPhase
-    Init --> Message
+    Init --> Watched
     Init --> Observer_T
     MonkeyPatching --> Package
     MonkeyPatching --> Watched
     Observer --> DevelopmentPhase
-    Observer --> Message
+    Observer --> Watched
     Observer --> Publisher_T
     Observer --> Watched
-    Consumer --> Message
+    Consumer --> Watched
     Consumer --> Publisher_T
     Observer --|> Observer_T
     Consumer --|> Publisher_T
-    Publisher_T --> Message
+    Publisher_T --> Watched
     Observer_T --> Watched
-    Message --> Watched
+    <<Interface>> Publisher_T
+    <<Interface>> Observer_T
+    <<Entity>> Package
+    <<Entity>> Watched
+    <<Enum>> DevelopmentPhase
 ```
 
 ## Code Quality Checks

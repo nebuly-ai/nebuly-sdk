@@ -2,16 +2,16 @@ from __future__ import annotations
 
 import pytest
 
-from nebuly.entities import DevelopmentPhase, Message
+from nebuly.entities import DevelopmentPhase, Watched
 from nebuly.monkey_patching import _patcher
 from nebuly.observers import NebulyObserver
 
 
 class Publisher:
     def __init__(self) -> None:
-        self.messages: list[Message] = []
+        self.messages: list[Watched] = []
 
-    def publish(self, message: Message) -> None:
+    def publish(self, message: Watched) -> None:
         self.messages.append(message)
 
 
@@ -33,10 +33,10 @@ def test_observer_calls_publisher_when_patched_is_called():
 
     assert result == 6
     assert len(publisher.messages) == 1
-    message = publisher.messages[0]
-    assert message.watched.called_with_nebuly_kwargs["nebuly_project"] == "test_project"
+    watched = publisher.messages[0]
+    assert watched.called_with_nebuly_kwargs["nebuly_project"] == "test_project"
     assert (
-        message.watched.called_with_nebuly_kwargs["nebuly_phase"]
+        watched.called_with_nebuly_kwargs["nebuly_phase"]
         == DevelopmentPhase.EXPERIMENTATION
     )
 
@@ -55,10 +55,10 @@ def test_observer_sets_nebuly_kwargs():
 
     assert result == 6
     assert len(publisher.messages) == 1
-    message = publisher.messages[0]
-    assert message.watched.called_with_nebuly_kwargs["nebuly_project"] == "test_project"
+    watched = publisher.messages[0]
+    assert watched.called_with_nebuly_kwargs["nebuly_project"] == "test_project"
     assert (
-        message.watched.called_with_nebuly_kwargs["nebuly_phase"]
+        watched.called_with_nebuly_kwargs["nebuly_phase"]
         == DevelopmentPhase.EXPERIMENTATION
     )
 
@@ -83,12 +83,10 @@ def test_observer_doesnt_override_nebuly_kwargs():
 
     assert result == 6
     assert len(publisher.messages) == 1
-    message = publisher.messages[0]
+    watched = publisher.messages[0]
+    assert watched.called_with_nebuly_kwargs["nebuly_project"] == "other_project"
     assert (
-        message.watched.called_with_nebuly_kwargs["nebuly_project"] == "other_project"
-    )
-    assert (
-        message.watched.called_with_nebuly_kwargs["nebuly_phase"]
+        watched.called_with_nebuly_kwargs["nebuly_phase"]
         == DevelopmentPhase.PREPROCESSING
     )
 

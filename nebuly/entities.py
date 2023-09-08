@@ -65,25 +65,6 @@ class Watched:  # pylint: disable=too-many-instance-attributes
         }
 
 
-@dataclass(frozen=True)
-class Message:
-    """
-    Message represents a message to be sent to the API.
-    """
-
-    api_key: str
-    watched: Watched
-
-    def to_dict(self) -> dict[str, Any]:
-        """
-        to_dict returns a dictionary representation of the Message instance.
-        """
-        return {
-            "api_key": self.api_key,
-            "watched": self.watched.to_dict(),
-        }
-
-
 Observer_T = Callable[[Watched], None]
 
-Publisher_T = Callable[[Message], None]
+Publisher_T = Callable[[Watched], None]

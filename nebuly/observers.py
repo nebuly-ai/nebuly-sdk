@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from nebuly.entities import DevelopmentPhase, Message, Publisher_T, Watched
+from nebuly.entities import DevelopmentPhase, Publisher_T, Watched
 
 
 class NebulyObserver:
@@ -25,11 +25,7 @@ class NebulyObserver:
     def on_event_received(self, watched: Watched) -> None:
         self._set_nebuly_kwargs(watched)
         self._validate_phase(watched)
-        message = Message(
-            api_key=self._api_key,
-            watched=watched,
-        )
-        self._publisher(message)
+        self._publisher(watched)
 
     def _set_nebuly_kwargs(self, watched: Watched) -> None:
         if "nebuly_project" not in watched.called_with_nebuly_kwargs and self._project:
