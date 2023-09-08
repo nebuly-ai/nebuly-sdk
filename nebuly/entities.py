@@ -36,7 +36,7 @@ class Provider(Enum):
     OPENAI = "openai"
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class Package:
     """
     Package represents a package to be patched.
@@ -47,7 +47,7 @@ class Package:
     to_patch: tuple[str, ...]
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class Watched:  # pylint: disable=too-many-instance-attributes
     """
     Watched represents a call to a function that was patched.
@@ -86,7 +86,7 @@ class Watched:  # pylint: disable=too-many-instance-attributes
         }
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class Message:
     """
     Message represents a message to be sent to the API.
