@@ -1,3 +1,4 @@
+from asyncio import sleep
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
@@ -216,6 +217,7 @@ def test_patcher_calls_observer_after_generator_has_finished(args, kwargs) -> No
 @pytest.mark.asyncio
 async def test_patcher_async_function():
     async def to_patched_async_function():
+        await sleep(0.1)
         return 1
 
     patched = _patcher(lambda _: None, "module", "function_name")(
@@ -223,3 +225,21 @@ async def test_patcher_async_function():
     )
 
     assert await patched() == 1
+
+
+@pytest.mark.asyncio
+async def test_patcher_async_generator():
+    async def to_patched_async_generator():
+        await sleep(0.1)
+        yield 1
+        await sleep(0.1)
+        yield 2
+
+    patched = _patcher(lambda _: None, "module", "function_name")(
+        to_patched_async_generator
+    )
+
+    generator = await patched()
+
+    result = [i async for i in generator]
+    assert result == [1, 2]
