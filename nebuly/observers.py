@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from nebuly.entities import Message, Publisher_T, Watched
+from nebuly.entities import DevelopmentPhase, Message, Publisher_T, Watched
 
 
 class NebulyObserver:
@@ -14,12 +14,12 @@ class NebulyObserver:
         *,
         api_key: str,
         project: str | None,
-        phase: str | None,
+        development_phase: DevelopmentPhase | None,
         publish: Publisher_T,
     ) -> None:
         self._api_key = api_key
         self._project = project
-        self._phase = phase
+        self._phase = development_phase
         self._publisher = publish
 
     def _set_nebuly_kwargs(self, watched: Watched) -> None:

@@ -6,7 +6,7 @@ from queue import Queue
 
 from nebuly.config import PACKAGES
 from nebuly.consumers import ConsumerWorker
-from nebuly.entities import Message, Observer_T
+from nebuly.entities import DevelopmentPhase, Message, Observer_T
 from nebuly.exceptions import APIKeyNotProvidedError, NebulyAlreadyInitializedError
 from nebuly.monkey_patching import (
     check_no_packages_already_imported,
@@ -21,14 +21,14 @@ def init(
     *,
     api_key: str | None = None,
     project: str | None = None,
-    phase: str | None = None,
+    development_phase: DevelopmentPhase | None = None,
 ) -> None:
     if not api_key:
         api_key = _get_api_key()
     _check_nebuly_is_not_initialized()
     check_no_packages_already_imported(PACKAGES)
     observer = _create_observer_and_start_publisher(
-        api_key=api_key, project=project, phase=phase
+        api_key=api_key, project=project, development_phase=development_phase
     )
     import_and_patch_packages(PACKAGES, observer)
 
@@ -66,7 +66,7 @@ def _post_message(message: Message) -> None:
 
 
 def _create_observer_and_start_publisher(
-    *, api_key: str, project: str | None, phase: str | None
+    *, api_key: str, project: str | None, development_phase: DevelopmentPhase | None
 ) -> Observer_T:
     queue: Queue[Message] = Queue()
 
@@ -74,7 +74,7 @@ def _create_observer_and_start_publisher(
     observer = NebulyObserver(
         api_key=api_key,
         project=project,
-        phase=phase,
+        development_phase=development_phase,
         publish=queue.put,
     )
     return observer.on_event_received

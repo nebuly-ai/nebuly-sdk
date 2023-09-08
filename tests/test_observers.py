@@ -22,7 +22,7 @@ def test_observer_calls_publisher_when_patched_is_called():
     observer = NebulyObserver(
         api_key="test_api_key",
         project="test_project",
-        phase="test_phase",
+        development_phase="test_phase",
         publish=publisher.publish,
     )
 
@@ -41,7 +41,7 @@ def test_observer_sets_nebuly_kwargs():
     observer = NebulyObserver(
         api_key="test_api_key",
         project="test_project",
-        phase="test_phase",
+        development_phase="test_phase",
         publish=publisher.publish,
     )
 
@@ -60,7 +60,7 @@ def test_observer_doesnt_override_nebuly_kwargs():
     observer = NebulyObserver(
         api_key="test_api_key",
         project="test_project",
-        phase="test_phase",
+        development_phase="test_phase",
         publish=publisher.publish,
     )
 
