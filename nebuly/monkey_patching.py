@@ -228,28 +228,24 @@ def async_generator_wrapper(f, observer, module, function_name):
         original_args = deepcopy(args)
         nebuly_kwargs = deepcopy(nebuly_kwargs)
         original_kwargs = deepcopy(function_kwargs)
-        generator_first_element_timestamp = None
 
         called_start = datetime.now(timezone.utc)
-        result = f(*args, **function_kwargs)
+        generator = f(*args, **function_kwargs)
 
-        if isinstance(result, AsyncGenerator):
-            logger.debug("Result is a generator")
-            return watch_from_generator_async(
-                generator=result,
-                observer=observer,
-                module=module,
-                function_name=function_name,
-                called_start=called_start,
-                original_args=original_args,
-                original_kwargs=original_kwargs,
-                nebuly_kwargs=nebuly_kwargs,
-            )
+        original_result = []
+        generator_first_element_timestamp = None
 
-        logger.debug("Result is not a generator")
+        first_element = True
+        async for element in generator:
+            if first_element:
+                first_element = False
+                generator_first_element_timestamp = datetime.now(timezone.utc)
+            logger.info("Yielding %s", element)
+            original_result.append(deepcopy(element))
+            yield element
 
-        original_result = deepcopy(result)
         called_end = datetime.now(timezone.utc)
+
         watched = Watched(
             module=module,
             function=function_name,
@@ -259,16 +255,15 @@ def async_generator_wrapper(f, observer, module, function_name):
             called_with_kwargs=original_kwargs,
             called_with_nebuly_kwargs=nebuly_kwargs,
             returned=original_result,
-            generator=False,
+            generator=True,
             generator_first_element_timestamp=generator_first_element_timestamp,
         )
         observer(watched)
-        return result
 
     return wrapper
 
 
-def generator_wrapper(f, observer, module, function_name):
+def regular_function_wrapper(f, observer, module, function_name):
     @wraps(f)
     def wrapper(*args, **kwargs):
         logger.debug("Calling %s.%s", module, function_name)
@@ -333,6 +328,6 @@ def _patcher(observer: Observer_T, module: str, function_name: str) -> Callable:
         if isasyncgenfunction(f):
             return async_generator_wrapper(f, observer, module, function_name)
 
-        return generator_wrapper(f, observer, module, function_name)
+        return regular_function_wrapper(f, observer, module, function_name)
 
     return inner
