@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import urllib.request
 
 from nebuly.entities import Message
@@ -21,7 +22,9 @@ class CustomJSONEncoder(json.JSONEncoder):
 
 def post_message(message: Message) -> None:
     json_data = json.dumps(message, cls=CustomJSONEncoder)
-    url = "https://backend.nebuly.com/event-ingestion/api/v1/events"
+    url = os.environ.get(
+        "NEBULY_API_URL", "https://backend.nebuly.com/event-ingestion/api/v1/events"
+    )
     post_json_data(url, json_data)
 
 
