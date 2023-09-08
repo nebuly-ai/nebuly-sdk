@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import atexit
 from queue import Empty, Queue
 from threading import Thread

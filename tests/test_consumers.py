@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from queue import Queue
 
 from nebuly.consumers import ConsumerWorker

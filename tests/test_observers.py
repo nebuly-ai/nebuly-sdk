@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from nebuly.entities import Message
 from nebuly.monkey_patching import _patcher
 from nebuly.observers import NebulyObserver

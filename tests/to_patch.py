@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class ToPatch:
     """This is the class to patch."""
 

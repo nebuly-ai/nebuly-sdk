@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from nebuly.entities import Message, Publisher_T, Watched
 
 
@@ -13,7 +15,7 @@ class NebulyObserver:
         api_key: str,
         project: str | None,
         phase: str | None,
-        publish: Publisher_T
+        publish: Publisher_T,
     ) -> None:
         self._api_key = api_key
         self._project = project

@@ -25,7 +25,7 @@ lint-fix: format ## Run the linter and fix issues
 ##@ Test
 .PHONY: test
 test: ## Run the tests
-	@poetry run pytest --cov=nebuly --cov-context=test --cov-report=html --cov-report=xml
+	@poetry run pytest --cov=nebuly --cov-context=test --cov-report=html --cov-report=xml -v
 	@poetry run coverage report
 
 ##@ Install

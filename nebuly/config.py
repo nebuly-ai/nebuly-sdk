@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from nebuly.entities import Package
 
 PACKAGES = (
