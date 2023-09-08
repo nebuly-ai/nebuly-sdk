@@ -192,7 +192,9 @@ def _setup_args_kwargs(
     return original_args, original_kwargs, function_kwargs, nebuly_kwargs
 
 
-def coroutine_wrapper(f, observer, module, function_name):
+def coroutine_wrapper(
+    f: Callable, observer: Observer_T, module: str, function_name: str
+) -> Callable:
     @wraps(f)
     async def wrapper(*args, **kwargs):
         logger.debug("Calling %s.%s", module, function_name)
@@ -250,7 +252,7 @@ def coroutine_wrapper(f, observer, module, function_name):
 
 def function_wrapper(
     f: Callable, observer: Observer_T, module: str, function_name: str
-):
+) -> Callable:
     @wraps(f)
     def wrapper(*args, **kwargs):
         logger.debug("Calling %s.%s", module, function_name)
