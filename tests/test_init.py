@@ -10,9 +10,9 @@ from nebuly.init import _get_api_key
 
 
 def test_cannot_init_twice():
-    init(api_key="fake_key", project="", development_phase="")
+    init(api_key="fake_key", project="", phase="")
     with pytest.raises(NebulyAlreadyInitializedError):
-        init(api_key="fake_key", project="", development_phase="")
+        init(api_key="fake_key", project="", phase="")
 
 
 def test_get_api_key_not_provided():

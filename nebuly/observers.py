@@ -14,12 +14,12 @@ class NebulyObserver:
         *,
         api_key: str,
         project: str | None,
-        development_phase: DevelopmentPhase | None,
+        phase: DevelopmentPhase | None,
         publish: Publisher_T,
     ) -> None:
         self._api_key = api_key
         self._project = project
-        self._phase = development_phase
+        self._phase = phase
         self._publisher = publish
 
     def _set_nebuly_kwargs(self, watched: Watched) -> None:
