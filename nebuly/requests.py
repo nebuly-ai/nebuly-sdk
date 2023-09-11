@@ -21,7 +21,7 @@ class CustomJSONEncoder(json.JSONEncoder):
 
 
 def post_message(message: Watched, api_key: str) -> None:
-    json_data = json.dumps(message, cls=CustomJSONEncoder)
+    json_data = json.dumps({"body": message}, cls=CustomJSONEncoder)
     url = os.environ.get(
         "NEBULY_API_URL", "https://backend.nebuly.com/event-ingestion/api/v1/events"
     )
