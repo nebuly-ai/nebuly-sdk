@@ -6,6 +6,8 @@ The SDK for instrumenting applications for tracking AI costs.
 1. Nice to have: semantic versioning expansion in package (maybe OSS library or Poetry?)
 1. Check the publisher doens't crash, and if it does re start it somehow
 1. batch processing
+1. if publishing message fails retry (discuss how many retries before dropping the message)
+1. limit queue size (discuss how long it should be and what to do if it gets full)
 
 ## Design
 
