@@ -1,0 +1,32 @@
+classDiagram
+  class nebuly {
+  }
+  class config {
+  }
+  class consumers {
+  }
+  class entities {
+  }
+  class exceptions {
+  }
+  class init {
+  }
+  class monkey_patching {
+  }
+  class observers {
+  }
+  class requests {
+  }
+  nebuly --> init
+  config --> entities
+  consumers --> entities
+  init --> config
+  init --> consumers
+  init --> entities
+  init --> exceptions
+  init --> monkey_patching
+  init --> observers
+  init --> requests
+  monkey_patching --> entities
+  observers --> entities
+  requests --> entities
