@@ -36,7 +36,7 @@ def test_patcher_doesnt_change_any_behavior(args, kwargs) -> None:
         """This is the docstring to be tested"""
         return args, kwargs
 
-    patched = _patcher(lambda _: None, "module", "function_name")(to_patched)
+    patched = _patcher(lambda _: None, "module", "0.1.0", "function_name")(to_patched)
 
     assert patched(*args, **kwargs) == to_patched(*args, **kwargs)
     assert patched.__name__ == to_patched.__name__
@@ -54,7 +54,7 @@ def test_patcher_calls_observer(args, kwargs) -> None:
 
     observer = Observer()
 
-    patched = _patcher(observer, "module", "function_name")(to_patched)
+    patched = _patcher(observer, "module", "0.1.0", "function_name")(to_patched)
 
     before = datetime.now(timezone.utc)
     patched(*args, **kwargs)
@@ -79,7 +79,7 @@ def test_watched_is_immutable() -> None:
     observer = Observer()
     mutable: list[int] = []
 
-    _patcher(observer, "module", "function_name")(to_patched)(mutable)
+    _patcher(observer, "module", "0.1.0", "function_name")(to_patched)(mutable)
 
     mutable.append(2)
 
@@ -109,7 +109,7 @@ def test_nebuly_args_are_intercepted():
         return a + b
 
     observer = Observer()
-    patched = _patcher(observer, "module", "function_name")(function)
+    patched = _patcher(observer, "module", "0.1.0", "function_name")(function)
 
     patched(1, 2, nebuly_segment="segment", nebuly_project="project")
 
@@ -192,7 +192,9 @@ def test_patcher_calls_observer_after_generator_has_finished(args, kwargs) -> No
 
     observer = Observer()
 
-    patched = _patcher(observer, "module", "function_name")(to_patched_generator)
+    patched = _patcher(observer, "module", "0.1.0", "function_name")(
+        to_patched_generator
+    )
 
     before = datetime.now(timezone.utc)
     generator = patched(*args, **kwargs)
@@ -222,7 +224,7 @@ async def test_patcher_async_function():
         await sleep(0.1)
         return 1
 
-    patched = _patcher(lambda _: None, "module", "function_name")(
+    patched = _patcher(lambda _: None, "module", "0.1.0", "function_name")(
         to_patched_async_function
     )
 
@@ -237,7 +239,7 @@ async def test_patcher_async_generator():
         await sleep(0.1)
         yield 2
 
-    patched = _patcher(lambda _: None, "module", "function_name")(
+    patched = _patcher(lambda _: None, "module", "0.1.0", "function_name")(
         to_patched_async_generator
     )
 
@@ -257,7 +259,7 @@ async def test_patcher_async_return_generator():
     async def to_patched_async_generator():
         return (i async for i in async_range(3))
 
-    patched = _patcher(lambda _: None, "module", "function_name")(
+    patched = _patcher(lambda _: None, "module", "0.1.0", "function_name")(
         to_patched_async_generator
     )
 

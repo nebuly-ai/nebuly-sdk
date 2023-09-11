@@ -28,7 +28,9 @@ def test_observer_calls_publisher_when_patched_is_called():
         publish=publisher.publish,
     )
 
-    patched = _patcher(observer.on_event_received, "module", "function_name")(function)
+    patched = _patcher(observer.on_event_received, "module", "0.1.0", "function_name")(
+        function
+    )
     result = patched(1.0, 2, c=3)
 
     assert result == 6
@@ -50,7 +52,9 @@ def test_observer_sets_nebuly_kwargs():
         publish=publisher.publish,
     )
 
-    patched = _patcher(observer.on_event_received, "module", "function_name")(function)
+    patched = _patcher(observer.on_event_received, "module", "0.1.0", "function_name")(
+        function
+    )
     result = patched(1.0, 2, c=3)
 
     assert result == 6
@@ -72,7 +76,9 @@ def test_observer_doesnt_override_nebuly_kwargs():
         publish=publisher.publish,
     )
 
-    patched = _patcher(observer.on_event_received, "module", "function_name")(function)
+    patched = _patcher(observer.on_event_received, "module", "0.1.0", "function_name")(
+        function
+    )
     result = patched(
         1.0,
         2,
@@ -99,7 +105,9 @@ def test_nebuly_observer_raises_exception_if_invalid_phase():
         phase="invalid_phase",  # type: ignore
         publish=publisher.publish,
     )
-    patched = _patcher(observer.on_event_received, "module", "function_name")(function)
+    patched = _patcher(observer.on_event_received, "module", "0.1.0", "function_name")(
+        function
+    )
 
     with pytest.raises(ValueError):
         patched(1.0, 2, c=3)
@@ -113,7 +121,9 @@ def test_nebuly_observer_raises_exception_if_invalid_phase_override():
         phase=DevelopmentPhase.EXPERIMENTATION,
         publish=publisher.publish,
     )
-    patched = _patcher(observer.on_event_received, "module", "function_name")(function)
+    patched = _patcher(observer.on_event_received, "module", "0.1.0", "function_name")(
+        function
+    )
 
     with pytest.raises(ValueError):
         patched(1.0, 2, c=3, nebuly_phase="invalid_phase")

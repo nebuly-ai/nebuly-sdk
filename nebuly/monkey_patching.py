@@ -49,6 +49,7 @@ def _monkey_patch(package: Package, observer: Observer_T) -> None:
 def _monkey_patch_attribute(
     attr: str, module: ModuleType, observer: Observer_T
 ) -> None:
+    version = module.__version__ if hasattr(module, "__version__") else "unknown"
     tmp_component = module
     path = attr.split(".")
     for component_name in path[:-1]:
@@ -57,7 +58,9 @@ def _monkey_patch_attribute(
     setattr(
         tmp_component,
         path[-1],
-        _patcher(observer, str(module), attr)(getattr(tmp_component, path[-1])),
+        _patcher(observer, module.__name__, version, attr)(
+            getattr(tmp_component, path[-1])
+        ),
     )
 
 
@@ -83,6 +86,7 @@ def watch_from_generator(  # pylint: disable=too-many-arguments
     generator: Generator,
     observer: Observer_T,
     module: str,
+    version: str,
     function_name: str,
     called_start: datetime,
     original_args: tuple[Any, ...],
@@ -111,6 +115,7 @@ def watch_from_generator(  # pylint: disable=too-many-arguments
 
     watched = Watched(
         module=module,
+        version=version,
         function=function_name,
         called_start=called_start,
         called_end=called_end,
@@ -129,6 +134,7 @@ async def watch_from_generator_async(  # pylint: disable=too-many-arguments
     generator: AsyncGenerator,
     observer: Observer_T,
     module: str,
+    version: str,
     function_name: str,
     called_start: datetime,
     original_args: tuple[Any, ...],
@@ -157,6 +163,7 @@ async def watch_from_generator_async(  # pylint: disable=too-many-arguments
 
     watched = Watched(
         module=module,
+        version=version,
         function=function_name,
         called_start=called_start,
         called_end=called_end,
@@ -193,7 +200,7 @@ def _setup_args_kwargs(
 
 
 def coroutine_wrapper(
-    f: Callable, observer: Observer_T, module: str, function_name: str
+    f: Callable, observer: Observer_T, module: str, version: str, function_name: str
 ) -> Callable:
     @wraps(f)
     async def wrapper(*args, **kwargs):
@@ -221,6 +228,7 @@ def coroutine_wrapper(
                 generator=result,
                 observer=observer,
                 module=module,
+                version=version,
                 function_name=function_name,
                 called_start=called_start,
                 original_args=original_args,
@@ -234,6 +242,7 @@ def coroutine_wrapper(
         called_end = datetime.now(timezone.utc)
         watched = Watched(
             module=module,
+            version=version,
             function=function_name,
             called_start=called_start,
             called_end=called_end,
@@ -251,7 +260,7 @@ def coroutine_wrapper(
 
 
 def function_wrapper(
-    f: Callable, observer: Observer_T, module: str, function_name: str
+    f: Callable, observer: Observer_T, module: str, version: str, function_name: str
 ) -> Callable:
     @wraps(f)
     def wrapper(*args, **kwargs):
@@ -275,6 +284,7 @@ def function_wrapper(
                 generator=result,
                 observer=observer,
                 module=module,
+                version=version,
                 function_name=function_name,
                 called_start=called_start,
                 original_args=original_args,
@@ -288,6 +298,7 @@ def function_wrapper(
         called_end = datetime.now(timezone.utc)
         watched = Watched(
             module=module,
+            version=version,
             function=function_name,
             called_start=called_start,
             called_end=called_end,
@@ -304,7 +315,9 @@ def function_wrapper(
     return wrapper
 
 
-def _patcher(observer: Observer_T, module: str, function_name: str) -> Callable:
+def _patcher(
+    observer: Observer_T, module: str, version: str, function_name: str
+) -> Callable:
     """
     Decorator that calls observer with a Watched instance when the decorated
     function is called
@@ -315,8 +328,8 @@ def _patcher(observer: Observer_T, module: str, function_name: str) -> Callable:
 
     def inner(f):
         if iscoroutinefunction(f) or isasyncgenfunction(f):
-            return coroutine_wrapper(f, observer, module, function_name)
+            return coroutine_wrapper(f, observer, module, version, function_name)
 
-        return function_wrapper(f, observer, module, function_name)
+        return function_wrapper(f, observer, module, version, function_name)
 
     return inner

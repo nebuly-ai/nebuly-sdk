@@ -33,6 +33,7 @@ class Watched:  # pylint: disable=too-many-instance-attributes
     """
 
     module: str
+    version: str
     function: str
     called_start: datetime
     called_end: datetime
@@ -49,6 +50,7 @@ class Watched:  # pylint: disable=too-many-instance-attributes
         """
         return {
             "module": self.module,
+            "version": self.version,
             "function": self.function,
             "called_start": self.called_start.isoformat(),
             "called_end": self.called_end.isoformat(),
