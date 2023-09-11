@@ -125,5 +125,23 @@ def test_nebuly_observer_raises_exception_if_invalid_phase_override():
         function
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError) as e:
         patched(1.0, 2, c=3, nebuly_phase="invalid_phase")
+    assert str(e.value) == "nebuly_phase must be a DevelopmentPhase"
+
+
+def test_nebuly_observer_phase_must_be_set():
+    publisher = Publisher()
+    observer = NebulyObserver(
+        api_key="test_api_key",
+        project="test_project",
+        phase=None,
+        publish=publisher.publish,
+    )
+    patched = _patcher(observer.on_event_received, "module", "0.1.0", "function_name")(
+        function
+    )
+
+    with pytest.raises(ValueError) as e:
+        patched(1.0, 2, c=3)
+    assert str(e.value) == "nebuly_phase must be set"
