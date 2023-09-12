@@ -64,6 +64,7 @@ def open_ai_chat():
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": "Hello!"},
         ],
+        temperature=0,
     )
 
     print(completion)
@@ -74,6 +75,7 @@ def open_ai_chat():
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": "Hello!"},
         ],
+        temperature=0,
         stream=True,
     )
 
@@ -87,6 +89,7 @@ async def open_ai_chat_async():
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": "Hello!"},
         ],
+        temperature=0,
     )
 
     print(completion)
@@ -97,6 +100,7 @@ async def open_ai_chat_async():
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": "Hello!"},
         ],
+        temperature=0,
         stream=True,
     )
 
