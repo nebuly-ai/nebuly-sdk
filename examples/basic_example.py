@@ -8,7 +8,7 @@ API_KEY = str(os.environ.get("NEBULY_API_KEY"))
 
 init(api_key=API_KEY, project="my_project", phase=DevelopmentPhase.EXPERIMENTATION)
 
-import openai
+import openai  # noqa  # pylint: disable=wrong-import-position, wrong-import-order
 
 OPENAI_KEY = str(os.environ.get("OPENAI_KEY"))
 openai.api_key = OPENAI_KEY
