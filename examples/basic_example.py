@@ -134,14 +134,31 @@ async def open_ai_embedding_async():
     print(result)
 
 
+def open_ai_moderation():
+    result = openai.Moderation.create(
+        input="I want to kill them.",
+    )
+    print(result)
+
+
+async def open_ai_moderation_async():
+    # This doesn't work con OpenAI library
+    result = await openai.Moderation.acreate(
+        input="I want to kill them.",
+    )
+    print(result)
+
+
 async def main():
-    # open_ai_completion()
-    # await open_ai_completion_async()
-    # open_ai_chat()
-    # await open_ai_chat_async()
-    # open_ai_fine_tuning()
+    open_ai_completion()
+    await open_ai_completion_async()
+    open_ai_chat()
+    await open_ai_chat_async()
+    open_ai_fine_tuning()
     open_ai_embedding()
     await open_ai_embedding_async()
+    # open_ai_moderation()
+    # await open_ai_moderation_async()
 
 
 if __name__ == "__main__":
