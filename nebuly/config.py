@@ -11,8 +11,6 @@ PACKAGES = (
             "Completion.acreate",
             "ChatCompletion.create",
             "ChatCompletion.acreate",
-            "Edit.create",
-            "Edit.acreate",
             "Embedding.create",
             "Embedding.acreate",
             "Moderation.create",
