@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 import pytest
 
 from nebuly.entities import DevelopmentPhase, Watched
@@ -184,3 +186,44 @@ def test_nebuly_observer_project_must_be_set():
     with pytest.raises(ValueError) as e:
         patched(1.0, 2, c=3)
     assert str(e.value) == "nebuly_project must be set"
+
+
+def test_add_open_ai_extras():
+    # I don't like having this here, we should not transfer openai api key, and
+    # the organization probably could be gotten from the tenant
+    publisher = Publisher()
+    observer = NebulyObserver(
+        api_key="test_api_key",
+        project=None,
+        phase=DevelopmentPhase.EXPERIMENTATION,
+        publish=publisher.publish,
+    )
+
+    watched = Watched(
+        module="openai",
+        version="0.1.0",
+        function="function_name",
+        called_start=datetime.now(),
+        called_end=datetime.now(),
+        called_with_args=(),
+        called_with_kwargs={},
+        called_with_nebuly_kwargs={
+            "nebuly_project": "test_project",
+            "nebuly_phase": DevelopmentPhase.EXPERIMENTATION,
+        },
+        returned=None,
+        generator=False,
+        generator_first_element_timestamp=None,
+        provider_extras=None,
+    )
+
+    import openai
+
+    api_key = "api_key"
+    organization = "organization"
+    openai.api_key = api_key
+    openai.organization = organization
+
+    observer.on_event_received(watched)
+
+    assert watched.provider_extras == {"api_key": api_key, "organization": organization}

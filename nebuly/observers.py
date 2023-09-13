@@ -3,6 +3,12 @@ from __future__ import annotations
 from nebuly.entities import DevelopmentPhase, Publisher_T, Watched
 
 
+def get_open_ai_extras() -> tuple[str | None, str | None]:
+    import openai
+
+    return openai.api_key, openai.organization
+
+
 class NebulyObserver:
     """
     NebulyObserver is an observer that sends a message to the API when a
@@ -26,6 +32,14 @@ class NebulyObserver:
         self._set_nebuly_kwargs(watched)
         self._validate_phase(watched)
         self._validate_project(watched)
+        # This i don't like having here, we should not transfer openai api key,
+        # and the organization probably could be gotten from the tenant
+        if watched.module == "openai":
+            api_key, organization = get_open_ai_extras()
+            watched.provider_extras = {
+                "api_key": api_key,
+                "organization": organization,
+            }
         self._publisher(watched)
 
     def _set_nebuly_kwargs(self, watched: Watched) -> None:

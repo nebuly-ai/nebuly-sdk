@@ -26,7 +26,7 @@ class Package:
     to_patch: tuple[str, ...]
 
 
-@dataclass(frozen=True)
+@dataclass
 class Watched:  # pylint: disable=too-many-instance-attributes
     """
     Watched represents a call to a function that was patched.
@@ -43,6 +43,7 @@ class Watched:  # pylint: disable=too-many-instance-attributes
     returned: Any
     generator: bool
     generator_first_element_timestamp: datetime | None
+    provider_extras: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -64,6 +65,7 @@ class Watched:  # pylint: disable=too-many-instance-attributes
                 if self.generator_first_element_timestamp
                 else None
             ),
+            "provider_extras": self.provider_extras,
         }
 
 
