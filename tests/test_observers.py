@@ -189,8 +189,7 @@ def test_nebuly_observer_project_must_be_set():
 
 
 def test_add_open_ai_extras():
-    # I don't like having this here, we should not transfer openai api key, and
-    # the organization probably could be gotten from the tenant
+    # I don't like having this here, we should not transfer openai api key
     publisher = Publisher()
     observer = NebulyObserver(
         api_key="test_api_key",
@@ -217,13 +216,11 @@ def test_add_open_ai_extras():
         provider_extras=None,
     )
 
-    import openai
+    import openai  # pylint: disable=import-outside-toplevel
 
     api_key = "api_key"
-    organization = "organization"
     openai.api_key = api_key
-    openai.organization = organization
 
     observer.on_event_received(watched)
 
-    assert watched.provider_extras == {"api_key": api_key, "organization": organization}
+    assert watched.provider_extras == {"api_key": api_key}

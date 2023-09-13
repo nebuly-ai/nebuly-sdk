@@ -3,10 +3,11 @@ from __future__ import annotations
 from nebuly.entities import DevelopmentPhase, Publisher_T, Watched
 
 
-def get_open_ai_extras() -> tuple[str | None, str | None]:
-    import openai
+def get_open_ai_api_key() -> str | None:
+    # This i don't like having here, we should not transfer openai api key
+    import openai  # pylint: disable=import-outside-toplevel
 
-    return openai.api_key, openai.organization
+    return openai.api_key
 
 
 class NebulyObserver:
@@ -32,13 +33,10 @@ class NebulyObserver:
         self._set_nebuly_kwargs(watched)
         self._validate_phase(watched)
         self._validate_project(watched)
-        # This i don't like having here, we should not transfer openai api key,
-        # and the organization probably could be gotten from the tenant
+        # This i don't like having here, we should not transfer openai api key
         if watched.module == "openai":
-            api_key, organization = get_open_ai_extras()
             watched.provider_extras = {
-                "api_key": api_key,
-                "organization": organization,
+                "api_key": get_open_ai_api_key(),
             }
         self._publisher(watched)
 
