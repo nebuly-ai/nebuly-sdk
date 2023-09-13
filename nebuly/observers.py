@@ -33,6 +33,8 @@ class NebulyObserver:
             watched.called_with_nebuly_kwargs["nebuly_project"] = self._project
         if "nebuly_phase" not in watched.called_with_nebuly_kwargs and self._phase:
             watched.called_with_nebuly_kwargs["nebuly_phase"] = self._phase
+        if "nebuly_user" not in watched.called_with_nebuly_kwargs:
+            watched.called_with_nebuly_kwargs["nebuly_user"] = "undefined"
 
     @staticmethod
     def _validate_phase(watched: Watched) -> None:

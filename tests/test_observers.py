@@ -85,6 +85,7 @@ def test_observer_doesnt_override_nebuly_kwargs():
         c=3,
         nebuly_project="other_project",
         nebuly_phase=DevelopmentPhase.PREPROCESSING,
+        nebuly_user="test_user",
     )
 
     assert result == 6
@@ -95,6 +96,27 @@ def test_observer_doesnt_override_nebuly_kwargs():
         watched.called_with_nebuly_kwargs["nebuly_phase"]
         == DevelopmentPhase.PREPROCESSING
     )
+    assert watched.called_with_nebuly_kwargs["nebuly_user"] == "test_user"
+
+
+def test_observer_adds_undefine_as_user_if_not_passed():
+    publisher = Publisher()
+    observer = NebulyObserver(
+        api_key="test_api_key",
+        project="test_project",
+        phase=DevelopmentPhase.EXPERIMENTATION,
+        publish=publisher.publish,
+    )
+
+    patched = _patcher(observer.on_event_received, "module", "0.1.0", "function_name")(
+        function
+    )
+    result = patched(1.0, 2, c=3)
+
+    assert result == 6
+    assert len(publisher.messages) == 1
+    watched = publisher.messages[0]
+    assert watched.called_with_nebuly_kwargs["nebuly_user"] == "undefined"
 
 
 def test_nebuly_observer_raises_exception_if_invalid_phase():
