@@ -145,3 +145,20 @@ def test_nebuly_observer_phase_must_be_set():
     with pytest.raises(ValueError) as e:
         patched(1.0, 2, c=3)
     assert str(e.value) == "nebuly_phase must be set"
+
+
+def test_nebuly_observer_project_must_be_set():
+    publisher = Publisher()
+    observer = NebulyObserver(
+        api_key="test_api_key",
+        project=None,
+        phase=DevelopmentPhase.EXPERIMENTATION,
+        publish=publisher.publish,
+    )
+    patched = _patcher(observer.on_event_received, "module", "0.1.0", "function_name")(
+        function
+    )
+
+    with pytest.raises(ValueError) as e:
+        patched(1.0, 2, c=3)
+    assert str(e.value) == "nebuly_project must be set"

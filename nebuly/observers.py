@@ -25,6 +25,7 @@ class NebulyObserver:
     def on_event_received(self, watched: Watched) -> None:
         self._set_nebuly_kwargs(watched)
         self._validate_phase(watched)
+        self._validate_project(watched)
         self._publisher(watched)
 
     def _set_nebuly_kwargs(self, watched: Watched) -> None:
@@ -41,3 +42,8 @@ class NebulyObserver:
             watched.called_with_nebuly_kwargs["nebuly_phase"], DevelopmentPhase
         ):
             raise ValueError("nebuly_phase must be a DevelopmentPhase")
+
+    @staticmethod
+    def _validate_project(watched: Watched) -> None:
+        if "nebuly_project" not in watched.called_with_nebuly_kwargs:
+            raise ValueError("nebuly_project must be set")
