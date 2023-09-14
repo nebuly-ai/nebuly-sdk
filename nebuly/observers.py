@@ -3,13 +3,6 @@ from __future__ import annotations
 from nebuly.entities import DevelopmentPhase, Publisher_T, Watched
 
 
-def get_open_ai_api_key() -> str | None:
-    # This i don't like having here, we should not transfer openai api key
-    import openai  # pylint: disable=import-outside-toplevel
-
-    return openai.api_key
-
-
 class NebulyObserver:
     """
     NebulyObserver is an observer that sends a message to the API when a
@@ -33,11 +26,6 @@ class NebulyObserver:
         self._set_nebuly_kwargs(watched)
         self._validate_phase(watched)
         self._validate_project(watched)
-        # This i don't like having here, we should not transfer openai api key
-        if watched.module == "openai":
-            watched.provider_extras = {
-                "api_key": get_open_ai_api_key(),
-            }
         self._publisher(watched)
 
     def _set_nebuly_kwargs(self, watched: Watched) -> None:
