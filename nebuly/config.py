@@ -13,8 +13,6 @@ PACKAGES = (
             "ChatCompletion.acreate",
             "Embedding.create",
             "Embedding.acreate",
-            "FineTuningJob.create",
-            "FineTuningJob.acreate",
         ),
     ),
 )

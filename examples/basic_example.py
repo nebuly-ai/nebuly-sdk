@@ -108,16 +108,6 @@ async def open_ai_chat_async():
         print(item)
 
 
-def open_ai_fine_tuning():
-    print(openai.FineTuningJob.list())
-    print(openai.FineTuningJob.retrieve("ftjob-ik7Vblte6G3sqKyDWjNNGX7A"))
-    print(
-        openai.FineTuningJob.create(
-            training_file="file-VhMkBIjaSVstfIMPDOi1J0wF", model="babbage-002"
-        )
-    )
-
-
 def open_ai_embedding():
     result = openai.Embedding.create(
         model="text-embedding-ada-002", input="The food was delicious and the waiter..."
@@ -134,31 +124,13 @@ async def open_ai_embedding_async():
     print(result)
 
 
-def open_ai_moderation():
-    result = openai.Moderation.create(
-        input="I want to kill them.",
-    )
-    print(result)
-
-
-async def open_ai_moderation_async():
-    # This doesn't work con OpenAI library
-    result = await openai.Moderation.acreate(
-        input="I want to kill them.",
-    )
-    print(result)
-
-
 async def main():
     open_ai_completion()
     await open_ai_completion_async()
     open_ai_chat()
     await open_ai_chat_async()
-    open_ai_fine_tuning()
     open_ai_embedding()
     await open_ai_embedding_async()
-    # open_ai_moderation()
-    # await open_ai_moderation_async()
 
 
 if __name__ == "__main__":
