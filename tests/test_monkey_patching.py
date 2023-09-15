@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from asyncio import sleep
 from datetime import datetime, timezone
+from typing import Any, AsyncGenerator, Generator
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -31,8 +32,12 @@ class Observer:
 
 
 @given(args=st.tuples(st_any), kwargs=st.dictionaries(st.text(), st_any))
-def test_patcher_doesnt_change_any_behavior(args, kwargs) -> None:
-    def to_patched(*args: int, **kwargs: str):
+def test_patcher_doesnt_change_any_behavior(
+    args: tuple[Any, ...], kwargs: dict[str, Any]
+) -> None:
+    def to_patched(
+        *args: tuple[Any, ...], **kwargs: dict[str, Any]
+    ) -> tuple[tuple[Any, ...], dict[str, Any]]:
         """This is the docstring to be tested"""
         return args, kwargs
 
@@ -47,8 +52,10 @@ def test_patcher_doesnt_change_any_behavior(args, kwargs) -> None:
 
 
 @given(args=st.tuples(st_any), kwargs=st.dictionaries(st.text(), st_any))
-def test_patcher_calls_observer(args, kwargs) -> None:
-    def to_patched(*args: int, **kwargs: str):
+def test_patcher_calls_observer(args: tuple[Any, ...], kwargs: dict[str, Any]) -> None:
+    def to_patched(
+        *args: tuple[Any, ...], **kwargs: dict[str, Any]
+    ) -> tuple[tuple[Any, ...], dict[str, Any]]:
         """This is the docstring to be tested"""
         return args, kwargs
 
@@ -89,7 +96,7 @@ def test_watched_is_immutable() -> None:
     assert watched.returned == [1]
 
 
-def test_split_nebuly_kwargs():
+def test_split_nebuly_kwargs() -> None:
     original_dict = {
         "nebuly_segment": "segment",
         "arg1": "arg1",
@@ -104,7 +111,7 @@ def test_split_nebuly_kwargs():
     assert function_kwargs == {"arg1": "arg1", "arg2": "arg2"}
 
 
-def test_nebuly_args_are_intercepted():
+def test_nebuly_args_are_intercepted() -> None:
     def function(a: int, b: int) -> int:
         return a + b
 
@@ -182,10 +189,12 @@ def test_monkey_patch_missing_component_doesnt_break_other_patches() -> None:
 
 
 @given(args=st.tuples(st_any), kwargs=st.dictionaries(st.text(), st_any))
-def test_patcher_calls_observer_after_generator_has_finished(args, kwargs) -> None:
-    def to_patched_generator(
+def test_patcher_calls_observer_after_generator_has_finished(
+    args: tuple[Any, ...], kwargs: dict[str, Any]
+) -> None:
+    def to_patched_generator(  # pylint: disable=unused-argument
         *args: int, **kwargs: str
-    ):  # pylint: disable=unused-argument
+    ) -> Generator[int, None, None]:
         """This is the docstring to be tested"""
         for i in range(3):
             yield i
@@ -219,8 +228,8 @@ def test_patcher_calls_observer_after_generator_has_finished(args, kwargs) -> No
 
 
 @pytest.mark.asyncio
-async def test_patcher_async_function():
-    async def to_patched_async_function():
+async def test_patcher_async_function() -> None:
+    async def to_patched_async_function() -> int:
         await sleep(0.1)
         return 1
 
@@ -232,8 +241,8 @@ async def test_patcher_async_function():
 
 
 @pytest.mark.asyncio
-async def test_patcher_async_generator():
-    async def to_patched_async_generator():
+async def test_patcher_async_generator() -> None:
+    async def to_patched_async_generator() -> AsyncGenerator[int, None]:
         await sleep(0.1)
         yield 1
         await sleep(0.1)
@@ -250,13 +259,13 @@ async def test_patcher_async_generator():
 
 
 @pytest.mark.asyncio
-async def test_patcher_async_return_generator():
-    async def async_range(n):
+async def test_patcher_async_return_generator() -> None:
+    async def async_range(n: int) -> AsyncGenerator[int, None]:
         for i in range(n):
             await sleep(0.1)
             yield i
 
-    async def to_patched_async_generator():
+    async def to_patched_async_generator() -> AsyncGenerator[int, None]:
         return (i async for i in async_range(3))
 
     patched = _patcher(lambda _: None, "module", "0.1.0", "function_name")(

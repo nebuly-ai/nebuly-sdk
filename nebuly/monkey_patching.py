@@ -83,7 +83,7 @@ def _split_nebuly_kwargs(
 
 def watch_from_generator(  # pylint: disable=too-many-arguments
     *,
-    generator: Generator,
+    generator: Generator[Any, Any, Any],
     observer: Observer_T,
     module: str,
     version: str,
@@ -92,7 +92,7 @@ def watch_from_generator(  # pylint: disable=too-many-arguments
     original_args: tuple[Any, ...],
     original_kwargs: dict[str, Any],
     nebuly_kwargs: dict[str, Any],
-) -> Generator:
+) -> Generator[Any, Any, Any]:
     """
     Watch a generator
 
@@ -131,7 +131,7 @@ def watch_from_generator(  # pylint: disable=too-many-arguments
 
 async def watch_from_generator_async(  # pylint: disable=too-many-arguments
     *,
-    generator: AsyncGenerator,
+    generator: AsyncGenerator[Any, Any],
     observer: Observer_T,
     module: str,
     version: str,
@@ -140,7 +140,7 @@ async def watch_from_generator_async(  # pylint: disable=too-many-arguments
     original_args: tuple[Any, ...],
     original_kwargs: dict[str, Any],
     nebuly_kwargs: dict[str, Any],
-) -> AsyncGenerator:
+) -> AsyncGenerator[Any, Any]:
     """
     Watch a generator
 
@@ -200,10 +200,14 @@ def _setup_args_kwargs(
 
 
 def coroutine_wrapper(
-    f: Callable, observer: Observer_T, module: str, version: str, function_name: str
-) -> Callable:
+    f: Callable[[Any], Any],
+    observer: Observer_T,
+    module: str,
+    version: str,
+    function_name: str,
+) -> Callable[[Any], Any]:
     @wraps(f)
-    async def wrapper(*args, **kwargs):
+    async def wrapper(*args: tuple[Any, ...], **kwargs: dict[str, Any]) -> Any:
         logger.debug("Calling %s.%s", module, function_name)
 
         (
@@ -260,10 +264,14 @@ def coroutine_wrapper(
 
 
 def function_wrapper(
-    f: Callable, observer: Observer_T, module: str, version: str, function_name: str
-) -> Callable:
+    f: Callable[[Any], Any],
+    observer: Observer_T,
+    module: str,
+    version: str,
+    function_name: str,
+) -> Callable[[Any], Any]:
     @wraps(f)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: tuple[Any, ...], **kwargs: dict[str, Any]) -> Any:
         logger.debug("Calling %s.%s", module, function_name)
 
         (
@@ -317,7 +325,7 @@ def function_wrapper(
 
 def _patcher(
     observer: Observer_T, module: str, version: str, function_name: str
-) -> Callable:
+) -> Callable[[Any], Any]:
     """
     Decorator that calls observer with a Watched instance when the decorated
     function is called
@@ -326,7 +334,7 @@ def _patcher(
     decorated function
     """
 
-    def inner(f):
+    def inner(f: Callable[[Any], Any]) -> Callable[[Any], Any]:
         if iscoroutinefunction(f) or isasyncgenfunction(f):
             return coroutine_wrapper(f, observer, module, version, function_name)
 

@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import urllib.request
+from typing import Any
 
 from nebuly.entities import Watched
 
@@ -11,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class CustomJSONEncoder(json.JSONEncoder):
-    def default(self, o):
+    def default(self, o: Any) -> Any:
         if hasattr(o, "to_dict"):
             return o.to_dict()
         try:
@@ -30,7 +31,7 @@ def post_message(message: Watched, api_key: str) -> None:
     post_json_data(url, json_data, api_key)
 
 
-def post_json_data(url: str, json_data: str, api_key: str) -> str:
+def post_json_data(url: str, json_data: str, api_key: str) -> Any:
     request = urllib.request.Request(
         url,
         data=json_data.encode("utf-8"),

@@ -21,6 +21,10 @@ lint-fix: format ## Run the linter and fix issues
 	@poetry run ruff check . --fix
 	@echo "\033[0;32m[Linting OK]\033[0m"
 
+.PHONY: check
+check: ## Run the pre-commit checks
+	@poetry run pre-commit run --all-files
+
 ##@ Test
 .PHONY: test
 test: ## Run the tests

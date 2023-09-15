@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from nebuly.entities import DevelopmentPhase, Watched
 
 
-def test_watched_to_dict():
+def test_watched_to_dict() -> None:
     watched = Watched(
         module="module",
         version="version",

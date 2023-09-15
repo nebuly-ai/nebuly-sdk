@@ -19,7 +19,7 @@ def function(a: float, b: int, *, c: int = 0) -> int:
     return int(a + b + c)
 
 
-def test_observer_calls_publisher_when_patched_is_called():
+def test_observer_calls_publisher_when_patched_is_called() -> None:
     publisher = Publisher()
     observer = NebulyObserver(
         api_key="test_api_key",
@@ -43,7 +43,7 @@ def test_observer_calls_publisher_when_patched_is_called():
     )
 
 
-def test_observer_sets_nebuly_kwargs():
+def test_observer_sets_nebuly_kwargs() -> None:
     publisher = Publisher()
     observer = NebulyObserver(
         api_key="test_api_key",
@@ -67,7 +67,7 @@ def test_observer_sets_nebuly_kwargs():
     )
 
 
-def test_observer_doesnt_override_nebuly_kwargs():
+def test_observer_doesnt_override_nebuly_kwargs() -> None:
     publisher = Publisher()
     observer = NebulyObserver(
         api_key="test_api_key",
@@ -99,7 +99,7 @@ def test_observer_doesnt_override_nebuly_kwargs():
     assert watched.called_with_nebuly_kwargs["nebuly_user"] == "test_user"
 
 
-def test_observer_adds_undefine_as_user_if_not_passed():
+def test_observer_adds_undefine_as_user_if_not_passed() -> None:
     publisher = Publisher()
     observer = NebulyObserver(
         api_key="test_api_key",
@@ -119,7 +119,7 @@ def test_observer_adds_undefine_as_user_if_not_passed():
     assert watched.called_with_nebuly_kwargs["nebuly_user"] == "undefined"
 
 
-def test_nebuly_observer_raises_exception_if_invalid_phase():
+def test_nebuly_observer_raises_exception_if_invalid_phase() -> None:
     publisher = Publisher()
     observer = NebulyObserver(
         api_key="test_api_key",
@@ -135,7 +135,7 @@ def test_nebuly_observer_raises_exception_if_invalid_phase():
         patched(1.0, 2, c=3)
 
 
-def test_nebuly_observer_raises_exception_if_invalid_phase_override():
+def test_nebuly_observer_raises_exception_if_invalid_phase_override() -> None:
     publisher = Publisher()
     observer = NebulyObserver(
         api_key="test_api_key",
@@ -152,7 +152,7 @@ def test_nebuly_observer_raises_exception_if_invalid_phase_override():
     assert str(e.value) == "nebuly_phase must be a DevelopmentPhase"
 
 
-def test_nebuly_observer_phase_must_be_set():
+def test_nebuly_observer_phase_must_be_set() -> None:
     publisher = Publisher()
     observer = NebulyObserver(
         api_key="test_api_key",
@@ -169,7 +169,7 @@ def test_nebuly_observer_phase_must_be_set():
     assert str(e.value) == "nebuly_phase must be set"
 
 
-def test_nebuly_observer_project_must_be_set():
+def test_nebuly_observer_project_must_be_set() -> None:
     publisher = Publisher()
     observer = NebulyObserver(
         api_key="test_api_key",

@@ -14,8 +14,8 @@ OPENAI_KEY = str(os.environ.get("OPENAI_KEY"))
 openai.api_key = OPENAI_KEY
 
 
-def open_ai_completion():
-    response = openai.Completion.create(
+def open_ai_completion() -> None:
+    response = openai.Completion.create(  # type: ignore
         model="text-davinci-003",
         prompt="Say this is a test",
         max_tokens=7,
@@ -24,7 +24,7 @@ def open_ai_completion():
 
     print(response)
 
-    response = openai.Completion.create(
+    response = openai.Completion.create(  # type: ignore
         model="text-davinci-003",
         prompt="Say this is a test",
         max_tokens=7,
@@ -35,8 +35,8 @@ def open_ai_completion():
     print(list(response))
 
 
-async def open_ai_completion_async():
-    response = await openai.Completion.acreate(
+async def open_ai_completion_async() -> None:
+    response = await openai.Completion.acreate(  # type: ignore
         model="text-davinci-003",
         prompt="Say this is a test",
         max_tokens=7,
@@ -45,7 +45,7 @@ async def open_ai_completion_async():
 
     print(response)
 
-    response = await openai.Completion.acreate(
+    response = await openai.Completion.acreate(  # type: ignore
         model="text-davinci-003",
         prompt="Say this is a test",
         max_tokens=7,
@@ -57,8 +57,8 @@ async def open_ai_completion_async():
         print(item)
 
 
-def open_ai_chat():
-    completion = openai.ChatCompletion.create(
+def open_ai_chat() -> None:
+    completion = openai.ChatCompletion.create(  # type: ignore
         model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
@@ -69,7 +69,7 @@ def open_ai_chat():
 
     print(completion)
 
-    completion = openai.ChatCompletion.create(
+    completion = openai.ChatCompletion.create(  # type: ignore
         model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
@@ -82,8 +82,8 @@ def open_ai_chat():
     print(list(completion))
 
 
-async def open_ai_chat_async():
-    completion = await openai.ChatCompletion.acreate(
+async def open_ai_chat_async() -> None:
+    completion = await openai.ChatCompletion.acreate(  # type: ignore
         model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
@@ -94,7 +94,7 @@ async def open_ai_chat_async():
 
     print(completion)
 
-    completion = await openai.ChatCompletion.acreate(
+    completion = await openai.ChatCompletion.acreate(  # type: ignore
         model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
@@ -108,23 +108,23 @@ async def open_ai_chat_async():
         print(item)
 
 
-def open_ai_embedding():
-    result = openai.Embedding.create(
+def open_ai_embedding() -> None:
+    result = openai.Embedding.create(  # type: ignore
         model="text-embedding-ada-002", input="The food was delicious and the waiter..."
     )
 
     print(result)
 
 
-async def open_ai_embedding_async():
-    result = await openai.Embedding.acreate(
+async def open_ai_embedding_async() -> None:
+    result = await openai.Embedding.acreate(  # type: ignore
         model="text-embedding-ada-002", input="The food was delicious and the waiter..."
     )
 
     print(result)
 
 
-async def main():
+async def main() -> None:
     open_ai_completion()
     await open_ai_completion_async()
     open_ai_chat()

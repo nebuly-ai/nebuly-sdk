@@ -37,7 +37,7 @@ class Watched:  # pylint: disable=too-many-instance-attributes
     function: str
     called_start: datetime
     called_end: datetime
-    called_with_args: tuple
+    called_with_args: tuple[Any, ...]
     called_with_kwargs: dict[str, Any]
     called_with_nebuly_kwargs: dict[str, Any]
     returned: Any
