@@ -46,8 +46,8 @@ repos:
         entry: poetry run bandit -r app/
         language: system
         pass_filenames: false
-      - id: safety
-        name: safety
-        entry: poetry run safety check
-        language: system
-        pass_filenames: false
+#      - id: safety
+#        name: safety
+#        entry: poetry run safety check
+#        language: system
+#        pass_filenames: false

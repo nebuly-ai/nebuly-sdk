@@ -3,12 +3,14 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Dict
 
+from langchain.schema import Document
 from typing_extensions import Self
 
 
 class EventType(enum.Enum):
     CHAIN = "chain"
     TOOL = "tool"
+    RETRIEVAL = "retrieval"
 
 
 @dataclass
@@ -146,7 +148,7 @@ class EventPairingDispatcher:
         data = {
             "type": EventType.TOOL.value,
             "name": serialized["name"],
-            "inputs": {"input": input_str},
+            "inputs": {"query": input_str},
         }
         self.events_storage.add_event(run_id, parent_run_id, data)
 
@@ -157,7 +159,40 @@ class EventPairingDispatcher:
         parent_run_id: uuid.UUID | None = None,
     ) -> WatchedLangChain:
         data = {
-            "outputs": {"output": output},
+            "outputs": {"result": output},
+        }
+        self.events_storage.add_event(run_id, parent_run_id, data)
+        watched_event = WatchedLangChain.from_chain_data(
+            self.events_storage.events[run_id]
+        )
+        # Delete all events that are part of the chain if the root chain is finished
+        if watched_event.parent_run_id is None:
+            self.events_storage.delete_events(watched_event.run_id)
+
+        return watched_event
+
+    def on_retriever_start(
+        self,
+        serialized: Dict[str, Any],
+        query: str,
+        run_id: uuid.UUID,
+        parent_run_id: uuid.UUID | None = None,
+    ) -> None:
+        data = {
+            "type": EventType.RETRIEVAL.value,
+            "name": serialized["id"][-1],
+            "inputs": {"query": query},
+        }
+        self.events_storage.add_event(run_id, parent_run_id, data)
+
+    def on_retriever_end(
+        self,
+        documents: list[Document],
+        run_id: uuid.UUID,
+        parent_run_id: uuid.UUID | None = None,
+    ) -> WatchedLangChain:
+        data = {
+            "outputs": {"documents": documents},
         }
         self.events_storage.add_event(run_id, parent_run_id, data)
         watched_event = WatchedLangChain.from_chain_data(

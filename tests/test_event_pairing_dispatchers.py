@@ -2,6 +2,7 @@ import uuid
 from typing import Any
 
 import pytest
+from langchain.schema import Document
 
 from nebuly.event_pairing_dispatchers import EventPairingDispatcher
 
@@ -17,7 +18,7 @@ def fixture_simple_sequential_chain_serialized_data() -> dict[str, Any]:
         "lc": 1,
         "type": "not_implemented",
         "id": ["langchain", "chains", "sequential", "SimpleSequentialChain"],
-        "repr": "SimpleSequentialChain(chains=[synopsis_chain, review_chain], "
+        "repr": "SimpleSequentialChain(chains=[synopsis_chain, review_chain], ..."
         "verbose=True)",
     }
 
@@ -56,6 +57,26 @@ def fixture_llm_chain_serialized_data() -> dict[str, Any]:
                 },
             },
         },
+    }
+
+
+@pytest.fixture(name="agent_chain_serialized_data")
+def fixture_agent_chain_serialized_data() -> dict[str, Any]:
+    return {
+        "lc": 1,
+        "type": "not_implemented",
+        "id": ["langchain", "agents", "agent", "AgentExecutor"],
+        "repr": "AgentExecutor(memory=None, callbacks=None, callback_manager=None ...",
+    }
+
+
+@pytest.fixture(name="qa_chain_serialized_data")
+def fixture_qa_chain_serialized_data() -> dict[str, Any]:
+    return {
+        "lc": 1,
+        "type": "not_implemented",
+        "id": ["langchain", "chains", "retrieval_qa", "base", "RetrievalQA"],
+        "repr": "RetrievalQA(memory=None, callbacks=None, callback_manager=None, ...",
     }
 
 
@@ -209,13 +230,13 @@ def test_event_pairing_dispatcher_on_chain_end__child_chain(
 
 
 def test_event_pairing_dispatcher_on_tool_start(
-    simple_sequential_chain_serialized_data: dict[str, Any]
+    agent_chain_serialized_data: dict[str, Any]
 ) -> None:
     chain_id = uuid.uuid4()
     event_dispatcher = EventPairingDispatcher()
     event_dispatcher.on_chain_start(
-        serialized=simple_sequential_chain_serialized_data,
-        inputs={"input": "Tragedy at sunset on the beach"},
+        serialized=agent_chain_serialized_data,
+        inputs={"input": "Who is Leo DiCaprio's girlfriend?"},
         run_id=chain_id,
         parent_run_id=None,
     )
@@ -259,7 +280,7 @@ def test_event_pairing_dispatcher_on_tool_start(
     assert event_dispatcher.events_storage.events[parent_tool_id].data == {
         "type": "tool",
         "name": "Search",
-        "inputs": {"input": "Leonardo DiCaprio's girlfriend"},
+        "inputs": {"query": "Leonardo DiCaprio's girlfriend"},
     }
     assert event_dispatcher.events_storage.events[run_id].event_id == run_id
     assert event_dispatcher.events_storage.events[run_id].hierarchy is not None
@@ -267,18 +288,18 @@ def test_event_pairing_dispatcher_on_tool_start(
     assert event_dispatcher.events_storage.events[run_id].data == {
         "type": "tool",
         "name": "Wikipedia",
-        "inputs": {"input": "Leonardo DiCaprio's girlfriend"},
+        "inputs": {"query": "Leonardo DiCaprio's girlfriend"},
     }
 
 
 def test_event_pairing_dispatcher_on_tool_end(
-    simple_sequential_chain_serialized_data: dict[str, Any], tool_sample_output: str
+    agent_chain_serialized_data: dict[str, Any], tool_sample_output: str
 ) -> None:
     chain_id = uuid.uuid4()
     event_dispatcher = EventPairingDispatcher()
     event_dispatcher.on_chain_start(
-        serialized=simple_sequential_chain_serialized_data,
-        inputs={"input": "Tragedy at sunset on the beach"},
+        serialized=agent_chain_serialized_data,
+        inputs={"input": "Who is Leo DiCaprio's girlfriend?"},
         run_id=chain_id,
         parent_run_id=None,
     )
@@ -310,13 +331,13 @@ def test_event_pairing_dispatcher_on_tool_end(
         parent_run_id=parent_tool_id,
     )
 
-    event_dispatcher.on_tool_end(
+    wiki_watched_event = event_dispatcher.on_tool_end(
         output=tool_sample_output,
         run_id=run_id,
         parent_run_id=parent_tool_id,
     )
 
-    event_dispatcher.on_tool_end(
+    search_watched_event = event_dispatcher.on_tool_end(
         output=tool_sample_output,
         run_id=parent_tool_id,
         parent_run_id=chain_id,
@@ -324,25 +345,131 @@ def test_event_pairing_dispatcher_on_tool_end(
 
     assert event_dispatcher.events_storage.events is not None
     assert len(event_dispatcher.events_storage.events) == 3
-    assert run_id in event_dispatcher.events_storage.events
-    assert event_dispatcher.events_storage.events[run_id].event_id == run_id
-    assert event_dispatcher.events_storage.events[run_id].hierarchy is not None
-    assert event_dispatcher.events_storage.events[run_id].hierarchy.parent_id == parent_tool_id  # type: ignore # pylint: disable=line-too-long
-    assert event_dispatcher.events_storage.events[run_id].data == {
-        "type": "tool",
-        "name": "Wikipedia",
-        "inputs": {"input": "Leonardo DiCaprio's girlfriend"},
-        "outputs": {"output": tool_sample_output},
-    }
-    assert (
-        event_dispatcher.events_storage.events[parent_tool_id].event_id
-        == parent_tool_id
+    assert wiki_watched_event is not None
+    assert wiki_watched_event.run_id == run_id
+    assert wiki_watched_event.parent_run_id == parent_tool_id
+    assert wiki_watched_event.root_run_id == chain_id
+    assert wiki_watched_event.inputs == {"query": "Leonardo DiCaprio's girlfriend"}
+    assert wiki_watched_event.outputs == {"result": tool_sample_output}
+    assert wiki_watched_event.type == "tool"
+    assert wiki_watched_event.name == "Wikipedia"
+    assert search_watched_event is not None
+    assert search_watched_event.run_id == parent_tool_id
+    assert search_watched_event.parent_run_id == chain_id
+    assert search_watched_event.root_run_id == chain_id
+    assert search_watched_event.inputs == {"query": "Leonardo DiCaprio's girlfriend"}
+    assert search_watched_event.outputs == {"result": tool_sample_output}
+    assert search_watched_event.type == "tool"
+    assert search_watched_event.name == "Search"
+
+
+def test_event_pairing_dispatcher_on_retriever_start(
+    qa_chain_serialized_data: dict[str, Any]
+) -> None:
+    chain_id = uuid.uuid4()
+    event_dispatcher = EventPairingDispatcher()
+    event_dispatcher.on_chain_start(
+        serialized=qa_chain_serialized_data,
+        inputs={"query": "What did the president say about Ketanji Brown Jackson"},
+        run_id=chain_id,
+        parent_run_id=None,
     )
-    assert event_dispatcher.events_storage.events[parent_tool_id].hierarchy is not None
-    assert event_dispatcher.events_storage.events[parent_tool_id].hierarchy.parent_id == chain_id  # type: ignore # pylint: disable=line-too-long
-    assert event_dispatcher.events_storage.events[parent_tool_id].data == {
-        "type": "tool",
-        "name": "Search",
-        "inputs": {"input": "Leonardo DiCaprio's girlfriend"},
-        "outputs": {"output": tool_sample_output},
+
+    retriever_id = uuid.uuid4()
+
+    event_dispatcher.on_retriever_start(
+        serialized={
+            "lc": 1,
+            "type": "not_implemented",
+            "id": ["langchain", "vectorstores", "base", "VectorStoreRetriever"],
+            "repr": "VectorStoreRetriever(tags=['Chroma', 'OpenAIEmbeddings'], "
+            "metadata=None, vectorstore=<langchain.vectorstores.chroma.Chroma "
+            "object at 0x14db9e790>, search_type='similarity', "
+            "search_kwargs={})",
+        },
+        query="What did the president say about Ketanji Brown Jackson",
+        run_id=retriever_id,
+        parent_run_id=chain_id,
+    )
+
+    assert event_dispatcher.events_storage.events is not None
+    assert len(event_dispatcher.events_storage.events) == 2
+    assert retriever_id in event_dispatcher.events_storage.events
+    assert event_dispatcher.events_storage.events[retriever_id].event_id == retriever_id
+    assert event_dispatcher.events_storage.events[retriever_id].hierarchy is not None
+    assert event_dispatcher.events_storage.events[retriever_id].hierarchy.parent_id == chain_id  # type: ignore # pylint: disable=line-too-long
+    assert event_dispatcher.events_storage.events[retriever_id].data == {
+        "type": "retrieval",
+        "name": "VectorStoreRetriever",
+        "inputs": {"query": "What did the president say about Ketanji Brown Jackson"},
     }
+
+
+def test_event_pairing_dispatcher_on_retriever_end(
+    qa_chain_serialized_data: dict[str, Any]
+) -> None:
+    chain_id = uuid.uuid4()
+    event_dispatcher = EventPairingDispatcher()
+    event_dispatcher.on_chain_start(
+        serialized=qa_chain_serialized_data,
+        inputs={"query": "What did the president say about Ketanji Brown Jackson"},
+        run_id=chain_id,
+        parent_run_id=None,
+    )
+
+    retriever_id = uuid.uuid4()
+
+    event_dispatcher.on_retriever_start(
+        serialized={
+            "lc": 1,
+            "type": "not_implemented",
+            "id": ["langchain", "vectorstores", "base", "VectorStoreRetriever"],
+            "repr": "VectorStoreRetriever(tags=['Chroma', 'OpenAIEmbeddings'], "
+            "metadata=None, vectorstore=<langchain.vectorstores.chroma.Chroma "
+            "object at 0x14db9e790>, search_type='similarity', "
+            "search_kwargs={})",
+        },
+        query="What did the president say about Ketanji Brown Jackson",
+        run_id=retriever_id,
+        parent_run_id=chain_id,
+    )
+
+    retriever_output_documents_sample = [
+        Document(
+            page_content="Tonight. I call on the Senate to...",
+            metadata={"source": "./state_of_the_union.txt"},
+        ),
+        Document(
+            page_content="A former top litigator in private practice...",
+            metadata={"source": "./state_of_the_union.txt"},
+        ),
+        Document(
+            page_content="And for our LGBTQ+ Americans, let’s finally...",
+            metadata={"source": "./state_of_the_union.txt"},
+        ),
+        Document(
+            page_content="Tonight, I’m announcing a crackdown on ",
+            metadata={"source": "./state_of_the_union.txt"},
+        ),
+    ]
+
+    watched_event = event_dispatcher.on_retriever_end(
+        documents=retriever_output_documents_sample,
+        run_id=retriever_id,
+        parent_run_id=chain_id,
+    )
+
+    assert event_dispatcher.events_storage.events is not None
+    assert len(event_dispatcher.events_storage.events) == 2
+    assert watched_event is not None
+    assert watched_event.run_id == retriever_id
+    assert watched_event.parent_run_id == chain_id
+    assert watched_event.root_run_id == chain_id
+    assert watched_event.inputs == {
+        "query": "What did the president say about Ketanji Brown Jackson"
+    }
+    assert watched_event.outputs == {
+        "documents": retriever_output_documents_sample,
+    }
+    assert watched_event.type == "retrieval"
+    assert watched_event.name == "VectorStoreRetriever"
