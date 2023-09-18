@@ -1,8 +1,14 @@
+import enum
 import uuid
 from dataclasses import dataclass, field
 from typing import Any, Dict
 
 from typing_extensions import Self
+
+
+class EventType(enum.Enum):
+    CHAIN = "chain"
+    TOOL = "tool"
 
 
 @dataclass
@@ -23,7 +29,8 @@ class WatchedLangChain:
     run_id: uuid.UUID
     parent_run_id: uuid.UUID | None
     root_run_id: uuid.UUID | None
-    chain: str
+    type: str
+    name: str
     inputs: dict[str, Any]
     outputs: dict[str, Any]
 
@@ -37,7 +44,8 @@ class WatchedLangChain:
             root_run_id=event.hierarchy.root_id
             if event.hierarchy is not None
             else None,
-            chain=event.data["chain"],
+            type=event.data["type"],
+            name=event.data["name"],
             inputs=event.data["inputs"],
             outputs=event.data["outputs"],
         )
@@ -101,7 +109,8 @@ class EventPairingDispatcher:
         parent_run_id: uuid.UUID | None = None,
     ) -> None:
         data = {
-            "chain": serialized["id"][-1],
+            "type": EventType.CHAIN.value,
+            "name": serialized["id"][-1],
             "inputs": inputs,
         }
         self.events_storage.add_event(run_id, parent_run_id, data)
@@ -124,5 +133,38 @@ class EventPairingDispatcher:
             self.events_storage.delete_events(watched_event.run_id)
 
         # TODO: Publish the event in a queue
+
+        return watched_event
+
+    def on_tool_start(
+        self,
+        serialized: Dict[str, Any],
+        input_str: str,
+        run_id: uuid.UUID,
+        parent_run_id: uuid.UUID | None = None,
+    ) -> None:
+        data = {
+            "type": EventType.TOOL.value,
+            "name": serialized["name"],
+            "inputs": {"input": input_str},
+        }
+        self.events_storage.add_event(run_id, parent_run_id, data)
+
+    def on_tool_end(
+        self,
+        output: str,
+        run_id: uuid.UUID,
+        parent_run_id: uuid.UUID | None = None,
+    ) -> WatchedLangChain:
+        data = {
+            "outputs": {"output": output},
+        }
+        self.events_storage.add_event(run_id, parent_run_id, data)
+        watched_event = WatchedLangChain.from_chain_data(
+            self.events_storage.events[run_id]
+        )
+        # Delete all events that are part of the chain if the root chain is finished
+        if watched_event.parent_run_id is None:
+            self.events_storage.delete_events(watched_event.run_id)
 
         return watched_event
