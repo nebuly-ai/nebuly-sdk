@@ -1,15 +1,73 @@
 import logging
 from typing import Any
 
-from langchain.callbacks.base import BaseCallbackHandler
+from langchain.callbacks.base import BaseCallbackHandler, BaseCallbackManager, Callbacks
+from langchain.chains.base import Chain
 
-from nebuly.event_pairing_dispatchers import EventPairingDispatcher
+from nebuly.event_pairing_dispatchers import LangChainEventPairingDispatcher
 
 logger = logging.getLogger(__name__)
 
 
-class LangChainTrackingHandler(BaseCallbackHandler):
-    def __init__(self, event_pairing_dispatcher: EventPairingDispatcher):
+def set_tracking_handlers() -> None:
+    event_pairing_dispatcher = LangChainEventPairingDispatcher()
+    tracking_handler = LangChainTrackingHandler(
+        event_pairing_dispatcher=event_pairing_dispatcher
+    )
+    original_call = Chain.__call__
+    original_acall = Chain.acall
+
+    def set_callbacks_arg(callbacks: Callbacks) -> Callbacks:
+        if callbacks is None:
+            callbacks = [tracking_handler]
+        elif isinstance(callbacks, list):
+            if tracking_handler not in callbacks:
+                callbacks.append(tracking_handler)
+        elif isinstance(callbacks, BaseCallbackManager):
+            if tracking_handler not in callbacks.handlers:
+                callbacks.handlers.append(tracking_handler)
+            if tracking_handler not in callbacks.inheritable_handlers:
+                callbacks.inheritable_handlers.append(tracking_handler)
+        return callbacks
+
+    def tracked_call(
+        self: Any,
+        inputs: dict[str, Any],
+        return_only_outputs: bool = False,
+        callbacks: Callbacks = None,
+        **kwargs: Any,
+    ) -> Any:
+        callbacks = set_callbacks_arg(callbacks)
+        return original_call(
+            self,
+            inputs=inputs,
+            return_only_outputs=return_only_outputs,
+            callbacks=callbacks,
+            **kwargs,
+        )
+
+    def tracked_acall(
+        self: Any,
+        inputs: dict[str, Any],
+        return_only_outputs: bool = False,
+        callbacks: Callbacks = None,
+        **kwargs: Any,
+    ) -> Any:
+        callbacks = set_callbacks_arg(callbacks)
+        return original_acall(
+            self,
+            inputs=inputs,
+            return_only_outputs=return_only_outputs,
+            callbacks=callbacks,
+            **kwargs,
+        )
+
+    Chain.__call__ = tracked_call  # type: ignore
+    Chain.acall = tracked_acall  # type: ignore
+
+
+class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
+    def __init__(self, event_pairing_dispatcher: LangChainEventPairingDispatcher):
         self.event_pairing_dispatcher = event_pairing_dispatcher
 
     def on_retriever_start(

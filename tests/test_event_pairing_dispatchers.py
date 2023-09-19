@@ -8,13 +8,13 @@ from langchain.schema.output import ChatGeneration, Generation, LLMResult
 
 from nebuly.event_pairing_dispatchers import (
     EventData,
-    EventPairingDispatcher,
     EventType,
+    LangChainEventPairingDispatcher,
 )
 
 
 def test_new_event_pairing_dispatcher() -> None:
-    event_dispatcher = EventPairingDispatcher()
+    event_dispatcher = LangChainEventPairingDispatcher()
     assert event_dispatcher is not None
 
 
@@ -159,7 +159,7 @@ def test_event_pairing_dispatcher_on_chain_start__new_root_chain(
     default_kwargs: dict[str, Any],
 ) -> None:
     run_id = uuid.uuid4()
-    event_dispatcher = EventPairingDispatcher()
+    event_dispatcher = LangChainEventPairingDispatcher()
     event_dispatcher.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,
         inputs={"input": "Tragedy at sunset on the beach"},
@@ -193,7 +193,7 @@ def test_event_pairing_dispatcher_on_chain_start__existing_root_chain(
     llm_chain_kwargs: dict[str, Any],
 ) -> None:
     root_id = uuid.uuid4()
-    event_dispatcher = EventPairingDispatcher()
+    event_dispatcher = LangChainEventPairingDispatcher()
     event_dispatcher.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,
         inputs={"input": "Tragedy at sunset on the beach"},
@@ -231,7 +231,7 @@ def test_event_pairing_dispatcher_on_chain_end__root_chain(
     default_kwargs: dict[str, Any],
 ) -> None:
     run_id = uuid.uuid4()
-    event_dispatcher = EventPairingDispatcher()
+    event_dispatcher = LangChainEventPairingDispatcher()
     event_dispatcher.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,
         inputs={"input": "Tragedy at sunset on the beach"},
@@ -269,7 +269,7 @@ def test_event_pairing_dispatcher_on_chain_end__child_chain(
     default_kwargs: dict[str, Any],
 ) -> None:
     root_id = uuid.uuid4()
-    event_dispatcher = EventPairingDispatcher()
+    event_dispatcher = LangChainEventPairingDispatcher()
     event_dispatcher.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,
         inputs={"input": "Tragedy at sunset on the beach"},
@@ -321,7 +321,7 @@ def test_event_pairing_dispatcher_on_tool_start(
     default_tool_kwargs: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    event_dispatcher = EventPairingDispatcher()
+    event_dispatcher = LangChainEventPairingDispatcher()
     event_dispatcher.on_chain_start(
         serialized=agent_chain_serialized_data,
         inputs={"input": "Who is Leo DiCaprio's girlfriend?"},
@@ -387,7 +387,7 @@ def test_event_pairing_dispatcher_on_tool_end(
     default_tool_kwargs: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    event_dispatcher = EventPairingDispatcher()
+    event_dispatcher = LangChainEventPairingDispatcher()
     event_dispatcher.on_chain_start(
         serialized=agent_chain_serialized_data,
         inputs={"input": "Who is Leo DiCaprio's girlfriend?"},
@@ -465,7 +465,7 @@ def test_event_pairing_dispatcher_on_retriever_start(
     default_kwargs: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    event_dispatcher = EventPairingDispatcher()
+    event_dispatcher = LangChainEventPairingDispatcher()
     event_dispatcher.on_chain_start(
         serialized=qa_chain_serialized_data,
         inputs={"query": "What did the president say about Ketanji Brown Jackson"},
@@ -505,7 +505,7 @@ def test_event_pairing_dispatcher_on_retriever_end(
     default_kwargs: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    event_dispatcher = EventPairingDispatcher()
+    event_dispatcher = LangChainEventPairingDispatcher()
     event_dispatcher.on_chain_start(
         serialized=qa_chain_serialized_data,
         inputs={"query": "What did the president say about Ketanji Brown Jackson"},
@@ -607,7 +607,7 @@ def test_event_pairing_dispatcher_on_llm_start(  # pylint: disable=too-many-argu
     llm_invocation_params: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    event_dispatcher = EventPairingDispatcher()
+    event_dispatcher = LangChainEventPairingDispatcher()
     event_dispatcher.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,
         inputs={"era": "Victorian England", "title": "Tragedy at sunset on the beach"},
@@ -693,7 +693,7 @@ def test_event_pairing_dispatcher_on_chat_model_start(  # pylint: disable=too-ma
     chat_invocation_params: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    event_dispatcher = EventPairingDispatcher()
+    event_dispatcher = LangChainEventPairingDispatcher()
     event_dispatcher.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,
         inputs={"era": "Victorian England", "title": "Tragedy at sunset on the beach"},
@@ -757,7 +757,7 @@ def test_event_pairing_dispatcher_on_llm_end(  # pylint: disable=too-many-argume
     llm_chain_kwargs: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    event_dispatcher = EventPairingDispatcher()
+    event_dispatcher = LangChainEventPairingDispatcher()
     event_dispatcher.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,
         inputs={"era": "Victorian England", "title": "Tragedy at sunset on the beach"},
@@ -845,7 +845,7 @@ def test_event_pairing_dispatcher_on_llm_end__chat_model(  # pylint: disable=too
     llm_chain_kwargs: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    event_dispatcher = EventPairingDispatcher()
+    event_dispatcher = LangChainEventPairingDispatcher()
     event_dispatcher.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,
         inputs={"era": "Victorian England", "title": "Tragedy at sunset on the beach"},

@@ -8,6 +8,7 @@ from nebuly.config import PACKAGES
 from nebuly.consumers import ConsumerWorker
 from nebuly.entities import DevelopmentPhase, Observer_T, Watched
 from nebuly.exceptions import APIKeyNotProvidedError, NebulyAlreadyInitializedError
+from nebuly.handlers import set_tracking_handlers
 from nebuly.monkey_patching import (
     check_no_packages_already_imported,
     import_and_patch_packages,
@@ -32,6 +33,7 @@ def init(
         api_key=api_key, project=project, phase=phase
     )
     import_and_patch_packages(PACKAGES, observer)
+    set_tracking_handlers()
 
 
 def _get_api_key() -> str:

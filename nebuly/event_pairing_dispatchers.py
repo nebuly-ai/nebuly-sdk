@@ -156,7 +156,7 @@ class EventsStorage:
 
 
 @dataclass(frozen=True)
-class EventPairingDispatcher:
+class LangChainEventPairingDispatcher:
     events_storage: EventsStorage = field(default_factory=EventsStorage)
 
     def on_chain_start(
@@ -190,6 +190,7 @@ class EventPairingDispatcher:
             self.events_storage.delete_events(watched_event.run_id)
 
         # TODO: Publish the event in a queue
+        print(watched_event)
 
         return watched_event
 
@@ -226,6 +227,7 @@ class EventPairingDispatcher:
             self.events_storage.delete_events(watched_event.run_id)
 
         # TODO: Publish the event in a queue
+        print(watched_event)
 
         return watched_event
 
@@ -262,6 +264,7 @@ class EventPairingDispatcher:
             self.events_storage.delete_events(watched_event.run_id)
 
         # TODO: Publish the event in a queue
+        print(watched_event)
 
         return watched_event
 
@@ -298,6 +301,7 @@ class EventPairingDispatcher:
             self.events_storage.delete_events(watched_event.run_id)
 
         # TODO: Publish the event in a queue
+        print(watched_event)
 
         return watched_event
 
