@@ -65,12 +65,3 @@ jobs:
 
       - name: Run tests
         run: make test
-
-      - name: Generate coverage report
-        run: poetry run coverage xml
-
-      - uses: actions/upload-artifact@v3
-        name: Upload coverage report
-        with:
-          name: coverage
-          path: coverage.xml
