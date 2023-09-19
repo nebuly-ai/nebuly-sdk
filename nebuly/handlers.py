@@ -4,13 +4,13 @@ from typing import Any
 from langchain.callbacks.base import BaseCallbackHandler, BaseCallbackManager, Callbacks
 from langchain.chains.base import Chain
 
-from nebuly.entities import Observer_T
+from nebuly.entities import Observer
 from nebuly.event_pairing_dispatchers import LangChainEventPairingDispatcher
 
 logger = logging.getLogger(__name__)
 
 
-def set_tracking_handlers(observer: Observer_T) -> None:
+def set_tracking_handlers(observer: Observer) -> None:
     event_pairing_dispatcher = LangChainEventPairingDispatcher(observer)
     tracking_handler = LangChainTrackingHandler(
         event_pairing_dispatcher=event_pairing_dispatcher

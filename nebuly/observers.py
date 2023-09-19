@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from nebuly.entities import DevelopmentPhase, Publisher_T, Watched, WatchedEvent
+from nebuly.entities import DevelopmentPhase, Publisher, Watched, WatchedEvent
 
 
 class CustomJSONEncoder(json.JSONEncoder):
@@ -28,7 +28,7 @@ class NebulyObserver:
         api_key: str,
         project: str | None,
         phase: DevelopmentPhase | None,
-        publish: Publisher_T,
+        publish: Publisher,
     ) -> None:
         self._api_key = api_key
         self._project = project

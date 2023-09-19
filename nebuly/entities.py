@@ -4,7 +4,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Union
+from typing import Any, Callable, TypeAlias
 
 
 class DevelopmentPhase(Enum):
@@ -90,7 +90,6 @@ class ExtraData:
     input: dict[str, Any]
     output: dict[str, Any]
 
-
 @dataclass
 class WatchedEvent:  # pylint: disable=too-many-instance-attributes
     module: str
@@ -121,6 +120,6 @@ class WatchedEvent:  # pylint: disable=too-many-instance-attributes
         }
 
 
-Observer_T = Callable[[Watched | WatchedEvent], None]
+Observer: TypeAlias = Callable[[Watched | WatchedEvent], None]
 
-Publisher_T = Callable[[str], None]
+Publisher: TypeAlias = Callable[[str], None]

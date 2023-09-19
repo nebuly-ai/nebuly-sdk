@@ -11,7 +11,7 @@ from nebuly.entities import (
     EventHierarchy,
     EventType,
     ExtraData,
-    Observer_T,
+    Observer,
     WatchedEvent,
 )
 
@@ -138,7 +138,7 @@ class EventsStorage:
 
 @dataclass(frozen=True)
 class LangChainEventPairingDispatcher:
-    observer: Observer_T
+    observer: Observer
     events_storage: EventsStorage = field(default_factory=EventsStorage)
 
     def on_chain_start(

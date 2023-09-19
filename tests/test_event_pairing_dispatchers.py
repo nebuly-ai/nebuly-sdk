@@ -11,12 +11,11 @@ from nebuly.event_pairing_dispatchers import (
     EventType,
     LangChainEventPairingDispatcher,
 )
-from tests.test_monkey_patching import Observer
 
 
 def test_new_event_pairing_dispatcher() -> None:
-    observer = Observer()
-    event_dispatcher = LangChainEventPairingDispatcher(observer)
+    observer = []
+    event_dispatcher = LangChainEventPairingDispatcher(observer.append)
     assert event_dispatcher is not None
 
 
@@ -323,7 +322,7 @@ def test_event_pairing_dispatcher_on_tool_start(
     default_tool_kwargs: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    event_dispatcher = LangChainEventPairingDispatcher(Observer())
+    event_dispatcher = LangChainEventPairingDispatcher()
     event_dispatcher.on_chain_start(
         serialized=agent_chain_serialized_data,
         inputs={"input": "Who is Leo DiCaprio's girlfriend?"},
