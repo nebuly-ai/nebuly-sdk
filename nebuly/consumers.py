@@ -4,11 +4,11 @@ import atexit
 from queue import Empty, Queue
 from threading import Thread
 
-from nebuly.entities import Publisher_T, Watched
+from nebuly.entities import Publisher, Watched
 
 
 class ConsumerWorker:
-    def __init__(self, queue: Queue[Watched], publish: Publisher_T) -> None:
+    def __init__(self, queue: Queue[Watched], publish: Publisher) -> None:
         self.publish = publish
         self.queue: Queue[Watched] = queue
         self.running = True

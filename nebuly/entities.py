@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable
+from typing import Any, Callable, TypeAlias
 
 
 class DevelopmentPhase(Enum):
@@ -70,6 +70,6 @@ class Watched:  # pylint: disable=too-many-instance-attributes
         }
 
 
-Observer_T = Callable[[Watched], None]
+Observer: TypeAlias = Callable[[Watched], None]
 
-Publisher_T = Callable[[Watched], None]
+Publisher: TypeAlias = Callable[[Watched], None]

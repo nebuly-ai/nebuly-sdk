@@ -10,7 +10,7 @@ from inspect import isasyncgenfunction, iscoroutinefunction
 from types import ModuleType
 from typing import Any, AsyncGenerator, Callable, Generator, Iterable
 
-from nebuly.entities import Observer_T, Package, Watched
+from nebuly.entities import Observer, Package, Watched
 
 logger = logging.getLogger(__name__)
 
@@ -24,9 +24,7 @@ def check_no_packages_already_imported(packages: Iterable[Package]) -> None:
             logger.warning("%s already imported", package.name)
 
 
-def import_and_patch_packages(
-    packages: Iterable[Package], observer: Observer_T
-) -> None:
+def import_and_patch_packages(packages: Iterable[Package], observer: Observer) -> None:
     """
     Import each package in packages and patch it with the observer.
     """
@@ -37,7 +35,7 @@ def import_and_patch_packages(
             pass
 
 
-def _monkey_patch(package: Package, observer: Observer_T) -> None:
+def _monkey_patch(package: Package, observer: Observer) -> None:
     module = importlib.import_module(package.name)
     for attr in package.to_patch:
         try:
@@ -46,9 +44,7 @@ def _monkey_patch(package: Package, observer: Observer_T) -> None:
             logger.warning("Failed to patch %s", attr)
 
 
-def _monkey_patch_attribute(
-    attr: str, module: ModuleType, observer: Observer_T
-) -> None:
+def _monkey_patch_attribute(attr: str, module: ModuleType, observer: Observer) -> None:
     version = module.__version__ if hasattr(module, "__version__") else "unknown"
     tmp_component = module
     path = attr.split(".")
@@ -84,7 +80,7 @@ def _split_nebuly_kwargs(
 def watch_from_generator(  # pylint: disable=too-many-arguments
     *,
     generator: Generator[Any, Any, Any],
-    observer: Observer_T,
+    observer: Observer,
     module: str,
     version: str,
     function_name: str,
@@ -132,7 +128,7 @@ def watch_from_generator(  # pylint: disable=too-many-arguments
 async def watch_from_generator_async(  # pylint: disable=too-many-arguments
     *,
     generator: AsyncGenerator[Any, Any],
-    observer: Observer_T,
+    observer: Observer,
     module: str,
     version: str,
     function_name: str,
@@ -201,7 +197,7 @@ def _setup_args_kwargs(
 
 def coroutine_wrapper(
     f: Callable[[Any], Any],
-    observer: Observer_T,
+    observer: Observer,
     module: str,
     version: str,
     function_name: str,
@@ -265,7 +261,7 @@ def coroutine_wrapper(
 
 def function_wrapper(
     f: Callable[[Any], Any],
-    observer: Observer_T,
+    observer: Observer,
     module: str,
     version: str,
     function_name: str,
@@ -324,7 +320,7 @@ def function_wrapper(
 
 
 def _patcher(
-    observer: Observer_T, module: str, version: str, function_name: str
+    observer: Observer, module: str, version: str, function_name: str
 ) -> Callable[[Any], Any]:
     """
     Decorator that calls observer with a Watched instance when the decorated
