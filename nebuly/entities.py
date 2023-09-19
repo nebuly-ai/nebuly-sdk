@@ -57,8 +57,12 @@ class Watched:  # pylint: disable=too-many-instance-attributes
             "called_end": self.called_end.isoformat(),
             "called_with_args": self.called_with_args,
             "called_with_kwargs": self.called_with_kwargs,
-            "called_with_nebuly_kwargs": self.called_with_nebuly_kwargs
-            | {"nebuly_phase": self.called_with_nebuly_kwargs["nebuly_phase"].value},
+            "called_with_nebuly_kwargs": {
+                **self.called_with_nebuly_kwargs,
+                **{
+                    "nebuly_phase": self.called_with_nebuly_kwargs["nebuly_phase"].value
+                },
+            },
             "returned": self.returned,
             "generator": self.generator,
             "generator_first_element_timestamp": (
