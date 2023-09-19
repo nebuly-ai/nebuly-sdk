@@ -1,19 +1,6 @@
 from __future__ import annotations
 
-import json
-from typing import Any
-
 from nebuly.entities import DevelopmentPhase, Publisher, Watched, WatchedEvent
-
-
-class CustomJSONEncoder(json.JSONEncoder):
-    def default(self, o: Any) -> Any:
-        if hasattr(o, "to_dict"):
-            return o.to_dict()
-        try:
-            return json.JSONEncoder.default(self, o)
-        except Exception:  # pylint: disable=broad-except
-            return str(o)
 
 
 class NebulyObserver:
@@ -39,8 +26,7 @@ class NebulyObserver:
         self._set_nebuly_kwargs(watched)
         self._validate_phase(watched)
         self._validate_project(watched)
-        json_data = json.dumps({"body": watched, "provider": ""}, cls=CustomJSONEncoder)
-        self._publisher(json_data)
+        self._publisher(watched)
 
     def _set_nebuly_kwargs(self, watched: Watched | WatchedEvent) -> None:
         if "nebuly_project" not in watched.called_with_nebuly_kwargs and self._project:

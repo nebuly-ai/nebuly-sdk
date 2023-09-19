@@ -7,13 +7,7 @@ from langchain.schema.messages import BaseMessage
 from langchain.schema.output import LLMResult
 from typing_extensions import Self
 
-from nebuly.entities import (
-    EventHierarchy,
-    EventType,
-    ExtraData,
-    Observer,
-    WatchedEvent,
-)
+from nebuly.entities import EventHierarchy, EventType, ExtraData, Observer, WatchedEvent
 
 
 @dataclass

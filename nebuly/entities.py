@@ -90,6 +90,7 @@ class ExtraData:
     input: dict[str, Any]
     output: dict[str, Any]
 
+
 @dataclass
 class WatchedEvent:  # pylint: disable=too-many-instance-attributes
     module: str
@@ -122,4 +123,4 @@ class WatchedEvent:  # pylint: disable=too-many-instance-attributes
 
 Observer: TypeAlias = Callable[[Watched | WatchedEvent], None]
 
-Publisher: TypeAlias = Callable[[str], None]
+Publisher: TypeAlias = Callable[[Watched | WatchedEvent], None]

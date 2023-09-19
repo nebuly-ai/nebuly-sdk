@@ -12,7 +12,7 @@ def function(a: float, b: int, *, c: int = 0) -> int:
 
 
 def test_observer_calls_publisher_when_patched_is_called() -> None:
-    publisher: list[Watched] = []
+    publisher: list[Watched | WatchedEvent] = []
     observer = NebulyObserver(
         api_key="test_api_key",
         project="test_project",
@@ -36,7 +36,7 @@ def test_observer_calls_publisher_when_patched_is_called() -> None:
 
 
 def test_observer_sets_nebuly_kwargs() -> None:
-    publisher: list[Watched] = []
+    publisher: list[Watched | WatchedEvent] = []
     observer = NebulyObserver(
         api_key="test_api_key",
         project="test_project",
@@ -60,7 +60,7 @@ def test_observer_sets_nebuly_kwargs() -> None:
 
 
 def test_observer_doesnt_override_nebuly_kwargs() -> None:
-    publisher: list[Watched] = []
+    publisher: list[Watched | WatchedEvent] = []
     observer = NebulyObserver(
         api_key="test_api_key",
         project="test_project",
@@ -92,7 +92,7 @@ def test_observer_doesnt_override_nebuly_kwargs() -> None:
 
 
 def test_observer_adds_undefine_as_user_if_not_passed() -> None:
-    publisher: list[Watched] = []
+    publisher: list[Watched | WatchedEvent] = []
     observer = NebulyObserver(
         api_key="test_api_key",
         project="test_project",
@@ -112,7 +112,7 @@ def test_observer_adds_undefine_as_user_if_not_passed() -> None:
 
 
 def test_nebuly_observer_raises_exception_if_invalid_phase() -> None:
-    publisher: list[Watched] = []
+    publisher: list[Watched | WatchedEvent] = []
     observer = NebulyObserver(
         api_key="test_api_key",
         project="test_project",
@@ -128,7 +128,7 @@ def test_nebuly_observer_raises_exception_if_invalid_phase() -> None:
 
 
 def test_nebuly_observer_raises_exception_if_invalid_phase_override() -> None:
-    publisher: list[Watched] = []
+    publisher: list[Watched | WatchedEvent] = []
     observer = NebulyObserver(
         api_key="test_api_key",
         project="test_project",
@@ -145,7 +145,7 @@ def test_nebuly_observer_raises_exception_if_invalid_phase_override() -> None:
 
 
 def test_nebuly_observer_phase_must_be_set() -> None:
-    publisher: list[Watched] = []
+    publisher: list[Watched | WatchedEvent] = []
     observer = NebulyObserver(
         api_key="test_api_key",
         project="test_project",
@@ -162,7 +162,7 @@ def test_nebuly_observer_phase_must_be_set() -> None:
 
 
 def test_nebuly_observer_project_must_be_set() -> None:
-    publisher: list[Watched] = []
+    publisher: list[Watched | WatchedEvent] = []
     observer = NebulyObserver(
         api_key="test_api_key",
         project=None,
