@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+import uuid
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable
+from typing import Any, Callable, Union
 
 
 class DevelopmentPhase(Enum):
@@ -13,6 +14,14 @@ class DevelopmentPhase(Enum):
     FINETUNING = "fine-tuning"
     PRODUCTION = "production"
     UNKNOWN = "unknown"
+
+
+class EventType(Enum):
+    CHAIN = "chain"
+    TOOL = "tool"
+    RETRIEVAL = "retrieval"
+    LLM_MODEL = "llm_model"
+    CHAT_MODEL = "chat_model"
 
 
 @dataclass(frozen=True)
@@ -70,6 +79,48 @@ class Watched:  # pylint: disable=too-many-instance-attributes
         }
 
 
-Observer_T = Callable[[Watched], None]
+@dataclass
+class EventHierarchy:
+    parent_run_id: uuid.UUID
+    root_run_id: uuid.UUID
 
-Publisher_T = Callable[[Watched], None]
+
+@dataclass
+class ExtraData:
+    input: dict[str, Any]
+    output: dict[str, Any]
+
+
+@dataclass
+class WatchedEvent:  # pylint: disable=too-many-instance-attributes
+    module: str
+    run_id: uuid.UUID
+    hierarchy: EventHierarchy | None
+    type: EventType
+    serialized: dict[str, Any]
+    inputs: dict[str, Any]
+    outputs: dict[str, Any]
+    extras: ExtraData | None
+    called_with_nebuly_kwargs: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        to_dict returns a dictionary representation of the WatchedEvent instance.
+        """
+        return {
+            "module": self.module,
+            "run_id": self.run_id,
+            "hierarchy": self.hierarchy,
+            "type": self.type.value,
+            "serialized": self.serialized,
+            "inputs": self.inputs,
+            "outputs": self.outputs,
+            "extras": self.extras,
+            "called_with_nebuly_kwargs": self.called_with_nebuly_kwargs
+            | {"nebuly_phase": self.called_with_nebuly_kwargs["nebuly_phase"].value},
+        }
+
+
+Observer_T = Callable[[Watched | WatchedEvent], None]
+
+Publisher_T = Callable[[str], None]

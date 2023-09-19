@@ -9,7 +9,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from nebuly.entities import Package, Watched
+from nebuly.entities import Package, Watched, WatchedEvent
 from nebuly.monkey_patching import (
     _monkey_patch,
     _patcher,

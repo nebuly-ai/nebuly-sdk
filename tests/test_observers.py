@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from nebuly.entities import DevelopmentPhase, Watched
+from nebuly.entities import DevelopmentPhase, Watched, WatchedEvent
 from nebuly.monkey_patching import _patcher
 from nebuly.observers import NebulyObserver
 

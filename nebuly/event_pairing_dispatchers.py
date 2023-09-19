@@ -1,4 +1,3 @@
-import enum
 import uuid
 from dataclasses import dataclass, field
 from typing import Any, Dict
@@ -8,13 +7,13 @@ from langchain.schema.messages import BaseMessage
 from langchain.schema.output import LLMResult
 from typing_extensions import Self
 
-
-class EventType(enum.Enum):
-    CHAIN = "chain"
-    TOOL = "tool"
-    RETRIEVAL = "retrieval"
-    LLM_MODEL = "llm_model"
-    CHAT_MODEL = "chat_model"
+from nebuly.entities import (
+    EventHierarchy,
+    EventType,
+    ExtraData,
+    Observer_T,
+    WatchedEvent,
+)
 
 
 @dataclass
@@ -51,33 +50,11 @@ class EventData:
 
 
 @dataclass
-class EventHierarchy:
-    parent_run_id: uuid.UUID
-    root_run_id: uuid.UUID
-
-
-@dataclass
 class Event:
     event_id: uuid.UUID
     hierarchy: EventHierarchy | None
     data: EventData
-
-
-@dataclass
-class ExtraData:
-    input: dict[str, Any]
-    output: dict[str, Any]
-
-
-@dataclass
-class WatchedLangChain:
-    run_id: uuid.UUID
-    hierarchy: EventHierarchy | None
-    type: EventType
-    serialized: dict[str, Any]
-    inputs: dict[str, Any]
-    outputs: dict[str, Any]
-    extras: ExtraData | None
+    module: str
 
     @staticmethod
     def _get_extra_data(
@@ -91,22 +68,20 @@ class WatchedLangChain:
             return ExtraData(input=inputs, output={})
         return ExtraData(input=inputs, output=outputs)
 
-    @classmethod
-    def from_chain_data(cls, event: Event) -> Self:
-        if event.data.outputs is None:
-            raise ValueError(
-                "Event must have outputs to be converted to WatchedLangChain"
-            )
-        outputs: dict[str, Any] = event.data.outputs
-        return cls(
-            run_id=event.event_id,
-            hierarchy=event.hierarchy,
-            type=event.data.type,
-            serialized=event.data.serialized,
-            inputs=event.data.inputs,
+    def to_watched(self) -> WatchedEvent:
+        if self.data.outputs is None:
+            raise ValueError("Event must have outputs to be converted to WatchedEvent")
+        outputs: dict[str, Any] = self.data.outputs
+        return WatchedEvent(
+            module=self.module,
+            run_id=self.event_id,
+            hierarchy=self.hierarchy,
+            type=self.data.type,
+            serialized=self.data.serialized,
+            inputs=self.data.inputs,
             outputs=outputs,
-            extras=cls._get_extra_data(
-                inputs=event.data.input_extras, outputs=event.data.output_extras
+            extras=self._get_extra_data(
+                inputs=self.data.input_extras, outputs=self.data.output_extras
             ),
         )
 
@@ -124,7 +99,11 @@ class EventsStorage:
         return self.get_root_id(event.hierarchy.root_run_id)
 
     def add_event(
-        self, event_id: uuid.UUID, parent_id: uuid.UUID | None, data: EventData
+        self,
+        event_id: uuid.UUID,
+        parent_id: uuid.UUID | None,
+        data: EventData,
+        module: str,
     ) -> None:
         if event_id in self.events:
             raise ValueError(f"Event {event_id} already exists in events storage.")
@@ -136,7 +115,9 @@ class EventsStorage:
             hierarchy = EventHierarchy(
                 parent_run_id=parent_id, root_run_id=self.get_root_id(parent_id)
             )
-        self.events[event_id] = Event(event_id=event_id, hierarchy=hierarchy, data=data)
+        self.events[event_id] = Event(
+            event_id=event_id, hierarchy=hierarchy, data=data, module=module
+        )
 
     def delete_events(self, root_id: uuid.UUID) -> None:
         if root_id not in self.events:
@@ -157,6 +138,7 @@ class EventsStorage:
 
 @dataclass(frozen=True)
 class LangChainEventPairingDispatcher:
+    observer: Observer_T
     events_storage: EventsStorage = field(default_factory=EventsStorage)
 
     def on_chain_start(
@@ -173,24 +155,21 @@ class LangChainEventPairingDispatcher:
             event_type=EventType.CHAIN,
             input_extras=kwargs,
         )
-        self.events_storage.add_event(run_id, parent_run_id, data)
+        self.events_storage.add_event(run_id, parent_run_id, data, module="langchain")
 
     def on_chain_end(
         self,
         outputs: dict[str, Any],
         run_id: uuid.UUID,
         **kwargs: Any,
-    ) -> WatchedLangChain:
+    ) -> WatchedEvent:
         self.events_storage.events[run_id].data.set_outputs(outputs, kwargs)
-        watched_event = WatchedLangChain.from_chain_data(
-            self.events_storage.events[run_id]
-        )
+        watched_event = self.events_storage.events[run_id].to_watched()
         # Delete all events that are part of the chain if the root chain is finished
         if watched_event.hierarchy is None:
             self.events_storage.delete_events(watched_event.run_id)
 
-        # TODO: Publish the event in a queue
-        print(watched_event)
+        self.observer(watched_event)
 
         return watched_event
 
@@ -208,26 +187,23 @@ class LangChainEventPairingDispatcher:
             event_type=EventType.TOOL,
             input_extras=kwargs,
         )
-        self.events_storage.add_event(run_id, parent_run_id, data)
+        self.events_storage.add_event(run_id, parent_run_id, data, module="langchain")
 
     def on_tool_end(
         self,
         output: str,
         run_id: uuid.UUID,
         **kwargs: Any,
-    ) -> WatchedLangChain:
+    ) -> WatchedEvent:
         self.events_storage.events[run_id].data.set_outputs(
             outputs={"result": output}, output_extras=kwargs
         )
-        watched_event = WatchedLangChain.from_chain_data(
-            self.events_storage.events[run_id]
-        )
+        watched_event = self.events_storage.events[run_id].to_watched()
         # Delete all events that are part of the chain if the root chain is finished
         if watched_event.hierarchy is None:
             self.events_storage.delete_events(watched_event.run_id)
 
-        # TODO: Publish the event in a queue
-        print(watched_event)
+        self.observer(watched_event)
 
         return watched_event
 
@@ -245,26 +221,23 @@ class LangChainEventPairingDispatcher:
             event_type=EventType.RETRIEVAL,
             input_extras=kwargs,
         )
-        self.events_storage.add_event(run_id, parent_run_id, data)
+        self.events_storage.add_event(run_id, parent_run_id, data, module="langchain")
 
     def on_retriever_end(
         self,
         documents: list[Document],
         run_id: uuid.UUID,
         **kwargs: Any,
-    ) -> WatchedLangChain:
+    ) -> WatchedEvent:
         self.events_storage.events[run_id].data.set_outputs(
             outputs={"documents": documents}, output_extras=kwargs
         )
-        watched_event = WatchedLangChain.from_chain_data(
-            self.events_storage.events[run_id]
-        )
+        watched_event = watched_event = self.events_storage.events[run_id].to_watched()
         # Delete all events that are part of the chain if the root chain is finished
         if watched_event.hierarchy is None:
             self.events_storage.delete_events(watched_event.run_id)
 
-        # TODO: Publish the event in a queue
-        print(watched_event)
+        self.observer(watched_event)
 
         return watched_event
 
@@ -282,26 +255,23 @@ class LangChainEventPairingDispatcher:
             event_type=EventType.LLM_MODEL,
             input_extras=kwargs,
         )
-        self.events_storage.add_event(run_id, parent_run_id, data)
+        self.events_storage.add_event(run_id, parent_run_id, data, module="langchain")
 
     def on_llm_end(
         self,
         response: LLMResult,
         run_id: uuid.UUID,
         **kwargs: Any,
-    ) -> WatchedLangChain:
+    ) -> WatchedEvent:
         self.events_storage.events[run_id].data.set_outputs(
             outputs={"response": response}, output_extras=kwargs
         )
-        watched_event = WatchedLangChain.from_chain_data(
-            self.events_storage.events[run_id]
-        )
+        watched_event = watched_event = self.events_storage.events[run_id].to_watched()
         # Delete all events that are part of the chain if the root chain is finished
         if watched_event.hierarchy is None:
             self.events_storage.delete_events(watched_event.run_id)
 
-        # TODO: Publish the event in a queue
-        print(watched_event)
+        self.observer(watched_event)
 
         return watched_event
 
@@ -319,4 +289,4 @@ class LangChainEventPairingDispatcher:
             event_type=EventType.CHAT_MODEL,
             input_extras=kwargs,
         )
-        self.events_storage.add_event(run_id, parent_run_id, data)
+        self.events_storage.add_event(run_id, parent_run_id, data, module="langchain")
