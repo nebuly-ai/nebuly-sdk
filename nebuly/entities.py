@@ -4,7 +4,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, TypeAlias
+from typing import Any, Callable
 
 
 class DevelopmentPhase(Enum):
@@ -121,6 +121,6 @@ class WatchedEvent:  # pylint: disable=too-many-instance-attributes
         }
 
 
-Observer: TypeAlias = Callable[[Watched | WatchedEvent], None]
+Observer = Callable[[Watched | WatchedEvent], None]
 
-Publisher: TypeAlias = Callable[[Watched | WatchedEvent], None]
+Publisher = Callable[[Watched | WatchedEvent], None]
