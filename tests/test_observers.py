@@ -7,25 +7,17 @@ from nebuly.monkey_patching import _patcher
 from nebuly.observers import NebulyObserver
 
 
-class Publisher:
-    def __init__(self) -> None:
-        self.messages: list[Watched] = []
-
-    def publish(self, message: Watched) -> None:
-        self.messages.append(message)
-
-
 def function(a: float, b: int, *, c: int = 0) -> int:
     return int(a + b + c)
 
 
 def test_observer_calls_publisher_when_patched_is_called() -> None:
-    publisher = Publisher()
+    publisher: list[Watched] = []
     observer = NebulyObserver(
         api_key="test_api_key",
         project="test_project",
         phase=DevelopmentPhase.EXPERIMENTATION,
-        publish=publisher.publish,
+        publish=publisher.append,
     )
 
     patched = _patcher(observer.on_event_received, "module", "0.1.0", "function_name")(
@@ -34,8 +26,8 @@ def test_observer_calls_publisher_when_patched_is_called() -> None:
     result = patched(1.0, 2, c=3)
 
     assert result == 6
-    assert len(publisher.messages) == 1
-    watched = publisher.messages[0]
+    assert len(publisher) == 1
+    watched = publisher[0]
     assert watched.called_with_nebuly_kwargs["nebuly_project"] == "test_project"
     assert (
         watched.called_with_nebuly_kwargs["nebuly_phase"]
@@ -44,12 +36,12 @@ def test_observer_calls_publisher_when_patched_is_called() -> None:
 
 
 def test_observer_sets_nebuly_kwargs() -> None:
-    publisher = Publisher()
+    publisher: list[Watched] = []
     observer = NebulyObserver(
         api_key="test_api_key",
         project="test_project",
         phase=DevelopmentPhase.EXPERIMENTATION,
-        publish=publisher.publish,
+        publish=publisher.append,
     )
 
     patched = _patcher(observer.on_event_received, "module", "0.1.0", "function_name")(
@@ -58,8 +50,8 @@ def test_observer_sets_nebuly_kwargs() -> None:
     result = patched(1.0, 2, c=3)
 
     assert result == 6
-    assert len(publisher.messages) == 1
-    watched = publisher.messages[0]
+    assert len(publisher) == 1
+    watched = publisher[0]
     assert watched.called_with_nebuly_kwargs["nebuly_project"] == "test_project"
     assert (
         watched.called_with_nebuly_kwargs["nebuly_phase"]
@@ -68,12 +60,12 @@ def test_observer_sets_nebuly_kwargs() -> None:
 
 
 def test_observer_doesnt_override_nebuly_kwargs() -> None:
-    publisher = Publisher()
+    publisher: list[Watched] = []
     observer = NebulyObserver(
         api_key="test_api_key",
         project="test_project",
         phase=DevelopmentPhase.EXPERIMENTATION,
-        publish=publisher.publish,
+        publish=publisher.append,
     )
 
     patched = _patcher(observer.on_event_received, "module", "0.1.0", "function_name")(
@@ -89,8 +81,8 @@ def test_observer_doesnt_override_nebuly_kwargs() -> None:
     )
 
     assert result == 6
-    assert len(publisher.messages) == 1
-    watched = publisher.messages[0]
+    assert len(publisher) == 1
+    watched = publisher[0]
     assert watched.called_with_nebuly_kwargs["nebuly_project"] == "other_project"
     assert (
         watched.called_with_nebuly_kwargs["nebuly_phase"]
@@ -100,12 +92,12 @@ def test_observer_doesnt_override_nebuly_kwargs() -> None:
 
 
 def test_observer_adds_undefine_as_user_if_not_passed() -> None:
-    publisher = Publisher()
+    publisher: list[Watched] = []
     observer = NebulyObserver(
         api_key="test_api_key",
         project="test_project",
         phase=DevelopmentPhase.EXPERIMENTATION,
-        publish=publisher.publish,
+        publish=publisher.append,
     )
 
     patched = _patcher(observer.on_event_received, "module", "0.1.0", "function_name")(
@@ -114,18 +106,18 @@ def test_observer_adds_undefine_as_user_if_not_passed() -> None:
     result = patched(1.0, 2, c=3)
 
     assert result == 6
-    assert len(publisher.messages) == 1
-    watched = publisher.messages[0]
+    assert len(publisher) == 1
+    watched = publisher[0]
     assert watched.called_with_nebuly_kwargs["nebuly_user"] == "undefined"
 
 
 def test_nebuly_observer_raises_exception_if_invalid_phase() -> None:
-    publisher = Publisher()
+    publisher: list[Watched] = []
     observer = NebulyObserver(
         api_key="test_api_key",
         project="test_project",
         phase="invalid_phase",  # type: ignore
-        publish=publisher.publish,
+        publish=publisher.append,
     )
     patched = _patcher(observer.on_event_received, "module", "0.1.0", "function_name")(
         function
@@ -136,12 +128,12 @@ def test_nebuly_observer_raises_exception_if_invalid_phase() -> None:
 
 
 def test_nebuly_observer_raises_exception_if_invalid_phase_override() -> None:
-    publisher = Publisher()
+    publisher: list[Watched] = []
     observer = NebulyObserver(
         api_key="test_api_key",
         project="test_project",
         phase=DevelopmentPhase.EXPERIMENTATION,
-        publish=publisher.publish,
+        publish=publisher.append,
     )
     patched = _patcher(observer.on_event_received, "module", "0.1.0", "function_name")(
         function
@@ -153,12 +145,12 @@ def test_nebuly_observer_raises_exception_if_invalid_phase_override() -> None:
 
 
 def test_nebuly_observer_phase_must_be_set() -> None:
-    publisher = Publisher()
+    publisher: list[Watched] = []
     observer = NebulyObserver(
         api_key="test_api_key",
         project="test_project",
         phase=None,
-        publish=publisher.publish,
+        publish=publisher.append,
     )
     patched = _patcher(observer.on_event_received, "module", "0.1.0", "function_name")(
         function
@@ -170,12 +162,12 @@ def test_nebuly_observer_phase_must_be_set() -> None:
 
 
 def test_nebuly_observer_project_must_be_set() -> None:
-    publisher = Publisher()
+    publisher: list[Watched] = []
     observer = NebulyObserver(
         api_key="test_api_key",
         project=None,
         phase=DevelopmentPhase.EXPERIMENTATION,
-        publish=publisher.publish,
+        publish=publisher.append,
     )
     patched = _patcher(observer.on_event_received, "module", "0.1.0", "function_name")(
         function
