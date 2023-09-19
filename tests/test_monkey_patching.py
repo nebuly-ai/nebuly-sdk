@@ -23,14 +23,6 @@ st_any = st.one_of(
 )
 
 
-class Observer:
-    def __init__(self) -> None:
-        self.watched: list[Watched] = []
-
-    def __call__(self, watched: Watched) -> None:
-        self.watched.append(watched)
-
-
 @given(args=st.tuples(st_any), kwargs=st.dictionaries(st.text(), st_any))
 def test_patcher_doesnt_change_any_behavior(
     args: tuple[Any, ...], kwargs: dict[str, Any]
@@ -59,16 +51,16 @@ def test_patcher_calls_observer(args: tuple[Any, ...], kwargs: dict[str, Any]) -
         """This is the docstring to be tested"""
         return args, kwargs
 
-    observer = Observer()
+    observer: list[Watched] = []
 
-    patched = _patcher(observer, "module", "0.1.0", "function_name")(to_patched)
+    patched = _patcher(observer.append, "module", "0.1.0", "function_name")(to_patched)
 
     before = datetime.now(timezone.utc)
     patched(*args, **kwargs)
     after = datetime.now(timezone.utc)
 
-    assert len(observer.watched) == 1
-    watched = observer.watched[0]
+    assert len(observer) == 1
+    watched = observer[0]
     assert watched.function == "function_name"
     assert watched.module == "module"
     assert before <= watched.called_start <= watched.called_end <= after
@@ -83,15 +75,15 @@ def test_watched_is_immutable() -> None:
         mutable.append(1)
         return mutable
 
-    observer = Observer()
+    observer: list[Watched] = []
     mutable: list[int] = []
 
-    _patcher(observer, "module", "0.1.0", "function_name")(to_patched)(mutable)
+    _patcher(observer.append, "module", "0.1.0", "function_name")(to_patched)(mutable)
 
     mutable.append(2)
 
-    assert len(observer.watched) == 1
-    watched = observer.watched[0]
+    assert len(observer) == 1
+    watched = observer[0]
     assert watched.called_with_args == ([],)
     assert watched.returned == [1]
 
@@ -115,13 +107,13 @@ def test_nebuly_args_are_intercepted() -> None:
     def function(a: int, b: int) -> int:
         return a + b
 
-    observer = Observer()
-    patched = _patcher(observer, "module", "0.1.0", "function_name")(function)
+    observer: list[Watched] = []
+    patched = _patcher(observer.append, "module", "0.1.0", "function_name")(function)
 
     patched(1, 2, nebuly_segment="segment", nebuly_project="project")
 
-    assert len(observer.watched) == 1
-    watched = observer.watched[0]
+    assert len(observer) == 1
+    watched = observer[0]
     assert watched.called_with_args == (1, 2)
     assert watched.called_with_nebuly_kwargs == {
         "nebuly_segment": "segment",
@@ -199,9 +191,9 @@ def test_patcher_calls_observer_after_generator_has_finished(
         for i in range(3):
             yield i
 
-    observer = Observer()
+    observer: list[Watched] = []
 
-    patched = _patcher(observer, "module", "0.1.0", "function_name")(
+    patched = _patcher(observer.append, "module", "0.1.0", "function_name")(
         to_patched_generator
     )
 
@@ -213,8 +205,8 @@ def test_patcher_calls_observer_after_generator_has_finished(
     after = datetime.now(timezone.utc)
 
     assert consumed_generator == [0, 1, 2]
-    assert len(observer.watched) == 1
-    watched = observer.watched[0]
+    assert len(observer) == 1
+    watched = observer[0]
     assert watched.returned == [0, 1, 2]
     assert watched.generator is True
     assert watched.generator_first_element_timestamp is not None
