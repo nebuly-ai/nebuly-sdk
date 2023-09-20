@@ -11,8 +11,6 @@ PACKAGES = (
             "Completion.acreate",
             "ChatCompletion.create",
             "ChatCompletion.acreate",
-            "Embedding.create",
-            "Embedding.acreate",
         ),
     ),
     Package(
