@@ -29,18 +29,8 @@ repos:
         entry: poetry run black
         language: system
         types: [python]
-      - id: mypy
-        name: mypy
-        entry: poetry run mypy
+      - id: ruff
+        name: ruff
+        entry: poetry run ruff
         language: system
         types: [python]
-      - id: pylint
-        name: pylint
-        entry: poetry run pylint
-        language: system
-        types: [python]
-      - id: bandit
-        name: bandit
-        entry: poetry run bandit -r app/
-        language: system
-        pass_filenames: false
