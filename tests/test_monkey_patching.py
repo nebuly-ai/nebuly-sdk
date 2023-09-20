@@ -9,7 +9,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from nebuly.entities import Package, Watched, WatchedEvent
+from nebuly.entities import ChainEvent, Package, Watched
 from nebuly.monkey_patching import (
     _monkey_patch,
     _patcher,
@@ -51,7 +51,7 @@ def test_patcher_calls_observer(args: tuple[Any, ...], kwargs: dict[str, Any]) -
         """This is the docstring to be tested"""
         return args, kwargs
 
-    observer: list[Watched | WatchedEvent] = []
+    observer: list[Watched | ChainEvent] = []
 
     patched = _patcher(observer.append, "module", "0.1.0", "function_name")(to_patched)
 
@@ -76,7 +76,7 @@ def test_watched_is_immutable() -> None:
         mutable.append(1)
         return mutable
 
-    observer: list[Watched | WatchedEvent] = []
+    observer: list[Watched | ChainEvent] = []
     mutable: list[int] = []
 
     _patcher(observer.append, "module", "0.1.0", "function_name")(to_patched)(mutable)
@@ -109,7 +109,7 @@ def test_nebuly_args_are_intercepted() -> None:
     def function(a: int, b: int) -> int:
         return a + b
 
-    observer: list[Watched | WatchedEvent] = []
+    observer: list[Watched | ChainEvent] = []
     patched = _patcher(observer.append, "module", "0.1.0", "function_name")(function)
 
     patched(1, 2, nebuly_segment="segment", nebuly_project="project")
@@ -141,7 +141,7 @@ def test_monkey_patch() -> None:
             "ToPatch.to_patch_two",
         ),
     )
-    observer: list[Watched | WatchedEvent] = []
+    observer: list[Watched | ChainEvent] = []
 
     import_and_patch_packages([package], observer.append)
 
@@ -158,7 +158,7 @@ def test_monkey_patch_missing_module_doesnt_break() -> None:
         ("0.1.0",),
         ("ToPatch.to_patch_one",),
     )
-    observer: list[Watched | WatchedEvent] = []
+    observer: list[Watched | ChainEvent] = []
 
     import_and_patch_packages([package], observer.append)
 
@@ -172,7 +172,7 @@ def test_monkey_patch_missing_component_doesnt_break_other_patches() -> None:
             "ToPatch.to_patch_one",
         ),
     )
-    observer: list[Watched | WatchedEvent] = []
+    observer: list[Watched | ChainEvent] = []
 
     _monkey_patch(package, observer.append)
 
@@ -194,7 +194,7 @@ def test_patcher_calls_observer_after_generator_has_finished(
         for i in range(3):
             yield i
 
-    observer: list[Watched | WatchedEvent] = []
+    observer: list[Watched | ChainEvent] = []
 
     patched = _patcher(observer.append, "module", "0.1.0", "function_name")(
         to_patched_generator

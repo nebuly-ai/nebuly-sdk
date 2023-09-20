@@ -6,7 +6,7 @@ import os
 import urllib.request
 from typing import Any
 
-from nebuly.entities import Watched, WatchedEvent
+from nebuly.entities import ChainEvent, Watched
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class CustomJSONEncoder(json.JSONEncoder):
             return str(o)
 
 
-def post_message(watched: Watched | WatchedEvent, api_key: str) -> None:
+def post_message(watched: Watched | ChainEvent, api_key: str) -> None:
     message = json.dumps({"body": watched, "provider": ""}, cls=CustomJSONEncoder)
     url = os.environ.get(
         # TODO: make this url configurable

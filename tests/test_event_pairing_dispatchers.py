@@ -6,12 +6,12 @@ from langchain.schema import Document
 from langchain.schema.messages import AIMessage, HumanMessage, SystemMessage
 from langchain.schema.output import ChatGeneration, Generation, LLMResult
 
-from nebuly.entities import EventType, Watched, WatchedEvent
+from nebuly.entities import ChainEvent, EventType, Watched
 from nebuly.event_pairing_dispatchers import EventData, LangChainEventPairingDispatcher
 
 
 def test_new_event_pairing_dispatcher() -> None:
-    observer: list[Watched | WatchedEvent] = []
+    observer: list[Watched | ChainEvent] = []
     event_dispatcher = LangChainEventPairingDispatcher(observer.append)
     assert event_dispatcher is not None
 
@@ -157,7 +157,7 @@ def test_event_pairing_dispatcher_on_chain_start__new_root_chain(
     default_kwargs: dict[str, Any],
 ) -> None:
     run_id = uuid.uuid4()
-    observer: list[Watched | WatchedEvent] = []
+    observer: list[Watched | ChainEvent] = []
     event_dispatcher = LangChainEventPairingDispatcher(observer.append)
     event_dispatcher.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,
@@ -192,7 +192,7 @@ def test_event_pairing_dispatcher_on_chain_start__existing_root_chain(
     llm_chain_kwargs: dict[str, Any],
 ) -> None:
     root_id = uuid.uuid4()
-    observer: list[Watched | WatchedEvent] = []
+    observer: list[Watched | ChainEvent] = []
     event_dispatcher = LangChainEventPairingDispatcher(observer.append)
     event_dispatcher.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,
@@ -231,7 +231,7 @@ def test_event_pairing_dispatcher_on_chain_end__root_chain(
     default_kwargs: dict[str, Any],
 ) -> None:
     run_id = uuid.uuid4()
-    observer: list[Watched | WatchedEvent] = []
+    observer: list[Watched | ChainEvent] = []
     event_dispatcher = LangChainEventPairingDispatcher(observer.append)
     event_dispatcher.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,
@@ -259,9 +259,9 @@ def test_event_pairing_dispatcher_on_chain_end__root_chain(
     assert watched_event.outputs == {"text": "Tragedy at Sunset on the Beach"}
     assert watched_event.type is EventType.CHAIN
     assert watched_event.serialized == simple_sequential_chain_serialized_data
-    assert watched_event.extras is not None
-    assert watched_event.extras.input == default_kwargs
-    assert watched_event.extras.output == output_kwargs
+    assert watched_event.callback_kwargs is not None
+    assert watched_event.callback_kwargs.inputs == default_kwargs
+    assert watched_event.callback_kwargs.outputs == output_kwargs
 
 
 def test_event_pairing_dispatcher_on_chain_end__child_chain(
@@ -270,7 +270,7 @@ def test_event_pairing_dispatcher_on_chain_end__child_chain(
     default_kwargs: dict[str, Any],
 ) -> None:
     root_id = uuid.uuid4()
-    observer: list[Watched | WatchedEvent] = []
+    observer: list[Watched | ChainEvent] = []
     event_dispatcher = LangChainEventPairingDispatcher(observer.append)
     event_dispatcher.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,
@@ -311,9 +311,9 @@ def test_event_pairing_dispatcher_on_chain_end__child_chain(
     assert watched_event.outputs == {"text": "Tragedy at Sunset on the Beach"}
     assert watched_event.type is EventType.CHAIN
     assert watched_event.serialized == llm_chain_serialized_data
-    assert watched_event.extras is not None
-    assert watched_event.extras.input == default_kwargs
-    assert watched_event.extras.output == output_kwargs
+    assert watched_event.callback_kwargs is not None
+    assert watched_event.callback_kwargs.inputs == default_kwargs
+    assert watched_event.callback_kwargs.outputs == output_kwargs
 
 
 def test_event_pairing_dispatcher_on_tool_start(
@@ -323,7 +323,7 @@ def test_event_pairing_dispatcher_on_tool_start(
     default_tool_kwargs: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    observer: list[Watched | WatchedEvent] = []
+    observer: list[Watched | ChainEvent] = []
     event_dispatcher = LangChainEventPairingDispatcher(observer.append)
     event_dispatcher.on_chain_start(
         serialized=agent_chain_serialized_data,
@@ -390,7 +390,7 @@ def test_event_pairing_dispatcher_on_tool_end(
     default_tool_kwargs: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    observer: list[Watched | WatchedEvent] = []
+    observer: list[Watched | ChainEvent] = []
     event_dispatcher = LangChainEventPairingDispatcher(observer.append)
     event_dispatcher.on_chain_start(
         serialized=agent_chain_serialized_data,
@@ -446,9 +446,9 @@ def test_event_pairing_dispatcher_on_tool_end(
     assert wiki_watched_event.outputs == {"result": tool_sample_output}
     assert wiki_watched_event.type is EventType.TOOL
     assert wiki_watched_event.serialized == tool_serialized_data
-    assert wiki_watched_event.extras is not None
-    assert wiki_watched_event.extras.input == default_tool_kwargs
-    assert wiki_watched_event.extras.output == tool_end_sample_kwargs
+    assert wiki_watched_event.callback_kwargs is not None
+    assert wiki_watched_event.callback_kwargs.inputs == default_tool_kwargs
+    assert wiki_watched_event.callback_kwargs.outputs == tool_end_sample_kwargs
     assert search_watched_event is not None
     assert search_watched_event.run_id == parent_tool_id
     assert search_watched_event.hierarchy is not None
@@ -458,9 +458,9 @@ def test_event_pairing_dispatcher_on_tool_end(
     assert search_watched_event.outputs == {"result": tool_sample_output}
     assert search_watched_event.type is EventType.TOOL
     assert search_watched_event.serialized == tool_serialized_data
-    assert search_watched_event.extras is not None
-    assert search_watched_event.extras.input == default_tool_kwargs
-    assert search_watched_event.extras.output == tool_end_sample_kwargs
+    assert search_watched_event.callback_kwargs is not None
+    assert search_watched_event.callback_kwargs.inputs == default_tool_kwargs
+    assert search_watched_event.callback_kwargs.outputs == tool_end_sample_kwargs
 
 
 def test_event_pairing_dispatcher_on_retriever_start(
@@ -469,7 +469,7 @@ def test_event_pairing_dispatcher_on_retriever_start(
     default_kwargs: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    observer: list[Watched | WatchedEvent] = []
+    observer: list[Watched | ChainEvent] = []
     event_dispatcher = LangChainEventPairingDispatcher(observer.append)
     event_dispatcher.on_chain_start(
         serialized=qa_chain_serialized_data,
@@ -510,7 +510,7 @@ def test_event_pairing_dispatcher_on_retriever_end(
     default_kwargs: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    observer: list[Watched | WatchedEvent] = []
+    observer: list[Watched | ChainEvent] = []
     event_dispatcher = LangChainEventPairingDispatcher(observer.append)
     event_dispatcher.on_chain_start(
         serialized=qa_chain_serialized_data,
@@ -582,9 +582,9 @@ def test_event_pairing_dispatcher_on_retriever_end(
     }
     assert watched_event.type is EventType.RETRIEVAL
     assert watched_event.serialized == retrieval_serialized_data
-    assert watched_event.extras is not None
-    assert watched_event.extras.input == retriever_kwargs
-    assert watched_event.extras.output == retrieval_output_kwargs
+    assert watched_event.callback_kwargs is not None
+    assert watched_event.callback_kwargs.inputs == retriever_kwargs
+    assert watched_event.callback_kwargs.outputs == retrieval_output_kwargs
 
 
 @pytest.fixture(name="llm_invocation_params")
@@ -613,7 +613,7 @@ def test_event_pairing_dispatcher_on_llm_start(  # pylint: disable=too-many-argu
     llm_invocation_params: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    observer: list[Watched | WatchedEvent] = []
+    observer: list[Watched | ChainEvent] = []
     event_dispatcher = LangChainEventPairingDispatcher(observer.append)
     event_dispatcher.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,
@@ -700,7 +700,7 @@ def test_event_pairing_dispatcher_on_chat_model_start(  # pylint: disable=too-ma
     chat_invocation_params: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    observer: list[Watched | WatchedEvent] = []
+    observer: list[Watched | ChainEvent] = []
     event_dispatcher = LangChainEventPairingDispatcher(observer.append)
     event_dispatcher.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,
@@ -765,7 +765,7 @@ def test_event_pairing_dispatcher_on_llm_end(  # pylint: disable=too-many-argume
     llm_chain_kwargs: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    observer: list[Watched | WatchedEvent] = []
+    observer: list[Watched | ChainEvent] = []
     event_dispatcher = LangChainEventPairingDispatcher(observer.append)
     event_dispatcher.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,
@@ -838,11 +838,11 @@ def test_event_pairing_dispatcher_on_llm_end(  # pylint: disable=too-many-argume
     assert watched_event.outputs == {"response": llm_model_sample_output}
     assert watched_event.type is EventType.LLM_MODEL
     assert watched_event.serialized == llm_serialized_data
-    assert watched_event.extras is not None
-    assert watched_event.extras.input == dict(
+    assert watched_event.callback_kwargs is not None
+    assert watched_event.callback_kwargs.inputs == dict(
         {"invocation_params": llm_invocation_params}, **default_kwargs
     )
-    assert watched_event.extras.output == {"tags": []}
+    assert watched_event.callback_kwargs.outputs == {"tags": []}
 
 
 def test_event_pairing_dispatcher_on_llm_end__chat_model(  # pylint: disable=too-many-arguments
@@ -854,7 +854,7 @@ def test_event_pairing_dispatcher_on_llm_end__chat_model(  # pylint: disable=too
     llm_chain_kwargs: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    observer: list[Watched | WatchedEvent] = []
+    observer: list[Watched | ChainEvent] = []
     event_dispatcher = LangChainEventPairingDispatcher(observer.append)
     event_dispatcher.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,
@@ -936,8 +936,8 @@ def test_event_pairing_dispatcher_on_llm_end__chat_model(  # pylint: disable=too
     assert watched_event.outputs == {"response": chat_model_sample_output}
     assert watched_event.type is EventType.CHAT_MODEL
     assert watched_event.serialized == chat_serialized_data
-    assert watched_event.extras is not None
-    assert watched_event.extras.input == dict(
+    assert watched_event.callback_kwargs is not None
+    assert watched_event.callback_kwargs.inputs == dict(
         {"invocation_params": chat_invocation_params}, **default_kwargs
     )
-    assert watched_event.extras.output == {"tags": []}
+    assert watched_event.callback_kwargs.outputs == {"tags": []}

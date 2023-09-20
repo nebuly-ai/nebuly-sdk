@@ -7,7 +7,13 @@ from langchain.schema.messages import BaseMessage
 from langchain.schema.output import LLMResult
 from typing_extensions import Self
 
-from nebuly.entities import EventHierarchy, EventType, ExtraData, Observer, WatchedEvent
+from nebuly.entities import (
+    CallbackKwargs,
+    ChainEvent,
+    EventHierarchy,
+    EventType,
+    Observer,
+)
 
 
 @dataclass
@@ -53,20 +59,22 @@ class Event:
     @staticmethod
     def _get_extra_data(
         inputs: dict[str, Any] | None, outputs: dict[str, Any] | None
-    ) -> ExtraData | None:
+    ) -> CallbackKwargs | None:
         if inputs is None and outputs is None:
             return None
         if inputs is None:
-            return ExtraData(input={}, output=outputs if outputs is not None else {})
+            return CallbackKwargs(
+                inputs={}, outputs=outputs if outputs is not None else {}
+            )
         if outputs is None:
-            return ExtraData(input=inputs, output={})
-        return ExtraData(input=inputs, output=outputs)
+            return CallbackKwargs(inputs=inputs, outputs={})
+        return CallbackKwargs(inputs=inputs, outputs=outputs)
 
-    def to_watched(self) -> WatchedEvent:
+    def to_watched(self) -> ChainEvent:
         if self.data.outputs is None:
             raise ValueError("Event must have outputs to be converted to WatchedEvent")
         outputs: dict[str, Any] = self.data.outputs
-        return WatchedEvent(
+        return ChainEvent(
             module=self.module,
             run_id=self.event_id,
             hierarchy=self.hierarchy,
@@ -74,7 +82,7 @@ class Event:
             serialized=self.data.serialized,
             inputs=self.data.inputs,
             outputs=outputs,
-            extras=self._get_extra_data(
+            callback_kwargs=self._get_extra_data(
                 inputs=self.data.input_extras, outputs=self.data.output_extras
             ),
         )
@@ -156,7 +164,7 @@ class LangChainEventPairingDispatcher:
         outputs: dict[str, Any],
         run_id: uuid.UUID,
         **kwargs: Any,
-    ) -> WatchedEvent:
+    ) -> ChainEvent:
         self.events_storage.events[run_id].data.set_outputs(outputs, kwargs)
         watched_event = self.events_storage.events[run_id].to_watched()
         # Delete all events that are part of the chain if the root chain is finished
@@ -188,7 +196,7 @@ class LangChainEventPairingDispatcher:
         output: str,
         run_id: uuid.UUID,
         **kwargs: Any,
-    ) -> WatchedEvent:
+    ) -> ChainEvent:
         self.events_storage.events[run_id].data.set_outputs(
             outputs={"result": output}, output_extras=kwargs
         )
@@ -222,11 +230,11 @@ class LangChainEventPairingDispatcher:
         documents: list[Document],
         run_id: uuid.UUID,
         **kwargs: Any,
-    ) -> WatchedEvent:
+    ) -> ChainEvent:
         self.events_storage.events[run_id].data.set_outputs(
             outputs={"documents": documents}, output_extras=kwargs
         )
-        watched_event = watched_event = self.events_storage.events[run_id].to_watched()
+        watched_event = self.events_storage.events[run_id].to_watched()
         # Delete all events that are part of the chain if the root chain is finished
         if watched_event.hierarchy is None:
             self.events_storage.delete_events(watched_event.run_id)
@@ -256,11 +264,11 @@ class LangChainEventPairingDispatcher:
         response: LLMResult,
         run_id: uuid.UUID,
         **kwargs: Any,
-    ) -> WatchedEvent:
+    ) -> ChainEvent:
         self.events_storage.events[run_id].data.set_outputs(
             outputs={"response": response}, output_extras=kwargs
         )
-        watched_event = watched_event = self.events_storage.events[run_id].to_watched()
+        watched_event = self.events_storage.events[run_id].to_watched()
         # Delete all events that are part of the chain if the root chain is finished
         if watched_event.hierarchy is None:
             self.events_storage.delete_events(watched_event.run_id)
