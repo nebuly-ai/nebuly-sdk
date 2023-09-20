@@ -15,4 +15,14 @@ PACKAGES = (
             "Embedding.acreate",
         ),
     ),
+    Package(
+        "langchain",
+        ("0.0.200",),
+        (
+            "llms.base.BaseLLM.generate",
+            "llms.base.BaseLLM.agenerate",
+            "chat_models.base.BaseChatModel.generate",
+            "chat_models.base.BaseChatModel.agenerate",
+        ),
+    ),
 )

@@ -8,9 +8,13 @@ from datetime import datetime, timezone
 from functools import wraps
 from inspect import isasyncgenfunction, iscoroutinefunction
 from types import ModuleType
-from typing import Any, AsyncGenerator, Callable, Generator, Iterable
+from typing import Any, AsyncGenerator, Callable, Generator, Iterable, cast
+from uuid import UUID
+
+from langchain.callbacks.manager import CallbackManager
 
 from nebuly.entities import Observer, Package, Watched
+from nebuly.handlers import LangChainTrackingHandler
 
 logger = logging.getLogger(__name__)
 
@@ -195,6 +199,38 @@ def _setup_args_kwargs(
     return original_args, original_kwargs, function_kwargs, nebuly_kwargs
 
 
+def _add_tracking_info_to_provider_call(
+    f: Callable[[Any], Any], *args: Any, **kwargs: Any
+) -> Callable[[Any], Any]:
+    """
+    This function is a hack to add the chain run_ids info to the kwargs of the
+    provider call. This is needed to associate each call to a provider (ex OpenAI)
+    with the belonging chain.
+    """
+    callbacks = kwargs.get("callbacks")
+    if not isinstance(callbacks, CallbackManager) or callbacks.parent_run_id is None:
+        # If the llm/chat_model is called without a CallbackManager, it's not
+        # called from a chain, so we don't need to add the run ids info
+        return f(*args, **kwargs)  # type: ignore
+
+    # Get the parent_run_id from the CallbackManager
+    callback_manager = callbacks
+    parent_run_id = cast(UUID, callback_manager.parent_run_id)
+    additional_kwargs = {"nebuly_parent_run_id": parent_run_id}
+
+    # Get the root_run_id from the LangChainTrackingHandler
+    for handler in callback_manager.handlers:
+        if isinstance(handler, LangChainTrackingHandler):
+            event_pairing_dispatcher = handler.event_pairing_dispatcher
+            root_run_id = event_pairing_dispatcher.events_storage.get_root_id(
+                parent_run_id
+            )
+            additional_kwargs["nebuly_root_run_id"] = root_run_id
+            break
+
+    return f(*args, **kwargs, **additional_kwargs)  # type: ignore
+
+
 def coroutine_wrapper(
     f: Callable[[Any], Any],
     observer: Observer,
@@ -203,8 +239,16 @@ def coroutine_wrapper(
     function_name: str,
 ) -> Callable[[Any], Any]:
     @wraps(f)
-    async def wrapper(*args: tuple[Any, ...], **kwargs: dict[str, Any]) -> Any:
+    async def wrapper(*args: Any, **kwargs: Any) -> Any:
         logger.debug("Calling %s.%s", module, function_name)
+
+        if module == "langchain" and function_name.startswith(
+            ("llms.base.BaseLLM", "chat_models.base.BaseChatModel")
+        ):
+            func = _add_tracking_info_to_provider_call(f, *args, **kwargs)
+            if isasyncgenfunction(func):
+                return func(*args, **kwargs)
+            return await func(*args, **kwargs)
 
         (
             original_args,
@@ -267,9 +311,13 @@ def function_wrapper(
     function_name: str,
 ) -> Callable[[Any], Any]:
     @wraps(f)
-    def wrapper(*args: tuple[Any, ...], **kwargs: dict[str, Any]) -> Any:
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         logger.debug("Calling %s.%s", module, function_name)
 
+        if module == "langchain" and function_name.startswith(
+            ("llms.base.BaseLLM", "chat_models.base.BaseChatModel")
+        ):
+            return _add_tracking_info_to_provider_call(f, *args, **kwargs)
         (
             original_args,
             original_kwargs,
