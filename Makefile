@@ -13,7 +13,7 @@ ruff: ## Run ruff
 
 .PHONY: bandit
 bandit: ## Run bandit
-	@poetry run bandit .
+	@poetry run bandit -r nebuly/
 	@echo "\033[0;32m[Bandit OK]\033[0m"
 
 .PHONY: pylint
@@ -43,7 +43,7 @@ lint: ruff mypy pylint ## Run the linter
 format: black isort ## Run the auto-formatter
 
 .PHONY: check
-check: format lint ## Run all the checks
+check: format lint bandit ## Run all the checks
 
 ##@ Test
 .PHONY: test

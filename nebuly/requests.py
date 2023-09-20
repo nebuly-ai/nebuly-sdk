@@ -26,7 +26,9 @@ def post_message(message: Watched, api_key: str) -> None:
         {"body": message, "provider": message.module}, cls=CustomJSONEncoder
     )
     url = os.environ.get(
-        "NEBULY_API_URL", "https://backend.nebuly.com/event-ingestion/api/v1/events"
+        # TODO: make this url configurable
+        "NEBULY_API_URL",
+        "https://backend.nebuly.com/event-ingestion/api/v1/events",
     )
     post_json_data(url, json_data, api_key)
 
@@ -41,7 +43,7 @@ def post_json_data(url: str, json_data: str, api_key: str) -> Any:
         },
     )
 
-    with urllib.request.urlopen(request, timeout=3) as response:
+    with urllib.request.urlopen(request, timeout=3) as response:  # nosec
         response_body = response.read().decode("utf-8")
         logger.debug("response_body: %s", response_body)
 
