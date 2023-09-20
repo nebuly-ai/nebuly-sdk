@@ -6,24 +6,44 @@ help: ## Display this help.
 
 ##@ Dev
 
+.PHONY: ruff
+ruff: ## Run ruff
+	@poetry run ruff check .
+	@echo "\033[0;32m[Ruff OK]\033[0m"
+
+.PHONY: bandit
+bandit: ## Run bandit
+	@poetry run bandit -r nebuly/
+	@echo "\033[0;32m[Bandit OK]\033[0m"
+
+.PHONY: pylint
+pylint: ## Run pylint
+	@poetry run pylint nebuly tests
+	@echo "\033[0;32m[Pylint OK]\033[0m"
+
+.PHONY: black
+black: ## Run black
+	@poetry run black .
+	@echo "\033[0;32m[Black OK]\033[0m"
+
+.PHONY: isort
+isort: ## Run isort
+	@poetry run isort .
+	@echo "\033[0;32m[Isort OK]\033[0m"
+
+.PHONY: mypy
+mypy: ## Run mypy
+	@poetry run mypy .
+	@echo "\033[0;32m[Mypy OK]\033[0m"
+
 .PHONY: lint
-lint:
-	@poetry run pre-commit run -a
+lint: ruff mypy pylint ## Run the linter
 
 .PHONY: format
-format: ## Run the auto-formatter
-	@poetry run black .
-	@poetry run isort .
-	@echo "\033[0;32m[Autoformat OK]\033[0m"
-
-.PHONY: lint-fix
-lint-fix: format ## Run the linter and fix issues
-	@poetry run ruff check . --fix
-	@echo "\033[0;32m[Linting OK]\033[0m"
+format: black isort ## Run the auto-formatter
 
 .PHONY: check
-check: ## Run the pre-commit checks
-	@poetry run pre-commit run --all-files
+check: format lint bandit ## Run all the checks
 
 ##@ Test
 .PHONY: test
