@@ -40,16 +40,14 @@ def test_multithreading_context() -> None:
             sleep(random.random())
             assert get_nearest_open_interaction() is interaction
 
-    thread1 = threading.Thread(target=thread_func)
-    thread1.start()
-    thread2 = threading.Thread(target=thread_func)
-    thread2.start()
-    thread3 = threading.Thread(target=thread_func)
-    thread3.start()
+    threads = []
+    for _ in range(10):
+        thread = threading.Thread(target=thread_func)
+        thread.start()
+        threads.append(thread)
 
-    thread1.join()
-    thread2.join()
-    thread3.join()
+    for thread in threads:
+        thread.join()
 
 
 @pytest.mark.asyncio
