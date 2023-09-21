@@ -52,9 +52,14 @@ def new_interaction(user: str) -> Generator[InteractionContext, None, None]:
         get_nearest_open_interaction()
         raise AlreadyInInteractionContext()
     except NotInInteractionContext:
+        pass
+
+    try:
         yield InteractionContext(user, do_not_call_directly=True)
+    finally:
         try:
             interaction = get_nearest_open_interaction()
         except NotInInteractionContext:
             raise InteractionMustBeLocalVariable()  # pylint: disable=raise-missing-from
-        interaction.finish()
+        else:
+            interaction.finish()
