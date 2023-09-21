@@ -86,8 +86,20 @@ def _split_nebuly_kwargs(
     return nebuly_kwargs, function_kwargs
 
 
+def _extract_output(output: Any, module: str, function_name: str) -> str:
+    if module == "openai":
+        if function_name == "Completion.create":
+            return output["choices"][0]["text"]
+        elif function_name == "ChatCompletion.create":
+            return output["choices"][0]["message"]["content"]
+    return str(output)
+
+
 def _add_interaction_span(
-    input: Any,
+    original_args: tuple[Any, ...],
+    original_kwargs: dict[str, Any],
+    module: str,
+    function_name: str,
     output: Any,
     observer: Observer,
     watched: SpanWatch,
@@ -97,11 +109,29 @@ def _add_interaction_span(
         interaction.set_observer(observer)
         interaction.add_span(watched)
     except NotInInteractionContext:
+        user_input, history = _extract_input_and_history(
+            original_args, original_kwargs, module, function_name
+        )
         with new_interaction() as interaction:
-            interaction.set_input(input)
+            interaction.set_input(user_input)
+            interaction.set_history(history)
             interaction.set_observer(observer)
             interaction.add_span(watched)
-            interaction.set_output(output)
+            interaction.set_output(_extract_output(output, module, function_name))
+
+
+def _extract_input_and_history(
+    original_args: tuple[Any, ...],
+    original_kwargs: dict[str, Any],
+    module: str,
+    function_name: str,
+) -> tuple[str, list[tuple[str, Any]]]:
+    if module == "openai":
+        if function_name == "Completion.create":
+            return original_kwargs["prompt"], []
+        elif function_name == "ChatCompletion.create":
+            history = [(el["role"], el["content"]) for el in original_kwargs["messages"][:-1]]
+            return original_kwargs["messages"][-1]["content"], history
 
 
 def watch_from_generator(  # pylint: disable=too-many-arguments
@@ -147,11 +177,15 @@ def watch_from_generator(  # pylint: disable=too-many-arguments
         generator=True,
         generator_first_element_timestamp=generator_first_element_timestamp,
     )
+
     _add_interaction_span(
-        original_args[0] if len(original_args) > 0 else None,
-        original_result,
-        observer,
-        watched,
+        original_args=original_args,
+        original_kwargs=original_kwargs,
+        module=module,
+        function_name=function_name,
+        output=original_result,
+        observer=observer,
+        watched=watched,
     )
 
 
@@ -199,10 +233,13 @@ async def watch_from_generator_async(  # pylint: disable=too-many-arguments
         generator_first_element_timestamp=generator_first_element_timestamp,
     )
     _add_interaction_span(
-        original_args[0] if len(original_args) > 0 else None,
-        original_result,
-        observer,
-        watched,
+        original_args=original_args,
+        original_kwargs=original_kwargs,
+        module=module,
+        function_name=function_name,
+        output=original_result,
+        observer=observer,
+        watched=watched,
     )
 
 
@@ -325,10 +362,13 @@ def coroutine_wrapper(
             generator_first_element_timestamp=generator_first_element_timestamp,
         )
         _add_interaction_span(
-            original_args[0] if len(original_args) > 0 else None,
-            original_result,
-            observer,
-            watched,
+            original_args=original_args,
+            original_kwargs=original_kwargs,
+            module=module,
+            function_name=function_name,
+            output=original_result,
+            observer=observer,
+            watched=watched,
         )
         return result
 
@@ -392,10 +432,13 @@ def function_wrapper(
             generator_first_element_timestamp=generator_first_element_timestamp,
         )
         _add_interaction_span(
-            original_args[0] if len(original_args) > 0 else None,
-            original_result,
-            observer,
-            watched,
+            original_args=original_args,
+            original_kwargs=original_kwargs,
+            module=module,
+            function_name=function_name,
+            output=original_result,
+            observer=observer,
+            watched=watched,
         )
         return result
 

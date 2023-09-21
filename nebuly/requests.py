@@ -29,7 +29,7 @@ def post_message(watched: InteractionWatch, api_key: str) -> None:
         "https://backend.nebuly.com/event-ingestion/api/v1/events",
     )
     post_json_data(url, message, api_key)
-    # print(message)
+    #print(message)
 
 
 def post_json_data(url: str, json_data: str, api_key: str) -> Any:
