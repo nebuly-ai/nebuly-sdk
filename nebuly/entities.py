@@ -179,6 +179,6 @@ class ChainEvent:  # pylint: disable=too-many-instance-attributes
         }
 
 
-Observer = Callable[[SpanWatch], None]
+Observer = Callable[[InteractionWatch], None]
 
-Publisher = Callable[[SpanWatch], None]
+Publisher = Callable[[InteractionWatch], None]

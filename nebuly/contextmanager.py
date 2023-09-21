@@ -34,9 +34,9 @@ class InteractionContext:
         user_group_profile: str | None = None,
         input: str | None = None,
         output: str | None = None,
-        history: list[tuple[str, str]] = [],
-        hierarchy: dict[UUID, UUID] = {},
-        spans: list[SpanWatch] = [],
+        history: list[tuple[str, str]] = None,
+        hierarchy: dict[UUID, UUID] = None,
+        spans: list[SpanWatch] = None,
         do_not_call_directly: bool = False,
     ) -> None:
         if not do_not_call_directly:
@@ -48,9 +48,9 @@ class InteractionContext:
         self.user_group_profile = user_group_profile
         self.input = input
         self.output = output
-        self.spans = spans
-        self.history = history
-        self.hierarchy = hierarchy
+        self.spans = [] if spans is None else spans
+        self.history = {} if history is None else history
+        self.hierarchy = {} if hierarchy is None else hierarchy
         self.time_start = datetime.now(timezone.utc)
         self.observer = None
         self.finished = False

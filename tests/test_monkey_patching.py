@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from asyncio import sleep
+from datetime import datetime, timezone
 from typing import Any, AsyncGenerator
 from unittest.mock import MagicMock, patch
 
@@ -8,7 +9,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from nebuly.entities import Package, SpanWatch
+from nebuly.entities import InteractionWatch, Package, SpanWatch
 from nebuly.monkey_patching import (
     _monkey_patch,
     _patcher,
@@ -42,50 +43,58 @@ def test_patcher_doesnt_change_any_behavior(
     assert patched.__annotations__ == to_patched.__annotations__
 
 
-# @given(args=st.tuples(st_any), kwargs=st.dictionaries(st.text(), st_any))
-# def test_patcher_calls_observer(args: tuple[Any, ...], kwargs: dict[str, Any]) -> None:  # noqa: E501
-#     def to_patched(
-#         *args: tuple[Any, ...], **kwargs: dict[str, Any]
-#     ) -> tuple[tuple[Any, ...], dict[str, Any]]:
-#         """This is the docstring to be tested"""
-#         return args, kwargs
-#
-#     observer: list[SpanWatch] = []
-#
-#     patched = _patcher(observer.append, "module", "0.1.0", "function_name")(to_patched)  # noqa: E501
-#
-#     before = datetime.now(timezone.utc)
-#     patched(*args, **kwargs)
-#     after = datetime.now(timezone.utc)
-#
-#     assert len(observer) == 1
-#     watched = observer[0]
-#     assert isinstance(watched, SpanWatch)
-#     assert watched.function == "function_name"
-#     assert watched.module == "module"
-#     assert before <= watched.called_start <= watched.called_end <= after
-#     assert watched.called_with_args == args
-#     assert watched.called_with_kwargs == kwargs
-#     assert watched.returned == to_patched(*args, **kwargs)
+@given(args=st.tuples(st_any), kwargs=st.dictionaries(st.text(), st_any))
+def test_patcher_calls_observer(
+    args: tuple[Any, ...], kwargs: dict[str, Any]
+) -> None:  # noqa: E501
+    def to_patched(
+        *args: tuple[Any, ...], **kwargs: dict[str, Any]
+    ) -> tuple[tuple[Any, ...], dict[str, Any]]:
+        """This is the docstring to be tested"""
+        return args, kwargs
+
+    observer: list[InteractionWatch] = []
+
+    patched = _patcher(observer.append, "module", "0.1.0", "function_name")(
+        to_patched
+    )  # noqa: E501
+
+    before = datetime.now(timezone.utc)
+    patched(*args, **kwargs)
+    after = datetime.now(timezone.utc)
+
+    assert len(observer) == 1
+    watched = observer[0]
+    assert isinstance(watched, InteractionWatch)
+    assert len(watched.spans) == 1
+    span = watched.spans[0]
+    assert span.function == "function_name"
+    assert span.module == "module"
+    assert before <= span.called_start <= span.called_end <= after
+    assert span.called_with_args == args
+    assert span.called_with_kwargs == kwargs
+    assert span.returned == to_patched(*args, **kwargs)
 
 
-# def test_watched_is_immutable() -> None:
-#     def to_patched(mutable: list[int]) -> list[int]:
-#         mutable.append(1)
-#         return mutable
-#
-#     observer: list[SpanWatch] = []
-#     mutable: list[int] = []
-#
-#     _patcher(observer.append, "module", "0.1.0", "function_name")(to_patched)(mutable)
-#
-#     mutable.append(2)
-#
-#     assert len(observer) == 1
-#     watched = observer[0]
-#     assert isinstance(watched, SpanWatch)
-#     assert watched.called_with_args == ([],)
-#     assert watched.returned == [1]
+def test_watched_is_immutable() -> None:
+    def to_patched(mutable: list[int]) -> list[int]:
+        mutable.append(1)
+        return mutable
+
+    observer: list[InteractionWatch] = []
+    mutable: list[int] = []
+
+    _patcher(observer.append, "module", "0.1.0", "function_name")(to_patched)(mutable)
+
+    mutable.append(2)
+
+    assert len(observer) == 1
+    watched = observer[0]
+    assert isinstance(watched, InteractionWatch)
+    assert len(watched.spans) == 1
+    span = watched.spans[0]
+    assert span.called_with_args == ([],)
+    assert span.returned == [1]
 
 
 def test_split_nebuly_kwargs() -> None:
@@ -103,20 +112,22 @@ def test_split_nebuly_kwargs() -> None:
     assert function_kwargs == {"arg1": "arg1", "arg2": "arg2"}
 
 
-# def test_nebuly_args_are_intercepted() -> None:
-#     def function(a: int, b: int) -> int:
-#         return a + b
-#
-#     observer: list[SpanWatch] = []
-#     patched = _patcher(observer.append, "module", "0.1.0", "function_name")(function)
-#
-#     patched(1, 2, nebuly_segment="segment", nebuly_project="project")
-#
-#     assert len(observer) == 1
-#     watched = observer[0]
-#     assert isinstance(watched, SpanWatch)
-#     assert watched.called_with_args == (1, 2)
-#     assert watched.returned == 3
+def test_nebuly_args_are_intercepted() -> None:
+    def function(a: int, b: int) -> int:
+        return a + b
+
+    observer: list[InteractionWatch] = []
+    patched = _patcher(observer.append, "module", "0.1.0", "function_name")(function)
+
+    patched(1, 2, nebuly_segment="segment", nebuly_project="project")
+
+    assert len(observer) == 1
+    watched = observer[0]
+    assert len(watched.spans) == 1
+    span = watched.spans[0]
+    assert isinstance(watched, InteractionWatch)
+    assert span.called_with_args == (1, 2)
+    assert span.returned == 3
 
 
 @patch("nebuly.monkey_patching.logger")
@@ -135,7 +146,7 @@ def test_monkey_patch() -> None:
             "ToPatch.to_patch_two",
         ),
     )
-    observer: list[SpanWatch] = []
+    observer: list[InteractionWatch] = []
 
     import_and_patch_packages([package], observer.append)
 
@@ -151,7 +162,7 @@ def test_monkey_patch_missing_module_doesnt_break() -> None:
         ("0.1.0",),
         ("ToPatch.to_patch_one",),
     )
-    observer: list[SpanWatch] = []
+    observer: list[InteractionWatch] = []
 
     import_and_patch_packages([package], observer.append)
 
@@ -165,7 +176,7 @@ def test_monkey_patch_missing_component_doesnt_break_other_patches() -> None:
             "ToPatch.to_patch_one",
         ),
     )
-    observer: list[SpanWatch] = []
+    observer: list[InteractionWatch] = []
 
     _monkey_patch(package, observer.append)
 
@@ -175,44 +186,46 @@ def test_monkey_patch_missing_component_doesnt_break_other_patches() -> None:
     assert result == 6
 
 
-# @given(args=st.tuples(st_any), kwargs=st.dictionaries(st.text(), st_any))
-# def test_patcher_calls_observer_after_generator_has_finished(
-#     args: tuple[Any, ...], kwargs: dict[str, Any]
-# ) -> None:
-#     def to_patched_generator(  # pylint: disable=unused-argument
-#         *args: int, **kwargs: str
-#     ) -> Generator[int, None, None]:
-#         """This is the docstring to be tested"""
-#         for i in range(3):
-#             yield i
-#
-#     observer: list[SpanWatch] = []
-#
-#     patched = _patcher(observer.append, "module", "0.1.0", "function_name")(
-#         to_patched_generator
-#     )
-#
-#     before = datetime.now(timezone.utc)
-#     generator = patched(*args, **kwargs)
-#     datetime.now(timezone.utc)
-#
-#     consumed_generator = list(generator)
-#     after = datetime.now(timezone.utc)
-#
-#     assert consumed_generator == [0, 1, 2]
-#     assert len(observer) == 1
-#     watched = observer[0]
-#     assert isinstance(watched, SpanWatch)
-#     assert watched.returned == [0, 1, 2]
-#     assert watched.generator is True
-#     assert watched.generator_first_element_timestamp is not None
-#     assert (
-#         before
-#         <= watched.called_start
-#         <= watched.generator_first_element_timestamp
-#         <= watched.called_end
-#         <= after
-#     )
+@given(args=st.tuples(st_any), kwargs=st.dictionaries(st.text(), st_any))
+def test_patcher_calls_observer_after_generator_has_finished(
+    args: tuple[Any, ...], kwargs: dict[str, Any]
+) -> None:
+    def to_patched_generator(  # pylint: disable=unused-argument
+        *args: int, **kwargs: str
+    ) -> Generator[int, None, None]:
+        """This is the docstring to be tested"""
+        for i in range(3):
+            yield i
+
+    observer: list[InteractionWatch] = []
+
+    patched = _patcher(observer.append, "module", "0.1.0", "function_name")(
+        to_patched_generator
+    )
+
+    before = datetime.now(timezone.utc)
+    generator = patched(*args, **kwargs)
+    datetime.now(timezone.utc)
+
+    consumed_generator = list(generator)
+    after = datetime.now(timezone.utc)
+
+    assert consumed_generator == [0, 1, 2]
+    assert len(observer) == 1
+    watched = observer[0]
+    assert isinstance(watched, InteractionWatch)
+    assert len(watched.spans) == 1
+    span = watched.spans[0]
+    assert span.returned == [0, 1, 2]
+    assert span.generator is True
+    assert span.generator_first_element_timestamp is not None
+    assert (
+        before
+        <= span.called_start
+        <= span.generator_first_element_timestamp
+        <= span.called_end
+        <= after
+    )
 
 
 @pytest.mark.asyncio
