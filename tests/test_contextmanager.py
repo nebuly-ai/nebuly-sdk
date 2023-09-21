@@ -6,6 +6,9 @@ from time import sleep
 import pytest
 
 from nebuly.contextmanager import (
+    AlreadyInInteractionContext,
+    InteractionContext,
+    InteractionContextInitiationError,
     InteractionMustBeLocalVariable,
     get_nearest_open_interaction,
     new_interaction,
@@ -13,27 +16,27 @@ from nebuly.contextmanager import (
 
 
 def test_interaction_context() -> None:
-    with new_interaction("agus") as interaction:
+    with new_interaction("test_user") as interaction:
         assert get_nearest_open_interaction() is interaction
 
 
 def test_interaction_context_finish() -> None:
-    with new_interaction("agus") as interaction:
+    with new_interaction("test_user") as interaction:
         assert get_nearest_open_interaction() is interaction
 
-    with new_interaction("foo") as interaction:
+    with new_interaction("test_user_other") as interaction:
         assert get_nearest_open_interaction() is interaction
 
 
 def test_get_interaction_no_save() -> None:
     with pytest.raises(InteractionMustBeLocalVariable):
-        with new_interaction("test"):
+        with new_interaction("test_user"):
             pass
 
 
 def test_multithreading_context() -> None:
     def thread_func() -> None:
-        with new_interaction("agus") as interaction:
+        with new_interaction("test_user") as interaction:
             sleep(random.random())
             assert get_nearest_open_interaction() is interaction
 
@@ -52,8 +55,24 @@ def test_multithreading_context() -> None:
 @pytest.mark.asyncio
 async def test_asyncio_context() -> None:
     async def async_func() -> None:
-        with new_interaction("agus") as interaction:
+        with new_interaction("test_user") as interaction:
             await asyncio.sleep(random.random())
             assert get_nearest_open_interaction() is interaction
 
     await asyncio.gather(async_func(), async_func(), async_func())
+
+
+def test_cannot_directly_create_interaction() -> None:
+    with pytest.raises(InteractionContextInitiationError):
+        InteractionContext("test_user")
+
+
+def test_cannot_create_interaction_inside_interaction() -> None:
+    with new_interaction(
+        "test_user"
+    ) as interaction:  # noqa: F841 pylint: disable=unused-variable
+        with pytest.raises(AlreadyInInteractionContext):
+            with new_interaction(
+                "test_user"
+            ) as interaction2:  # noqa: F841 pylint: disable=unused-variable
+                pass
