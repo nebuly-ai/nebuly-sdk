@@ -20,24 +20,24 @@ classDiagram
     Init --> Observer
     Init --> Consumer
     Init --> DevelopmentPhase
-    Init --> Watched
+    Init --> SpanWatch
     Init --> Observer_T
     MonkeyPatching --> Package
-    MonkeyPatching --> Watched
+    MonkeyPatching --> SpanWatch
     Observer --> DevelopmentPhase
-    Observer --> Watched
+    Observer --> SpanWatch
     Observer --> Publisher_T
-    Observer --> Watched
-    Consumer --> Watched
+    Observer --> SpanWatch
+    Consumer --> SpanWatch
     Consumer --> Publisher_T
     Observer --|> Observer_T
     Consumer --|> Publisher_T
-    Publisher_T --> Watched
-    Observer_T --> Watched
+    Publisher_T --> SpanWatch
+    Observer_T --> SpanWatch
     <<Interface>> Publisher_T
     <<Interface>> Observer_T
     <<Entity>> Package
-    <<Entity>> Watched
+    <<Entity>> SpanWatch
     <<Enum>> DevelopmentPhase
 ```
 

@@ -6,12 +6,12 @@ from langchain.schema import Document
 from langchain.schema.messages import AIMessage, HumanMessage, SystemMessage
 from langchain.schema.output import ChatGeneration, Generation, LLMResult
 
-from nebuly.entities import ChainEvent, EventType, Watched
+from nebuly.entities import EventType, SpanWatch
 from nebuly.event_pairing_dispatchers import EventData, LangChainEventPairingDispatcher
 
 
 def test_new_event_pairing_dispatcher() -> None:
-    observer: list[Watched | ChainEvent] = []
+    observer: list[SpanWatch] = []
     event_dispatcher = LangChainEventPairingDispatcher(observer.append)
     assert event_dispatcher is not None
 
@@ -157,7 +157,7 @@ def test_event_pairing_dispatcher_on_chain_start__new_root_chain(
     default_kwargs: dict[str, Any],
 ) -> None:
     run_id = uuid.uuid4()
-    observer: list[Watched | ChainEvent] = []
+    observer: list[SpanWatch] = []
     event_dispatcher = LangChainEventPairingDispatcher(observer.append)
     event_dispatcher.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,
@@ -192,7 +192,7 @@ def test_event_pairing_dispatcher_on_chain_start__existing_root_chain(
     llm_chain_kwargs: dict[str, Any],
 ) -> None:
     root_id = uuid.uuid4()
-    observer: list[Watched | ChainEvent] = []
+    observer: list[SpanWatch] = []
     event_dispatcher = LangChainEventPairingDispatcher(observer.append)
     event_dispatcher.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,
@@ -216,8 +216,13 @@ def test_event_pairing_dispatcher_on_chain_start__existing_root_chain(
     assert run_id in event_dispatcher.events_storage.events
     assert event_dispatcher.events_storage.events[run_id].event_id == run_id
     assert event_dispatcher.events_storage.events[run_id].hierarchy is not None
-    assert event_dispatcher.events_storage.events[run_id].hierarchy.parent_run_id == root_id  # type: ignore # pylint: disable=line-too-long
-    assert event_dispatcher.events_storage.events[run_id].hierarchy.root_run_id == root_id  # type: ignore # pylint: disable=line-too-long
+    assert (
+        event_dispatcher.events_storage.events[run_id].hierarchy.parent_run_id
+        == root_id
+    )
+    assert (
+        event_dispatcher.events_storage.events[run_id].hierarchy.root_run_id == root_id
+    )
     assert event_dispatcher.events_storage.events[run_id].data == EventData(
         type=EventType.CHAIN,
         serialized=llm_chain_serialized_data,
@@ -231,7 +236,7 @@ def test_event_pairing_dispatcher_on_chain_end__root_chain(
     default_kwargs: dict[str, Any],
 ) -> None:
     run_id = uuid.uuid4()
-    observer: list[Watched | ChainEvent] = []
+    observer: list[SpanWatch] = []
     event_dispatcher = LangChainEventPairingDispatcher(observer.append)
     event_dispatcher.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,
@@ -270,7 +275,7 @@ def test_event_pairing_dispatcher_on_chain_end__child_chain(
     default_kwargs: dict[str, Any],
 ) -> None:
     root_id = uuid.uuid4()
-    observer: list[Watched | ChainEvent] = []
+    observer: list[SpanWatch] = []
     event_dispatcher = LangChainEventPairingDispatcher(observer.append)
     event_dispatcher.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,
@@ -323,7 +328,7 @@ def test_event_pairing_dispatcher_on_tool_start(
     default_tool_kwargs: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    observer: list[Watched | ChainEvent] = []
+    observer: list[SpanWatch] = []
     event_dispatcher = LangChainEventPairingDispatcher(observer.append)
     event_dispatcher.on_chain_start(
         serialized=agent_chain_serialized_data,
@@ -364,7 +369,10 @@ def test_event_pairing_dispatcher_on_tool_start(
         == parent_tool_id
     )
     assert event_dispatcher.events_storage.events[parent_tool_id].hierarchy is not None
-    assert event_dispatcher.events_storage.events[parent_tool_id].hierarchy.parent_run_id == chain_id  # type: ignore # pylint: disable=line-too-long
+    assert (
+        event_dispatcher.events_storage.events[parent_tool_id].hierarchy.parent_run_id
+        == chain_id
+    )  # noqa: E501
     assert event_dispatcher.events_storage.events[parent_tool_id].data == EventData(
         type=EventType.TOOL,
         serialized=tool_serialized_data,
@@ -373,7 +381,10 @@ def test_event_pairing_dispatcher_on_tool_start(
     )
     assert event_dispatcher.events_storage.events[run_id].event_id == run_id
     assert event_dispatcher.events_storage.events[run_id].hierarchy is not None
-    assert event_dispatcher.events_storage.events[run_id].hierarchy.parent_run_id == parent_tool_id  # type: ignore # pylint: disable=line-too-long
+    assert (
+        event_dispatcher.events_storage.events[run_id].hierarchy.parent_run_id
+        == parent_tool_id
+    )
     assert event_dispatcher.events_storage.events[run_id].data == EventData(
         type=EventType.TOOL,
         serialized=tool_serialized_data,
@@ -390,7 +401,7 @@ def test_event_pairing_dispatcher_on_tool_end(
     default_tool_kwargs: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    observer: list[Watched | ChainEvent] = []
+    observer: list[SpanWatch] = []
     event_dispatcher = LangChainEventPairingDispatcher(observer.append)
     event_dispatcher.on_chain_start(
         serialized=agent_chain_serialized_data,
@@ -469,7 +480,7 @@ def test_event_pairing_dispatcher_on_retriever_start(
     default_kwargs: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    observer: list[Watched | ChainEvent] = []
+    observer: list[SpanWatch] = []
     event_dispatcher = LangChainEventPairingDispatcher(observer.append)
     event_dispatcher.on_chain_start(
         serialized=qa_chain_serialized_data,
@@ -495,7 +506,10 @@ def test_event_pairing_dispatcher_on_retriever_start(
     assert retriever_id in event_dispatcher.events_storage.events
     assert event_dispatcher.events_storage.events[retriever_id].event_id == retriever_id
     assert event_dispatcher.events_storage.events[retriever_id].hierarchy is not None
-    assert event_dispatcher.events_storage.events[retriever_id].hierarchy.parent_run_id == chain_id  # type: ignore # pylint: disable=line-too-long
+    assert (
+        event_dispatcher.events_storage.events[retriever_id].hierarchy.parent_run_id
+        == chain_id
+    )  # noqa: E501
     assert event_dispatcher.events_storage.events[retriever_id].data == EventData(
         type=EventType.RETRIEVAL,
         serialized=retrieval_serialized_data,
@@ -510,7 +524,7 @@ def test_event_pairing_dispatcher_on_retriever_end(
     default_kwargs: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    observer: list[Watched | ChainEvent] = []
+    observer: list[SpanWatch] = []
     event_dispatcher = LangChainEventPairingDispatcher(observer.append)
     event_dispatcher.on_chain_start(
         serialized=qa_chain_serialized_data,
@@ -613,7 +627,7 @@ def test_event_pairing_dispatcher_on_llm_start(  # pylint: disable=too-many-argu
     llm_invocation_params: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    observer: list[Watched | ChainEvent] = []
+    observer: list[SpanWatch] = []
     event_dispatcher = LangChainEventPairingDispatcher(observer.append)
     event_dispatcher.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,
@@ -653,7 +667,10 @@ def test_event_pairing_dispatcher_on_llm_start(  # pylint: disable=too-many-argu
     assert llm_model_id in event_dispatcher.events_storage.events
     assert event_dispatcher.events_storage.events[llm_model_id].event_id == llm_model_id
     assert event_dispatcher.events_storage.events[llm_model_id].hierarchy is not None
-    assert event_dispatcher.events_storage.events[llm_model_id].hierarchy.parent_run_id == llm_chain_id  # type: ignore # pylint: disable=line-too-long
+    assert (
+        event_dispatcher.events_storage.events[llm_model_id].hierarchy.parent_run_id
+        == llm_chain_id
+    )
     assert event_dispatcher.events_storage.events[llm_model_id].data == EventData(
         type=EventType.LLM_MODEL,
         serialized=llm_serialized_data,
@@ -691,7 +708,7 @@ def fixture_chat_invocation_params() -> dict[str, Any]:
     }
 
 
-def test_event_pairing_dispatcher_on_chat_model_start(  # pylint: disable=too-many-arguments
+def test_event_pairing_dispatcher_on_chat_model_start(  # pylint: disable=too-many-arguments  # noqa: E501
     simple_sequential_chain_serialized_data: dict[str, Any],
     llm_chain_serialized_data: dict[str, Any],
     default_kwargs: dict[str, Any],
@@ -700,7 +717,7 @@ def test_event_pairing_dispatcher_on_chat_model_start(  # pylint: disable=too-ma
     chat_invocation_params: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    observer: list[Watched | ChainEvent] = []
+    observer: list[SpanWatch] = []
     event_dispatcher = LangChainEventPairingDispatcher(observer.append)
     event_dispatcher.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,
@@ -745,7 +762,10 @@ def test_event_pairing_dispatcher_on_chat_model_start(  # pylint: disable=too-ma
     assert llm_model_id in event_dispatcher.events_storage.events
     assert event_dispatcher.events_storage.events[llm_model_id].event_id == llm_model_id
     assert event_dispatcher.events_storage.events[llm_model_id].hierarchy is not None
-    assert event_dispatcher.events_storage.events[llm_model_id].hierarchy.parent_run_id == llm_chain_id  # type: ignore # pylint: disable=line-too-long
+    assert (
+        event_dispatcher.events_storage.events[llm_model_id].hierarchy.parent_run_id
+        == llm_chain_id
+    )  # type: ignore # pylint: disable=line-too-long
     assert event_dispatcher.events_storage.events[llm_model_id].data == EventData(
         type=EventType.CHAT_MODEL,
         serialized=chat_serialized_data,
@@ -765,7 +785,7 @@ def test_event_pairing_dispatcher_on_llm_end(  # pylint: disable=too-many-argume
     llm_chain_kwargs: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    observer: list[Watched | ChainEvent] = []
+    observer: list[SpanWatch] = []
     event_dispatcher = LangChainEventPairingDispatcher(observer.append)
     event_dispatcher.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,
@@ -845,7 +865,7 @@ def test_event_pairing_dispatcher_on_llm_end(  # pylint: disable=too-many-argume
     assert watched_event.callback_kwargs.outputs == {"tags": []}
 
 
-def test_event_pairing_dispatcher_on_llm_end__chat_model(  # pylint: disable=too-many-arguments
+def test_event_pairing_dispatcher_on_llm_end__chat_model(  # pylint: disable=too-many-arguments  # noqa: E501
     simple_sequential_chain_serialized_data: dict[str, Any],
     llm_chain_serialized_data: dict[str, Any],
     chat_serialized_data: dict[str, Any],
@@ -854,7 +874,7 @@ def test_event_pairing_dispatcher_on_llm_end__chat_model(  # pylint: disable=too
     llm_chain_kwargs: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    observer: list[Watched | ChainEvent] = []
+    observer: list[SpanWatch] = []
     event_dispatcher = LangChainEventPairingDispatcher(observer.append)
     event_dispatcher.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,

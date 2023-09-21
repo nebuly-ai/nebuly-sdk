@@ -13,7 +13,12 @@ from uuid import UUID
 
 from langchain.callbacks.manager import CallbackManager
 
-from nebuly.entities import Observer, Package, Watched
+from nebuly.contextmanager import (
+    NotInInteractionContext,
+    get_nearest_open_interaction,
+    new_interaction,
+)
+from nebuly.entities import Observer, Package, SpanWatch
 from nebuly.handlers import LangChainTrackingHandler
 
 logger = logging.getLogger(__name__)
@@ -81,6 +86,24 @@ def _split_nebuly_kwargs(
     return nebuly_kwargs, function_kwargs
 
 
+def _add_interaction_span(
+    input: Any,
+    output: Any,
+    observer: Observer,
+    watched: SpanWatch,
+) -> None:
+    try:
+        interaction = get_nearest_open_interaction()
+        interaction.set_observer(observer)
+        interaction.add_span(watched)
+    except NotInInteractionContext:
+        with new_interaction() as interaction:
+            interaction.set_input(input)
+            interaction.set_observer(observer)
+            interaction.add_span(watched)
+            interaction.set_output(output)
+
+
 def watch_from_generator(  # pylint: disable=too-many-arguments
     *,
     generator: Generator[Any, Any, Any],
@@ -91,12 +114,11 @@ def watch_from_generator(  # pylint: disable=too-many-arguments
     called_start: datetime,
     original_args: tuple[Any, ...],
     original_kwargs: dict[str, Any],
-    nebuly_kwargs: dict[str, Any],
 ) -> Generator[Any, Any, Any]:
     """
     Watch a generator
 
-    Creates the Watched object while the generator is being iterated over.
+    Creates the SpanWatch object while the generator is being iterated over.
     Waits until the iteration is done to call the observer.
     """
     original_result = []
@@ -113,7 +135,7 @@ def watch_from_generator(  # pylint: disable=too-many-arguments
 
     called_end = datetime.now(timezone.utc)
 
-    watched = Watched(
+    watched = SpanWatch(
         module=module,
         version=version,
         function=function_name,
@@ -121,12 +143,16 @@ def watch_from_generator(  # pylint: disable=too-many-arguments
         called_end=called_end,
         called_with_args=original_args,
         called_with_kwargs=original_kwargs,
-        called_with_nebuly_kwargs=nebuly_kwargs,
         returned=original_result,
         generator=True,
         generator_first_element_timestamp=generator_first_element_timestamp,
     )
-    observer(watched)
+    _add_interaction_span(
+        original_args[0] if len(original_args) > 0 else None,
+        original_result,
+        observer,
+        watched,
+    )
 
 
 async def watch_from_generator_async(  # pylint: disable=too-many-arguments
@@ -139,12 +165,11 @@ async def watch_from_generator_async(  # pylint: disable=too-many-arguments
     called_start: datetime,
     original_args: tuple[Any, ...],
     original_kwargs: dict[str, Any],
-    nebuly_kwargs: dict[str, Any],
 ) -> AsyncGenerator[Any, Any]:
     """
     Watch a generator
 
-    Creates the Watched object while the generator is being iterated over.
+    Creates the SpanWatch object while the generator is being iterated over.
     Waits until the iteration is done to call the observer.
     """
     original_result = []
@@ -161,7 +186,7 @@ async def watch_from_generator_async(  # pylint: disable=too-many-arguments
 
     called_end = datetime.now(timezone.utc)
 
-    watched = Watched(
+    watched = SpanWatch(
         module=module,
         version=version,
         function=function_name,
@@ -169,12 +194,16 @@ async def watch_from_generator_async(  # pylint: disable=too-many-arguments
         called_end=called_end,
         called_with_args=original_args,
         called_with_kwargs=original_kwargs,
-        called_with_nebuly_kwargs=nebuly_kwargs,
         returned=original_result,
         generator=True,
         generator_first_element_timestamp=generator_first_element_timestamp,
     )
-    observer(watched)
+    _add_interaction_span(
+        original_args[0] if len(original_args) > 0 else None,
+        original_result,
+        observer,
+        watched,
+    )
 
 
 def _setup_args_kwargs(
@@ -277,14 +306,13 @@ def coroutine_wrapper(
                 called_start=called_start,
                 original_args=original_args,
                 original_kwargs=original_kwargs,
-                nebuly_kwargs=nebuly_kwargs,
             )
 
         logger.debug("Result is not a generator")
 
         original_result = deepcopy(result)
         called_end = datetime.now(timezone.utc)
-        watched = Watched(
+        watched = SpanWatch(
             module=module,
             version=version,
             function=function_name,
@@ -292,12 +320,16 @@ def coroutine_wrapper(
             called_end=called_end,
             called_with_args=original_args,
             called_with_kwargs=original_kwargs,
-            called_with_nebuly_kwargs=nebuly_kwargs,
             returned=original_result,
             generator=False,
             generator_first_element_timestamp=generator_first_element_timestamp,
         )
-        observer(watched)
+        _add_interaction_span(
+            original_args[0] if len(original_args) > 0 else None,
+            original_result,
+            observer,
+            watched,
+        )
         return result
 
     return wrapper
@@ -341,14 +373,13 @@ def function_wrapper(
                 called_start=called_start,
                 original_args=original_args,
                 original_kwargs=original_kwargs,
-                nebuly_kwargs=nebuly_kwargs,
             )
 
         logger.debug("Result is not a generator")
 
         original_result = deepcopy(result)
         called_end = datetime.now(timezone.utc)
-        watched = Watched(
+        watched = SpanWatch(
             module=module,
             version=version,
             function=function_name,
@@ -356,12 +387,16 @@ def function_wrapper(
             called_end=called_end,
             called_with_args=original_args,
             called_with_kwargs=original_kwargs,
-            called_with_nebuly_kwargs=nebuly_kwargs,
             returned=original_result,
             generator=False,
             generator_first_element_timestamp=generator_first_element_timestamp,
         )
-        observer(watched)
+        _add_interaction_span(
+            original_args[0] if len(original_args) > 0 else None,
+            original_result,
+            observer,
+            watched,
+        )
         return result
 
     return wrapper
@@ -371,7 +406,7 @@ def _patcher(
     observer: Observer, module: str, version: str, function_name: str
 ) -> Callable[[Any], Any]:
     """
-    Decorator that calls observer with a Watched instance when the decorated
+    Decorator that calls observer with a SpanWatch instance when the decorated
     function is called
 
     kwargs that start with nebuly_ are passed to the observer and not the

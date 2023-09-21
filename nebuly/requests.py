@@ -6,7 +6,7 @@ import os
 import urllib.request
 from typing import Any
 
-from nebuly.entities import ChainEvent, Watched
+from nebuly.entities import InteractionWatch
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class CustomJSONEncoder(json.JSONEncoder):
             return str(o)
 
 
-def post_message(watched: Watched | ChainEvent, api_key: str) -> None:
+def post_message(watched: InteractionWatch, api_key: str) -> None:
     message = json.dumps({"body": watched, "provider": ""}, cls=CustomJSONEncoder)
     url = os.environ.get(
         # TODO: make this url configurable
@@ -29,6 +29,7 @@ def post_message(watched: Watched | ChainEvent, api_key: str) -> None:
         "https://backend.nebuly.com/event-ingestion/api/v1/events",
     )
     post_json_data(url, message, api_key)
+    # print(message)
 
 
 def post_json_data(url: str, json_data: str, api_key: str) -> Any:

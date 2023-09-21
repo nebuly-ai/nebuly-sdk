@@ -6,7 +6,7 @@ from queue import Queue
 
 from nebuly.config import PACKAGES
 from nebuly.consumers import ConsumerWorker
-from nebuly.entities import ChainEvent, DevelopmentPhase, Observer, Watched
+from nebuly.entities import Observer, SpanWatch
 from nebuly.exceptions import APIKeyNotProvidedError, NebulyAlreadyInitializedError
 from nebuly.handlers import set_tracking_handlers
 from nebuly.monkey_patching import (
@@ -22,16 +22,12 @@ _initialized = False
 def init(
     *,
     api_key: str | None = None,
-    project: str | None = None,
-    phase: DevelopmentPhase | None = None,
 ) -> None:
     if not api_key:
         api_key = _get_api_key()
     _check_nebuly_is_not_initialized()
     check_no_packages_already_imported(PACKAGES)
-    observer = _create_observer_and_start_publisher(
-        api_key=api_key, project=project, phase=phase
-    )
+    observer = _create_observer_and_start_publisher(api_key=api_key)
     import_and_patch_packages(PACKAGES, observer)
     set_tracking_handlers(observer)
 
@@ -52,16 +48,12 @@ def _check_nebuly_is_not_initialized() -> None:
     _initialized = True
 
 
-def _create_observer_and_start_publisher(
-    *, api_key: str, project: str | None, phase: DevelopmentPhase | None
-) -> Observer:
-    queue: Queue[Watched | ChainEvent] = Queue()
+def _create_observer_and_start_publisher(*, api_key: str) -> Observer:
+    queue: Queue[SpanWatch] = Queue()
 
     ConsumerWorker(queue, partial(post_message, api_key=api_key))
     observer = NebulyObserver(
         api_key=api_key,
-        project=project,
-        phase=phase,
         publish=queue.put,
     )
     return observer.on_event_received
