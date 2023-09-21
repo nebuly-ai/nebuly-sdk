@@ -75,6 +75,12 @@ class InteractionContext:
         self.finished = True
         self.observer(self.as_interaction_watch())
 
+    def set_user(self, value: str) -> None:
+        self.user = value
+
+    def set_user_group_profile(self, value: str) -> None:
+        self.user_group_profile = value
+
     def as_interaction_watch(self) -> InteractionWatch:
         return InteractionWatch(
             input=self.input,

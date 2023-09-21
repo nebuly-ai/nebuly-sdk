@@ -103,6 +103,7 @@ def _add_interaction_span(
     output: Any,
     observer: Observer,
     watched: SpanWatch,
+    nebuly_kwargs: dict[str, Any],
 ) -> None:
     try:
         interaction = get_nearest_open_interaction()
@@ -117,6 +118,10 @@ def _add_interaction_span(
             interaction.set_history(history)
             interaction.set_observer(observer)
             interaction.add_span(watched)
+            interaction.set_user(nebuly_kwargs.get("nebuly_user"))
+            interaction.set_user_group_profile(
+                nebuly_kwargs.get("nebuly_user_group_profile")
+            )
             interaction.set_output(_extract_output(output, module, function_name))
 
 
@@ -130,7 +135,9 @@ def _extract_input_and_history(
         if function_name == "Completion.create":
             return original_kwargs["prompt"], []
         elif function_name == "ChatCompletion.create":
-            history = [(el["role"], el["content"]) for el in original_kwargs["messages"][:-1]]
+            history = [
+                (el["role"], el["content"]) for el in original_kwargs["messages"][:-1]
+            ]
             return original_kwargs["messages"][-1]["content"], history
 
 
@@ -144,6 +151,7 @@ def watch_from_generator(  # pylint: disable=too-many-arguments
     called_start: datetime,
     original_args: tuple[Any, ...],
     original_kwargs: dict[str, Any],
+    nebuly_kwargs: dict[str, Any],
 ) -> Generator[Any, Any, Any]:
     """
     Watch a generator
@@ -186,6 +194,7 @@ def watch_from_generator(  # pylint: disable=too-many-arguments
         output=original_result,
         observer=observer,
         watched=watched,
+        nebuly_kwargs=nebuly_kwargs,
     )
 
 
@@ -199,6 +208,7 @@ async def watch_from_generator_async(  # pylint: disable=too-many-arguments
     called_start: datetime,
     original_args: tuple[Any, ...],
     original_kwargs: dict[str, Any],
+    nebuly_kwargs: dict[str, Any],
 ) -> AsyncGenerator[Any, Any]:
     """
     Watch a generator
@@ -240,6 +250,7 @@ async def watch_from_generator_async(  # pylint: disable=too-many-arguments
         output=original_result,
         observer=observer,
         watched=watched,
+        nebuly_kwargs=nebuly_kwargs,
     )
 
 
@@ -369,6 +380,7 @@ def coroutine_wrapper(
             output=original_result,
             observer=observer,
             watched=watched,
+            nebuly_kwargs=nebuly_kwargs,
         )
         return result
 
@@ -439,6 +451,7 @@ def function_wrapper(
             output=original_result,
             observer=observer,
             watched=watched,
+            nebuly_kwargs=nebuly_kwargs,
         )
         return result
 
