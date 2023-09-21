@@ -74,3 +74,11 @@ def test_cannot_create_interaction_inside_interaction() -> None:
                 "test_user"
             ) as interaction2:  # noqa: F841 pylint: disable=unused-variable
                 pass
+
+
+def test_calls_finish_when_exception_raised() -> None:
+    with pytest.raises(Exception):
+        with new_interaction("test_user") as interaction:
+            raise Exception("test")  # pylint: disable=broad-exception-raised
+
+    assert interaction.finished
