@@ -326,6 +326,15 @@ def coroutine_wrapper(
             if isasyncgenfunction(func):
                 return func(*args, **kwargs)
             return await func(*args, **kwargs)
+        elif module == "langchain" and function_name.startswith(("chains.base.Chain")):
+            try:
+                get_nearest_open_interaction()
+            except NotInInteractionContext:
+                with new_interaction() as interaction:
+                    interaction.set_input(kwargs.get("inputs"))
+                    original_res = f(*args, **kwargs)
+                    interaction.set_output(original_res)
+                    return original_res
 
         (
             original_args,
@@ -404,6 +413,15 @@ def function_wrapper(
             ("llms.base.BaseLLM", "chat_models.base.BaseChatModel")
         ):
             return _add_tracking_info_to_provider_call(f, *args, **kwargs)
+        elif module == "langchain" and function_name.startswith(("chains.base.Chain")):
+            try:
+                get_nearest_open_interaction()
+            except NotInInteractionContext:
+                with new_interaction() as interaction:
+                    interaction.set_input(kwargs.get("inputs"))
+                    original_res = f(*args, **kwargs)
+                    interaction.set_output(original_res)
+                    return original_res
         (
             original_args,
             original_kwargs,

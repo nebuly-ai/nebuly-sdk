@@ -17,6 +17,8 @@ PACKAGES = (
         "langchain",
         ("0.0.200",),
         (
+            "chains.base.Chain.__call__",
+            "chains.base.Chain.acall",
             "llms.base.BaseLLM.generate",
             "llms.base.BaseLLM.agenerate",
             "chat_models.base.BaseChatModel.generate",
