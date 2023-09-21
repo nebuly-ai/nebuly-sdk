@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from asyncio import sleep
 from datetime import datetime, timezone
-from typing import Any, AsyncGenerator
+from typing import Any, AsyncGenerator, Generator
 from unittest.mock import MagicMock, patch
 
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from nebuly.entities import InteractionWatch, Package, SpanWatch
+from nebuly.entities import InteractionWatch, Package
 from nebuly.monkey_patching import (
     _monkey_patch,
     _patcher,
