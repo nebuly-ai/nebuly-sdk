@@ -132,7 +132,7 @@ def test_openai_completion__multiple_interactions():
             with new_interaction(
                 user="test_user", group_profile="test_group"
             ) as interaction:
-                interaction.set_input("Initial input")
+                interaction.set_input("Initial input 1")
                 result = openai.Completion.create(
                     model="gpt-3.5-turbo-instruct",
                     prompt="Say this is a test",
@@ -140,12 +140,12 @@ def test_openai_completion__multiple_interactions():
                     temperature=0,
                 )
                 assert result is not None
-                interaction.set_output("Final output")
+                interaction.set_output("Final output 1")
 
             with new_interaction(
                 user="test_user", group_profile="test_group"
             ) as interaction:
-                interaction.set_input("Initial input")
+                interaction.set_input("Initial input 2")
                 result = openai.Completion.create(
                     model="gpt-3.5-turbo-instruct",
                     prompt="Say this is a test",
@@ -153,15 +153,15 @@ def test_openai_completion__multiple_interactions():
                     temperature=0,
                 )
                 assert result is not None
-                interaction.set_output("Final output")
+                interaction.set_output("Final output 2")
 
             assert mock_observer.call_count == 2
             interaction_watch_0: InteractionWatch = mock_observer.call_args_list[0][0][
                 0
             ]
             assert isinstance(interaction_watch_0, InteractionWatch)
-            assert interaction_watch_0.input == "Initial input"
-            assert interaction_watch_0.output == "Final output"
+            assert interaction_watch_0.input == "Initial input 1"
+            assert interaction_watch_0.output == "Final output 1"
             assert interaction_watch_0.end_user == "test_user"
             assert interaction_watch_0.end_user_group_profile == "test_group"
             assert len(interaction_watch_0.spans) == 1
@@ -172,8 +172,8 @@ def test_openai_completion__multiple_interactions():
                 0
             ]
             assert isinstance(interaction_watch_1, InteractionWatch)
-            assert interaction_watch_1.input == "Initial input"
-            assert interaction_watch_1.output == "Final output"
+            assert interaction_watch_1.input == "Initial input 2"
+            assert interaction_watch_1.output == "Final output 2"
             assert interaction_watch_1.end_user == "test_user"
             assert interaction_watch_1.end_user_group_profile == "test_group"
             assert len(interaction_watch_1.spans) == 1
