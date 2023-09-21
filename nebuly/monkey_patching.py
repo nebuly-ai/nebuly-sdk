@@ -326,13 +326,20 @@ def coroutine_wrapper(
             if isasyncgenfunction(func):
                 return func(*args, **kwargs)
             return await func(*args, **kwargs)
-        elif module == "langchain" and function_name.startswith(("chains.base.Chain")):
+        elif module == "langchain" and function_name.startswith("chains.base.Chain"):
             try:
                 get_nearest_open_interaction()
+                if isasyncgenfunction(f):
+                    return f(*args, **kwargs)
+                else:
+                    return await f(*args, **kwargs)
             except NotInInteractionContext:
                 with new_interaction() as interaction:
                     interaction.set_input(kwargs.get("inputs"))
-                    original_res = f(*args, **kwargs)
+                    if isasyncgenfunction(f):
+                        original_res = f(*args, **kwargs)
+                    else:
+                        original_res = await f(*args, **kwargs)
                     interaction.set_output(original_res)
                     return original_res
 
@@ -416,6 +423,7 @@ def function_wrapper(
         elif module == "langchain" and function_name.startswith(("chains.base.Chain")):
             try:
                 get_nearest_open_interaction()
+                return f(*args, **kwargs)
             except NotInInteractionContext:
                 with new_interaction() as interaction:
                     interaction.set_input(kwargs.get("inputs"))
