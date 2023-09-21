@@ -184,6 +184,7 @@ def watch_from_generator(  # pylint: disable=too-many-arguments
         returned=original_result,
         generator=True,
         generator_first_element_timestamp=generator_first_element_timestamp,
+        provider_extras=nebuly_kwargs,
     )
 
     _add_interaction_span(
@@ -241,6 +242,7 @@ async def watch_from_generator_async(  # pylint: disable=too-many-arguments
         returned=original_result,
         generator=True,
         generator_first_element_timestamp=generator_first_element_timestamp,
+        provider_extras=nebuly_kwargs,
     )
     _add_interaction_span(
         original_args=original_args,
@@ -298,10 +300,8 @@ def _add_tracking_info_to_provider_call(
     # Get the root_run_id from the LangChainTrackingHandler
     for handler in callback_manager.handlers:
         if isinstance(handler, LangChainTrackingHandler):
-            event_pairing_dispatcher = handler.event_pairing_dispatcher
-            root_run_id = event_pairing_dispatcher.events_storage.get_root_id(
-                parent_run_id
-            )
+            interaction = get_nearest_open_interaction()
+            root_run_id = interaction.events_storage.get_root_id(parent_run_id)
             additional_kwargs["nebuly_root_run_id"] = root_run_id
             break
 
@@ -354,6 +354,7 @@ def coroutine_wrapper(
                 called_start=called_start,
                 original_args=original_args,
                 original_kwargs=original_kwargs,
+                nebuly_kwargs=nebuly_kwargs,
             )
 
         logger.debug("Result is not a generator")
@@ -371,6 +372,7 @@ def coroutine_wrapper(
             returned=original_result,
             generator=False,
             generator_first_element_timestamp=generator_first_element_timestamp,
+            provider_extras=nebuly_kwargs,
         )
         _add_interaction_span(
             original_args=original_args,
@@ -425,6 +427,7 @@ def function_wrapper(
                 called_start=called_start,
                 original_args=original_args,
                 original_kwargs=original_kwargs,
+                nebuly_kwargs=nebuly_kwargs,
             )
 
         logger.debug("Result is not a generator")
@@ -442,6 +445,7 @@ def function_wrapper(
             returned=original_result,
             generator=False,
             generator_first_element_timestamp=generator_first_element_timestamp,
+            provider_extras=nebuly_kwargs,
         )
         _add_interaction_span(
             original_args=original_args,

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from nebuly.entities import SpanWatch
+from nebuly.entities import InteractionWatch, SpanWatch
 from nebuly.monkey_patching import _patcher
 from nebuly.observers import NebulyObserver
 
@@ -10,7 +10,7 @@ def function(a: float, b: int, *, c: int = 0) -> int:
 
 
 def test_observer_calls_publisher_when_patched_is_called() -> None:
-    publisher: list[SpanWatch] = []
+    publisher: list[InteractionWatch] = []
     observer = NebulyObserver(
         api_key="test_api_key",
         publish=publisher.append,

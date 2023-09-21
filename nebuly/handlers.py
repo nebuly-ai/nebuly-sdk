@@ -1,20 +1,25 @@
 import logging
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from functools import cached_property
 from typing import Any
+from uuid import UUID
 
 from langchain.callbacks.base import BaseCallbackHandler, BaseCallbackManager, Callbacks
 from langchain.chains.base import Chain
+from langchain.schema import Document
+from langchain.schema.messages import BaseMessage
+from langchain.schema.output import LLMResult
+from typing_extensions import Self
 
-from nebuly.entities import Observer
-from nebuly.event_pairing_dispatchers import LangChainEventPairingDispatcher
+from nebuly.contextmanager import EventData, EventsStorage, get_nearest_open_interaction
+from nebuly.entities import CallbackKwargs, EventHierarchy, EventType, SpanWatch
 
 logger = logging.getLogger(__name__)
 
 
-def set_tracking_handlers(observer: Observer) -> None:
-    event_pairing_dispatcher = LangChainEventPairingDispatcher(observer)
-    tracking_handler = LangChainTrackingHandler(
-        event_pairing_dispatcher=event_pairing_dispatcher
-    )
+def set_tracking_handlers() -> None:
+    tracking_handler = LangChainTrackingHandler()
     original_call = Chain.__call__
     original_acall = Chain.acall
 
@@ -68,77 +73,150 @@ def set_tracking_handlers(observer: Observer) -> None:
 
 
 class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
-    def __init__(self, event_pairing_dispatcher: LangChainEventPairingDispatcher):
-        self.event_pairing_dispatcher = event_pairing_dispatcher
-
-    def on_retriever_start(
-        self,
-        *args: Any,
-        **kwargs: Any,
-    ) -> None:
-        logger.debug("Called on_retriever_start")
-        self.event_pairing_dispatcher.on_retriever_start(*args, **kwargs)
-
-    def on_retriever_end(
-        self,
-        *args: Any,
-        **kwargs: Any,
-    ) -> None:
-        logger.debug("Called on_retriever_end")
-        self.event_pairing_dispatcher.on_retriever_end(*args, **kwargs)
+    @cached_property
+    def current_interaction_storage(self) -> EventsStorage:
+        return get_nearest_open_interaction().events_storage
 
     def on_tool_start(
         self,
-        *args: Any,
+        serialized: dict[str, Any],
+        input_str: str,
+        run_id: UUID,
+        parent_run_id: UUID | None = None,
         **kwargs: Any,
-    ) -> Any:
-        logger.debug("Called on_tool_start")
-        self.event_pairing_dispatcher.on_tool_start(*args, **kwargs)
+    ) -> None:
+        data = EventData(
+            type=EventType.TOOL,
+            kwargs={
+                "serialized": serialized,
+                "input_str": input_str,
+                **kwargs,
+            },
+        )
+        self.current_interaction_storage.add_event(
+            run_id, parent_run_id, data, module="langchain"
+        )
 
     def on_tool_end(
         self,
-        *args: Any,
+        output: str,
+        run_id: UUID,
         **kwargs: Any,
     ) -> None:
-        logger.debug("Called on_tool_end")
-        self.event_pairing_dispatcher.on_tool_end(*args, **kwargs)
+        self.current_interaction_storage.events[run_id].data.add_end_event_data(
+            kwargs=kwargs, output=output
+        )
+        self.current_interaction_storage.events[run_id].set_end_time()
+
+    def on_retriever_start(
+        self,
+        serialized: dict[str, Any],
+        query: str,
+        run_id: UUID,
+        parent_run_id: UUID | None = None,
+        **kwargs: Any,
+    ) -> None:
+        data = EventData(
+            type=EventType.RETRIEVAL,
+            kwargs={
+                "serialized": serialized,
+                "query": query,
+                **kwargs,
+            },
+        )
+        self.current_interaction_storage.add_event(
+            run_id, parent_run_id, data, module="langchain"
+        )
+
+    def on_retriever_end(
+        self,
+        documents: list[Document],
+        run_id: UUID,
+        **kwargs: Any,
+    ) -> None:
+        self.current_interaction_storage.events[run_id].data.add_end_event_data(
+            kwargs=kwargs, output=documents
+        )
+        self.current_interaction_storage.events[run_id].set_end_time()
 
     def on_llm_start(
         self,
-        *args: Any,
+        serialized: dict[str, Any],
+        prompts: list[str],
+        run_id: UUID,
+        parent_run_id: UUID | None = None,
         **kwargs: Any,
     ) -> None:
-        logger.debug("Called on_llm_start")
-        self.event_pairing_dispatcher.on_llm_start(*args, **kwargs)
+        data = EventData(
+            type=EventType.LLM_MODEL,
+            kwargs={
+                "serialized": serialized,
+                "prompts": prompts,
+                **kwargs,
+            },
+        )
+        self.current_interaction_storage.add_event(
+            run_id, parent_run_id, data, module="langchain"
+        )
 
     def on_llm_end(
         self,
-        *args: Any,
+        response: LLMResult,
+        run_id: UUID,
         **kwargs: Any,
     ) -> None:
-        logger.debug("Called on_llm_end")
-        self.event_pairing_dispatcher.on_llm_end(*args, **kwargs)
+        self.current_interaction_storage.events[run_id].data.add_end_event_data(
+            kwargs=kwargs, output=response
+        )
+        self.current_interaction_storage.events[run_id].set_end_time()
 
     def on_chat_model_start(
         self,
-        *args: Any,
+        serialized: dict[str, Any],
+        messages: list[list[BaseMessage]],
+        run_id: UUID,
+        parent_run_id: UUID | None = None,
         **kwargs: Any,
     ) -> None:
-        logger.debug("Called on_chat_model_start")
-        self.event_pairing_dispatcher.on_chat_model_start(*args, **kwargs)
+        data = EventData(
+            type=EventType.CHAT_MODEL,
+            kwargs={
+                "serialized": serialized,
+                "messages": messages,
+                **kwargs,
+            },
+        )
+        self.current_interaction_storage.add_event(
+            run_id, parent_run_id, data, module="langchain"
+        )
 
     def on_chain_start(
         self,
-        *args: Any,
+        serialized: dict[str, Any],
+        inputs: dict[str, Any],
+        run_id: UUID,
+        parent_run_id: UUID | None = None,
         **kwargs: Any,
     ) -> None:
-        logger.debug("Called on_chain_start")
-        self.event_pairing_dispatcher.on_chain_start(*args, **kwargs)
+        data = EventData(
+            type=EventType.CHAIN,
+            kwargs={
+                "serialized": serialized,
+                "inputs": inputs,
+                **kwargs,
+            },
+        )
+        self.current_interaction_storage.add_event(
+            run_id, parent_run_id, data, module="langchain"
+        )
 
     def on_chain_end(
         self,
-        *args: Any,
+        outputs: dict[str, Any],
+        run_id: UUID,
         **kwargs: Any,
     ) -> None:
-        logger.debug("Called on_chain_end")
-        self.event_pairing_dispatcher.on_chain_end(*args, **kwargs)
+        self.current_interaction_storage.events[run_id].data.add_end_event_data(
+            kwargs=kwargs, output=outputs
+        )
+        self.current_interaction_storage.events[run_id].set_end_time()

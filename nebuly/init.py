@@ -29,7 +29,7 @@ def init(
     check_no_packages_already_imported(PACKAGES)
     observer = _create_observer_and_start_publisher(api_key=api_key)
     import_and_patch_packages(PACKAGES, observer)
-    set_tracking_handlers(observer)
+    set_tracking_handlers()
 
 
 def _get_api_key() -> str:

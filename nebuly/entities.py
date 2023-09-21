@@ -155,8 +155,6 @@ class ChainEvent:  # pylint: disable=too-many-instance-attributes
     The kwargs of the input and output callbacks of a Chain block.
     """
 
-    called_with_nebuly_kwargs: dict[str, Any] = field(default_factory=dict)
-
     def to_dict(self) -> dict[str, Any]:
         """
         to_dict returns a dictionary representation of the WatchedEvent instance.
@@ -170,12 +168,6 @@ class ChainEvent:  # pylint: disable=too-many-instance-attributes
             "inputs": self.inputs,
             "outputs": self.outputs,
             "callback_kwargs": self.callback_kwargs,
-            "called_with_nebuly_kwargs": {
-                **self.called_with_nebuly_kwargs,
-                **{
-                    "nebuly_phase": self.called_with_nebuly_kwargs["nebuly_phase"].value
-                },
-            },
         }
 
 

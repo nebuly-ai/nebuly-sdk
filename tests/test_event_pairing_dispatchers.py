@@ -6,14 +6,9 @@ from langchain.schema import Document
 from langchain.schema.messages import AIMessage, HumanMessage, SystemMessage
 from langchain.schema.output import ChatGeneration, Generation, LLMResult
 
+from nebuly.contextmanager import EventData
 from nebuly.entities import EventType, SpanWatch
-from nebuly.event_pairing_dispatchers import EventData, LangChainEventPairingDispatcher
-
-
-def test_new_event_pairing_dispatcher() -> None:
-    observer: list[SpanWatch] = []
-    event_dispatcher = LangChainEventPairingDispatcher(observer.append)
-    assert event_dispatcher is not None
+from nebuly.handlers import LangChainTrackingHandler
 
 
 @pytest.fixture(name="simple_sequential_chain_serialized_data")
@@ -152,14 +147,13 @@ def fixture_default_tool_kwargs() -> dict[str, Any]:
     }
 
 
-def test_event_pairing_dispatcher_on_chain_start__new_root_chain(
+def test_event_handler_on_chain_start__new_root_chain(
     simple_sequential_chain_serialized_data: dict[str, Any],
     default_kwargs: dict[str, Any],
 ) -> None:
     run_id = uuid.uuid4()
-    observer: list[SpanWatch] = []
-    event_dispatcher = LangChainEventPairingDispatcher(observer.append)
-    event_dispatcher.on_chain_start(
+    event_handler = LangChainTrackingHandler()
+    event_handler.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,
         inputs={"input": "Tragedy at sunset on the beach"},
         run_id=run_id,
@@ -167,12 +161,12 @@ def test_event_pairing_dispatcher_on_chain_start__new_root_chain(
         **default_kwargs
     )
 
-    assert event_dispatcher.events_storage.events is not None
-    assert len(event_dispatcher.events_storage.events) == 1
-    assert run_id in event_dispatcher.events_storage.events
-    assert event_dispatcher.events_storage.events[run_id].event_id == run_id
-    assert event_dispatcher.events_storage.events[run_id].hierarchy is None
-    assert event_dispatcher.events_storage.events[run_id].data == EventData(
+    assert event_handler.current_interaction_storage.events is not None
+    assert len(event_handler.current_interaction_storage.events) == 1
+    assert run_id in event_handler.current_interaction_storage.events
+    assert event_handler.current_interaction_storage.events[run_id].event_id == run_id
+    assert event_handler.current_interaction_storage.events[run_id].hierarchy is None
+    assert event_handler.current_interaction_storage.events[run_id].data == EventData(
         type=EventType.CHAIN,
         serialized=simple_sequential_chain_serialized_data,
         inputs={"input": "Tragedy at sunset on the beach"},
