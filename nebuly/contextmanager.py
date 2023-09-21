@@ -31,20 +31,15 @@ class InteractionContext:
                 " 'new_interaction' contextmanager"
             )
         self.user = user
-        self.input = ""
         self.finished = False
 
     def finish(self) -> None:
         self.finished = True
 
-    def set_input(self, input: str) -> None:
-        self.input = input
-
 
 def get_nearest_open_interaction() -> InteractionContext:
     frames = inspect.stack()
     for frame in frames[::-1]:
-        print(frame)
         for v in frame.frame.f_locals.values():
             if isinstance(v, InteractionContext) and not v.finished:
                 return v
@@ -61,5 +56,5 @@ def new_interaction(user: str) -> Generator[InteractionContext, None, None]:
         try:
             interaction = get_nearest_open_interaction()
         except NotInInteractionContext:
-            raise InteractionMustBeLocalVariable()
+            raise InteractionMustBeLocalVariable()  # pylint: disable=raise-missing-from
         interaction.finish()
