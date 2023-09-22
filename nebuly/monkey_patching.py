@@ -11,6 +11,7 @@ from types import ModuleType
 from typing import Any, AsyncGenerator, Callable, Generator, Iterable, cast
 from uuid import UUID
 
+from anthropic import Stream, AsyncStream
 from cohere.responses.chat import StreamingChat
 from cohere.responses.generation import StreamingGenerations
 from langchain.callbacks.manager import CallbackManager
@@ -24,6 +25,10 @@ from nebuly.entities import Observer, Package, SpanWatch
 from nebuly.handlers import LangChainTrackingHandler
 
 logger = logging.getLogger(__name__)
+
+
+AsyncGen = AsyncGenerator | StreamingGenerations | StreamingChat | AsyncStream
+SyncGen = Generator | StreamingGenerations | StreamingChat | Stream
 
 
 def check_no_packages_already_imported(packages: Iterable[Package]) -> None:
@@ -444,7 +449,7 @@ def coroutine_wrapper(
         else:
             result = await f(*args, **function_kwargs)
 
-        if isinstance(result, AsyncGenerator):
+        if isinstance(result, AsyncGen):
             logger.debug("Result is a generator")
             return watch_from_generator_async(
                 generator=result,
@@ -527,7 +532,7 @@ def function_wrapper(
         called_start = datetime.now(timezone.utc)
         result = f(*args, **function_kwargs)
 
-        if isinstance(result, Generator | StreamingGenerations | StreamingChat):
+        if isinstance(result, SyncGen):
             logger.debug("Result is a generator")
             return watch_from_generator(
                 generator=result,
