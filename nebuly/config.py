@@ -25,4 +25,22 @@ PACKAGES = (
             "chat_models.base.BaseChatModel.agenerate",
         ),
     ),
+    Package(
+        "cohere",
+        ("4.0.0",),
+        (
+            "Client.generate",
+            "AsyncClient.generate",
+            "Client.chat",
+            "AsyncClient.chat",
+        ),
+    ),
+    Package(
+        "anthropic",
+        ("0.3.0",),
+        (
+            "resources.Completions.create",
+            "AsyncAnthropic.completions.create",
+        ),
+    ),
 )

@@ -92,6 +92,14 @@ def _extract_output(output: Any, module: str, function_name: str) -> str:
             return output["choices"][0]["text"]
         elif function_name == "ChatCompletion.create":
             return output["choices"][0]["message"]["content"]
+    elif module == "cohere":
+        if function_name == "Client.generate":
+            return output.generations[0].text
+        elif function_name == "Client.chat":
+            return output.text
+    elif module == "anthropic":
+        if function_name == "resources.Completions.create":
+            return output.completion
     return str(output)
 
 
@@ -139,6 +147,18 @@ def _extract_input_and_history(
                 (el["role"], el["content"]) for el in original_kwargs["messages"][:-1]
             ]
             return original_kwargs["messages"][-1]["content"], history
+    elif module == "cohere":
+        if function_name == "Client.generate":
+            return original_kwargs["prompt"], []
+        elif function_name == "Client.chat":
+            history = [
+                (el["user_name"], el["message"])
+                for el in original_kwargs["chat_history"]
+            ]
+            return original_kwargs["message"], history
+    elif module == "anthropic":
+        if function_name == "resources.Completions.create":
+            return original_kwargs["prompt"], []
 
 
 def watch_from_generator(  # pylint: disable=too-many-arguments
@@ -270,6 +290,12 @@ def _setup_args_kwargs(
         nebuly_kwargs: kwargs passed to the function that are nebuly kwargs
     """
     nebuly_kwargs, function_kwargs = _split_nebuly_kwargs(kwargs)
+
+    if len(args) > 0 and isinstance(args[0], object):
+        # TODO: this is a hack to make pickling work for cohere, we should write
+        # a more generic solution to handle not picklable objects
+        client = {k: v for k, v in args[0].__dict__.items() if not k.startswith("_")}
+        args = (client, *args[1:])
 
     original_args = deepcopy(args)
     nebuly_kwargs = deepcopy(nebuly_kwargs)
