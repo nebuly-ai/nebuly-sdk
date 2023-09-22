@@ -213,7 +213,7 @@ chain = LLMChain(llm=llm, prompt=prompt)
 
 with new_interaction(user="test_user", group_profile="test_group") as interaction:
     interaction.set_input("What is a good name for a company that makes colorful socks?")
-    # interaction.set_history(...) 
+    # interaction.set_history(...)
     result = chain.run("colorful socks")
     interaction.set_output("colorful socks spa")
 ```
