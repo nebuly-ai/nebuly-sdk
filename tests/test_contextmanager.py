@@ -46,16 +46,14 @@ def test_multithreading_context() -> None:
             sleep(random.random())
             assert get_nearest_open_interaction() is interaction
 
-    thread1 = threading.Thread(target=thread_func)
-    thread1.start()
-    thread2 = threading.Thread(target=thread_func)
-    thread2.start()
-    thread3 = threading.Thread(target=thread_func)
-    thread3.start()
+    threads = []
+    for _ in range(10):
+        thread = threading.Thread(target=thread_func)
+        thread.start()
+        threads.append(thread)
 
-    thread1.join()
-    thread2.join()
-    thread3.join()
+    for thread in threads:
+        thread.join()
 
 
 @pytest.mark.asyncio
@@ -86,3 +84,11 @@ def test_cannot_create_interaction_inside_interaction() -> None:
                 "test_user"
             ) as interaction2:  # noqa: F841 pylint: disable=unused-variable
                 pass
+
+
+def test_calls_finish_when_exception_raised() -> None:
+    with pytest.raises(Exception):
+        with new_interaction("test_user") as interaction:
+            raise Exception("test")  # pylint: disable=broad-exception-raised
+
+    assert interaction.finished

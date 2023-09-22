@@ -268,9 +268,14 @@ def new_interaction(
         get_nearest_open_interaction()
         raise AlreadyInInteractionContext()
     except NotInInteractionContext:
+        pass
+
+    try:
         yield InteractionContext(user, group_profile, do_not_call_directly=True)
+    finally:
         try:
             interaction = get_nearest_open_interaction()
         except NotInInteractionContext:
             raise InteractionMustBeLocalVariable()  # pylint: disable=raise-missing-from
-        interaction.finish()
+        else:
+            interaction.finish()
