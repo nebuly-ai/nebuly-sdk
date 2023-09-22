@@ -420,7 +420,7 @@ def function_wrapper(
             ("llms.base.BaseLLM", "chat_models.base.BaseChatModel")
         ):
             return _add_tracking_info_to_provider_call(f, *args, **kwargs)
-        elif module == "langchain" and function_name.startswith(("chains.base.Chain")):
+        elif module == "langchain" and function_name.startswith("chains.base.Chain"):
             try:
                 get_nearest_open_interaction()
                 return f(*args, **kwargs)

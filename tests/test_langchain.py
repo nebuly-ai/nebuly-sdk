@@ -2,8 +2,10 @@ from unittest.mock import patch
 
 import pytest
 from langchain.chains import LLMChain
+from langchain.chat_models import ChatOpenAI
 from langchain.llms import OpenAI
 from langchain.prompts import PromptTemplate
+from langchain.prompts.chat import ChatPromptTemplate
 
 import nebuly
 from nebuly.contextmanager import new_interaction
@@ -168,4 +170,60 @@ def test_langchain_llm_chain__multiple_interactions(openai_completion: dict) -> 
             assert len(interaction_watch_1.spans) == 3
             assert len(interaction_watch_1.hierarchy) == 3
             for span in interaction_watch_1.spans:
+                assert isinstance(span, SpanWatch)
+
+
+@pytest.fixture()
+def openai_chat() -> dict:
+    return {
+        "id": "chatcmpl-81Kl80GyhDVsOiEBQLQ6vG8svCUPe",
+        "object": "chat.completion",
+        "created": 1695328818,
+        "model": "gpt-3.5-turbo-0613",
+        "choices": [
+            {
+                "index": 0,
+                "message": {
+                    "role": "assistant",
+                    "content": "Hi there! How can I assist you today?",
+                },
+                "finish_reason": "stop",
+            }
+        ],
+        "usage": {"prompt_tokens": 19, "completion_tokens": 10, "total_tokens": 29},
+    }
+
+
+def test_langchain_chat_chain__no_context_manager(openai_chat: dict) -> None:
+    with patch("openai.ChatCompletion.create") as mock_chat_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_chat_completion_create.return_value = openai_chat
+            nebuly.init(api_key="test")
+            llm = ChatOpenAI()
+
+            chat_prompt = ChatPromptTemplate.from_messages(
+                messages=[
+                    ("user", "Hello!"),
+                    ("assistant", "Hi there! How can I assist you today?"),
+                    ("user", "I need help with my computer."),
+                ]
+            )
+            chain = LLMChain(llm=llm, prompt=chat_prompt)
+            result = chain.run(
+                prompt=chat_prompt,
+            )
+
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == [
+                ("user", "Hello!"),
+                ("assistant", "Hi there! How can I assist you today?"),
+                ("user", "I need help with my computer."),
+            ]
+            assert interaction_watch.output == "Hi there! How can I assist you today?"
+            assert len(interaction_watch.spans) == 3
+            assert len(interaction_watch.hierarchy) == 3
+            for span in interaction_watch.spans:
                 assert isinstance(span, SpanWatch)
