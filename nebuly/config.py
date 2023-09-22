@@ -43,4 +43,11 @@ PACKAGES = (
             "AsyncAnthropic.completions.create",
         ),
     ),
+    Package(
+        "huggingface_hub",
+        ("0.12.0",),
+        (
+            "InferenceClient.conversational",
+        )
+    ),
 )

@@ -191,7 +191,7 @@ class InteractionContext:
         self.input = input
         self.output = output
         self.spans = [] if spans is None else spans
-        self.history = {} if history is None else history
+        self.history = [] if history is None else history
         self.hierarchy = {} if hierarchy is None else hierarchy
         self.time_start = datetime.now(timezone.utc)
         self.observer = None

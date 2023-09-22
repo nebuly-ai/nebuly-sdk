@@ -100,6 +100,9 @@ def _extract_output(output: Any, module: str, function_name: str) -> str:
     elif module == "anthropic":
         if function_name == "resources.Completions.create":
             return output.completion
+    elif module == "huggingface_hub":
+        if function_name == "InferenceClient.conversational":
+            return output["generated_text"]
     return str(output)
 
 
@@ -159,6 +162,16 @@ def _extract_input_and_history(
     elif module == "anthropic":
         if function_name == "resources.Completions.create":
             return original_kwargs["prompt"], []
+    elif module == "huggingface_hub":
+        if function_name == "InferenceClient.conversational":
+            history = []
+            for user_input, assistant_response in zip(
+                original_kwargs.get("past_user_inputs", []),
+                original_kwargs.get("generated_responses", [])
+            ):
+                history.append(("user", user_input))
+                history.append(("assistant", assistant_response))
+            return original_args[1], history
 
 
 def watch_from_generator(  # pylint: disable=too-many-arguments
