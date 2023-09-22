@@ -109,6 +109,18 @@ def _extract_output(output: Any, module: str, function_name: str) -> str:
     return str(output)
 
 
+def _extract_output_generator(
+    outputs: list[Any], module: str, function_name: str
+) -> str:
+    if module == "openai":
+        if function_name in ["Completion.create", "Completion.acreate"]:
+            return "".join([output["choices"][0]["text"] for output in outputs])
+        elif function_name in ["ChatCompletion.create", "ChatCompletion.acreate"]:
+            return "".join(
+                [output["choices"][0]["delta"]["content"] for output in outputs]
+            )
+
+
 def _add_interaction_span(
     original_args: tuple[Any, ...],
     original_kwargs: dict[str, Any],
@@ -118,6 +130,7 @@ def _add_interaction_span(
     observer: Observer,
     watched: SpanWatch,
     nebuly_kwargs: dict[str, Any],
+    stream: bool = False,
 ) -> None:
     try:
         interaction = get_nearest_open_interaction()
@@ -136,7 +149,11 @@ def _add_interaction_span(
             interaction.set_user_group_profile(
                 nebuly_kwargs.get("nebuly_user_group_profile")
             )
-            interaction.set_output(_extract_output(output, module, function_name))
+            interaction.set_output(
+                _extract_output(output, module, function_name)
+                if not stream
+                else _extract_output_generator(output, module, function_name)
+            )
 
 
 def _extract_input_and_history(
@@ -235,6 +252,7 @@ def watch_from_generator(  # pylint: disable=too-many-arguments
         observer=observer,
         watched=watched,
         nebuly_kwargs=nebuly_kwargs,
+        stream=True,
     )
 
 
@@ -292,6 +310,7 @@ async def watch_from_generator_async(  # pylint: disable=too-many-arguments
         observer=observer,
         watched=watched,
         nebuly_kwargs=nebuly_kwargs,
+        stream=True,
     )
 
 
