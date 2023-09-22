@@ -260,14 +260,12 @@ def test_cohere_generate_gen(cohere_generate_gen):
             nebuly.init(api_key="test")
 
             co = cohere.Client("test")
-            result = ""
             for _ in co.generate(
                 prompt="How are you?",
                 max_tokens=20,
                 stream=True,
             ):
                 ...
-            assert result is not None
             assert mock_observer.call_count == 1
             interaction_watch = mock_observer.call_args[0][0]
             assert isinstance(interaction_watch, InteractionWatch)
@@ -320,7 +318,6 @@ def test_cohere_chat_gen(cohere_chat_gen):
             nebuly.init(api_key="test")
 
             co = cohere.Client("test")
-            result = ""
             for _ in co.chat(
                 message="How are you?",
                 chat_history=[
@@ -330,7 +327,6 @@ def test_cohere_chat_gen(cohere_chat_gen):
                 stream=True,
             ):
                 ...
-            assert result is not None
             assert mock_observer.call_count == 1
             interaction_watch = mock_observer.call_args[0][0]
             assert isinstance(interaction_watch, InteractionWatch)

@@ -132,6 +132,12 @@ def _extract_output_generator(
                     if output.event_type == "text-generation"
                 ]
             )
+    elif module == "anthropic":
+        if function_name in [
+            "resources.Completions.create",
+            "resources.AsyncCompletions.create",
+        ]:
+            return "".join([output.completion for output in outputs])
 
 
 def _add_interaction_span(
@@ -180,7 +186,9 @@ def _extract_input_and_history(
             return original_kwargs["prompt"], []
         elif function_name in ["ChatCompletion.create", "ChatCompletion.acreate"]:
             history = [
-                (el["role"], el["content"]) for el in original_kwargs["messages"][:-1]
+                (el["role"], el["content"])
+                for el in original_kwargs["messages"][:-1]
+                if len(original_kwargs["messages"]) > 1
             ]
             return original_kwargs["messages"][-1]["content"], history
     elif module == "cohere":
@@ -189,7 +197,7 @@ def _extract_input_and_history(
         elif function_name in ["Client.chat", "AsyncClient.chat"]:
             history = [
                 (el["user_name"], el["message"])
-                for el in original_kwargs["chat_history"]
+                for el in original_kwargs.get("chat_history", [])
             ]
             return original_kwargs["message"], history
     elif module == "anthropic":
