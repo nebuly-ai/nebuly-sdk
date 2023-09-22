@@ -88,17 +88,20 @@ def _split_nebuly_kwargs(
 
 def _extract_output(output: Any, module: str, function_name: str) -> str:
     if module == "openai":
-        if function_name == "Completion.create":
+        if function_name in ["Completion.create", "Completion.acreate"]:
             return output["choices"][0]["text"]
-        elif function_name == "ChatCompletion.create":
+        elif function_name in ["ChatCompletion.create", "ChatCompletion.acreate"]:
             return output["choices"][0]["message"]["content"]
     elif module == "cohere":
-        if function_name == "Client.generate":
+        if function_name in ["Client.generate", "AsyncClient.generate"]:
             return output.generations[0].text
-        elif function_name == "Client.chat":
+        elif function_name in ["Client.chat", "AsyncClient.chat"]:
             return output.text
     elif module == "anthropic":
-        if function_name == "resources.Completions.create":
+        if function_name in [
+            "resources.Completions.create",
+            "resources.AsyncCompletions.create",
+        ]:
             return output.completion
     elif module == "huggingface_hub":
         if function_name == "InferenceClient.conversational":
@@ -143,31 +146,34 @@ def _extract_input_and_history(
     function_name: str,
 ) -> tuple[str, list[tuple[str, Any]]]:
     if module == "openai":
-        if function_name == "Completion.create":
+        if function_name in ["Completion.create", "Completion.acreate"]:
             return original_kwargs["prompt"], []
-        elif function_name == "ChatCompletion.create":
+        elif function_name in ["ChatCompletion.create", "ChatCompletion.acreate"]:
             history = [
                 (el["role"], el["content"]) for el in original_kwargs["messages"][:-1]
             ]
             return original_kwargs["messages"][-1]["content"], history
     elif module == "cohere":
-        if function_name == "Client.generate":
+        if function_name in ["Client.generate", "AsyncClient.generate"]:
             return original_kwargs["prompt"], []
-        elif function_name == "Client.chat":
+        elif function_name in ["Client.chat", "AsyncClient.chat"]:
             history = [
                 (el["user_name"], el["message"])
                 for el in original_kwargs["chat_history"]
             ]
             return original_kwargs["message"], history
     elif module == "anthropic":
-        if function_name == "resources.Completions.create":
+        if function_name in [
+            "resources.Completions.create",
+            "resources.AsyncCompletions.create",
+        ]:
             return original_kwargs["prompt"], []
     elif module == "huggingface_hub":
         if function_name == "InferenceClient.conversational":
             history = []
             for user_input, assistant_response in zip(
                 original_kwargs.get("past_user_inputs", []),
-                original_kwargs.get("generated_responses", [])
+                original_kwargs.get("generated_responses", []),
             ):
                 history.append(("user", user_input))
                 history.append(("assistant", assistant_response))

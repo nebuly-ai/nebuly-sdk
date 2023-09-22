@@ -40,14 +40,8 @@ PACKAGES = (
         ("0.3.0",),
         (
             "resources.Completions.create",
-            "AsyncAnthropic.completions.create",
+            "resources.AsyncCompletions.create",
         ),
     ),
-    Package(
-        "huggingface_hub",
-        ("0.12.0",),
-        (
-            "InferenceClient.conversational",
-        )
-    ),
+    Package("huggingface_hub", ("0.12.0",), ("InferenceClient.conversational",)),
 )

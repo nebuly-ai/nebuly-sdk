@@ -84,7 +84,7 @@ def test_openai_completion__with_context_manager(openai_completion):
             assert isinstance(span, SpanWatch)
 
 
-def test_openai_completion__multiple_spans_in_interaction():
+def test_openai_completion__multiple_spans_in_interaction(openai_completion):
     with patch("openai.Completion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_completion
@@ -124,7 +124,7 @@ def test_openai_completion__multiple_spans_in_interaction():
             assert span_0.span_id != span_1.span_id
 
 
-def test_openai_completion__multiple_interactions():
+def test_openai_completion__multiple_interactions(openai_completion):
     with patch("openai.Completion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_completion
@@ -180,6 +180,29 @@ def test_openai_completion__multiple_interactions():
             span_1: SpanWatch = interaction_watch_1.spans[0]
             assert isinstance(span_1, SpanWatch)
             assert span_0.span_id != span_1.span_id
+
+
+@pytest.mark.asyncio
+async def test_openai_completion__async(openai_completion):
+    with patch("openai.Completion.acreate") as mock_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_create.return_value = openai_completion
+            nebuly_init()
+            result = await openai.Completion.acreate(
+                model="gpt-3.5-turbo-instruct",
+                prompt="Say this is a test",
+                max_tokens=7,
+                temperature=0,
+            )
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "Say this is a test"
+            assert interaction_watch.output == "\n\nThis is a test."
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
 
 
 @pytest.fixture()
@@ -264,7 +287,7 @@ def test_openai_chat__with_context_manager(openai_chat):
             assert isinstance(span, SpanWatch)
 
 
-def test_openai_chat__multiple_spans_in_interaction():
+def test_openai_chat__multiple_spans_in_interaction(openai_chat):
     with patch("openai.ChatCompletion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_chat
@@ -310,7 +333,7 @@ def test_openai_chat__multiple_spans_in_interaction():
             assert span_0.span_id != span_1.span_id
 
 
-def test_openai_chat__multiple_interactions():
+def test_openai_chat__multiple_interactions(openai_chat):
     with patch("openai.ChatCompletion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_chat
@@ -376,3 +399,30 @@ def test_openai_chat__multiple_interactions():
             span_1: SpanWatch = interaction_watch_1.spans[0]
             assert isinstance(span_1, SpanWatch)
             assert span_0.span_id != span_1.span_id
+
+
+@pytest.mark.asyncio
+async def test_openai_chat__async(openai_chat):
+    with patch("openai.ChatCompletion.acreate") as mock_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_create.return_value = openai_chat
+            nebuly.init(api_key="test")
+            result = await openai.ChatCompletion.acreate(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": "Hello!"},
+                ],
+            )
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "Hello!"
+            assert interaction_watch.history == [
+                ("system", "You are a helpful assistant."),
+            ]
+            assert interaction_watch.output == "Hi there! How can I assist you today?"
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)

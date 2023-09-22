@@ -80,6 +80,31 @@ def test_cohere_generate__with_context_manager(cohere_generate):
             assert isinstance(span, SpanWatch)
 
 
+@pytest.mark.asyncio
+async def test_cohere_generate__async(cohere_generate):
+    with patch("cohere.AsyncClient.generate") as mock_generate:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_generate.return_value = cohere_generate
+            nebuly.init(api_key="test")
+
+            co = cohere.AsyncClient("test")
+            result = await co.generate(
+                prompt="Please explain to me how LLMs work",
+            )
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "Please explain to me how LLMs work"
+            assert (
+                interaction_watch.output
+                == ' LLMs, or "AI language models", are a type of artificial intelligence that can understand and respond'
+            )
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+
+
 @pytest.fixture()
 def cohere_chat() -> Chat:
     return Chat.from_dict(
@@ -170,6 +195,36 @@ def test_cohere_chat__with_context_manager(cohere_chat):
             assert interaction_watch.output == "Sample output 1"
             assert interaction_watch.end_user == "test_user"
             assert interaction_watch.end_user_group_profile == "test_group"
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+
+
+@pytest.mark.asyncio
+async def test_cohere_chat__async(cohere_chat):
+    with patch("cohere.AsyncClient.chat") as mock_chat:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_chat.return_value = cohere_chat
+            nebuly.init(api_key="test")
+
+            co = cohere.AsyncClient("test")
+            result = await co.chat(
+                message="How are you?",
+                chat_history=[
+                    {"user_name": "User", "message": "Hi!"},
+                    {"user_name": "Chatbot", "message": "How can I help you today?"},
+                ],
+            )
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "How are you?"
+            assert interaction_watch.history == [
+                ("User", "Hi!"),
+                ("Chatbot", "How can I help you today?"),
+            ]
+            assert interaction_watch.output == "I'm doing well, thanks for asking!"
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
