@@ -11,6 +11,8 @@ from types import ModuleType
 from typing import Any, AsyncGenerator, Callable, Generator, Iterable, cast
 from uuid import UUID
 
+from cohere.responses.chat import StreamingChat
+from cohere.responses.generation import StreamingGenerations
 from langchain.callbacks.manager import CallbackManager
 
 from nebuly.contextmanager import (
@@ -118,6 +120,17 @@ def _extract_output_generator(
         elif function_name in ["ChatCompletion.create", "ChatCompletion.acreate"]:
             return "".join(
                 [output["choices"][0]["delta"]["content"] for output in outputs]
+            )
+    elif module == "cohere":
+        if function_name in ["Client.generate", "AsyncClient.generate"]:
+            return "".join([output.text for output in outputs])
+        elif function_name in ["Client.chat", "AsyncClient.chat"]:
+            return "".join(
+                [
+                    output.text
+                    for output in outputs
+                    if output.event_type == "text-generation"
+                ]
             )
 
 
@@ -506,7 +519,7 @@ def function_wrapper(
         called_start = datetime.now(timezone.utc)
         result = f(*args, **function_kwargs)
 
-        if isinstance(result, Generator):
+        if isinstance(result, Generator | StreamingGenerations | StreamingChat):
             logger.debug("Result is a generator")
             return watch_from_generator(
                 generator=result,
