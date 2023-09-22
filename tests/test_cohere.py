@@ -34,7 +34,7 @@ def test_cohere_generate__no_context_manager(cohere_generate):
     with patch("cohere.Client.generate") as mock_generate:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_generate.return_value = cohere_generate
-            nebuly.init(api_key="test")
+            nebuly.init(api_key="test", disable_checks=True)
 
             co = cohere.Client("test")
             result = co.generate(
@@ -58,7 +58,7 @@ def test_cohere_generate__with_context_manager(cohere_generate):
     with patch("cohere.Client.generate") as mock_generate:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_generate.return_value = cohere_generate
-            nebuly.init(api_key="test")
+            nebuly.init(api_key="test", disable_checks=True)
 
             co = cohere.Client("test")
             with new_interaction(
@@ -87,7 +87,7 @@ async def test_cohere_generate__async(cohere_generate):
     with patch("cohere.AsyncClient.generate") as mock_generate:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_generate.return_value = cohere_generate
-            nebuly.init(api_key="test")
+            nebuly.init(api_key="test", disable_checks=True)
 
             co = cohere.AsyncClient("test")
             result = await co.generate(
@@ -132,7 +132,7 @@ def test_cohere_chat__no_context_manager(cohere_chat):
     with patch("cohere.Client.chat") as mock_chat:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_chat.return_value = cohere_chat
-            nebuly.init(api_key="test")
+            nebuly.init(api_key="test", disable_checks=True)
 
             co = cohere.Client("test")
             result = co.chat(
@@ -161,7 +161,7 @@ def test_cohere_chat__with_context_manager(cohere_chat):
     with patch("cohere.Client.chat") as mock_chat:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_chat.return_value = cohere_chat
-            nebuly.init(api_key="test")
+            nebuly.init(api_key="test", disable_checks=True)
 
             co = cohere.Client("test")
             with new_interaction(
@@ -207,7 +207,7 @@ async def test_cohere_chat__async(cohere_chat):
     with patch("cohere.AsyncClient.chat") as mock_chat:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_chat.return_value = cohere_chat
-            nebuly.init(api_key="test")
+            nebuly.init(api_key="test", disable_checks=True)
 
             co = cohere.AsyncClient("test")
             result = await co.chat(
@@ -257,7 +257,7 @@ def test_cohere_generate_gen(cohere_generate_gen):
     with patch("cohere.Client.generate") as mock_generate:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_generate.return_value = (text for text in cohere_generate_gen)
-            nebuly.init(api_key="test")
+            nebuly.init(api_key="test", disable_checks=True)
 
             co = cohere.Client("test")
             for _ in co.generate(
@@ -315,7 +315,7 @@ def test_cohere_chat_gen(cohere_chat_gen):
     with patch("cohere.Client.chat") as mock_chat:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_chat.return_value = (text for text in cohere_chat_gen)
-            nebuly.init(api_key="test")
+            nebuly.init(api_key="test", disable_checks=True)
 
             co = cohere.Client("test")
             for _ in co.chat(

@@ -10,10 +10,6 @@ from nebuly.entities import InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver
 
 
-def nebuly_init():
-    nebuly.init(api_key="test")
-
-
 @pytest.fixture()
 def openai_completion() -> dict:
     return {
@@ -37,7 +33,7 @@ def test_openai_completion__no_context_manager(openai_completion):
     with patch("openai.Completion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_completion
-            nebuly_init()
+            nebuly.init(api_key="test", disable_checks=True)
             result = openai.Completion.create(
                 model="gpt-3.5-turbo-instruct",
                 prompt="Say this is a test",
@@ -59,7 +55,7 @@ def test_openai_completion__with_context_manager(openai_completion):
     with patch("openai.Completion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_completion
-            nebuly_init()
+            nebuly.init(api_key="test", disable_checks=True)
             with new_interaction(
                 user="test_user", group_profile="test_group"
             ) as interaction:
@@ -89,7 +85,7 @@ def test_openai_completion__multiple_spans_in_interaction(openai_completion):
     with patch("openai.Completion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_completion
-            nebuly.init(api_key="test")
+            nebuly.init(api_key="test", disable_checks=True)
             with new_interaction(
                 user="test_user", group_profile="test_group"
             ) as interaction:
@@ -129,7 +125,7 @@ def test_openai_completion__multiple_interactions(openai_completion):
     with patch("openai.Completion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_completion
-            nebuly.init(api_key="test")
+            nebuly.init(api_key="test", disable_checks=True)
             with new_interaction(
                 user="test_user", group_profile="test_group"
             ) as interaction:
@@ -188,7 +184,7 @@ async def test_openai_completion__async(openai_completion):
     with patch("openai.Completion.acreate") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_completion
-            nebuly_init()
+            nebuly.init(api_key="test", disable_checks=True)
             result = await openai.Completion.acreate(
                 model="gpt-3.5-turbo-instruct",
                 prompt="Say this is a test",
@@ -231,7 +227,7 @@ def test_openai_chat__no_context_manager(openai_chat):
     with patch("openai.ChatCompletion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_chat
-            nebuly.init(api_key="test")
+            nebuly.init(api_key="test", disable_checks=True)
             result = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
                 messages=[
@@ -257,7 +253,7 @@ def test_openai_chat__with_context_manager(openai_chat):
     with patch("openai.ChatCompletion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_chat
-            nebuly.init(api_key="test")
+            nebuly.init(api_key="test", disable_checks=True)
             with new_interaction(
                 user="test_user", group_profile="test_group"
             ) as interaction:
@@ -292,7 +288,7 @@ def test_openai_chat__multiple_spans_in_interaction(openai_chat):
     with patch("openai.ChatCompletion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_chat
-            nebuly.init(api_key="test")
+            nebuly.init(api_key="test", disable_checks=True)
             with new_interaction(
                 user="test_user", group_profile="test_group"
             ) as interaction:
@@ -338,7 +334,7 @@ def test_openai_chat__multiple_interactions(openai_chat):
     with patch("openai.ChatCompletion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_chat
-            nebuly.init(api_key="test")
+            nebuly.init(api_key="test", disable_checks=True)
             with new_interaction(
                 user="test_user", group_profile="test_group"
             ) as interaction:
@@ -407,7 +403,7 @@ async def test_openai_chat__async(openai_chat):
     with patch("openai.ChatCompletion.acreate") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_chat
-            nebuly.init(api_key="test")
+            nebuly.init(api_key="test", disable_checks=True)
             result = await openai.ChatCompletion.acreate(
                 model="gpt-3.5-turbo",
                 messages=[
@@ -502,7 +498,7 @@ def test_openai_completion_gen(openai_completion_gen):
     with patch("openai.Completion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = (el for el in openai_completion_gen)
-            nebuly_init()
+            nebuly.init(api_key="test", disable_checks=True)
             result = ""
             for chunk in openai.Completion.create(
                 model="gpt-3.5-turbo-instruct",
@@ -579,7 +575,7 @@ def test_openai_chat_gen(openai_chat_gen):
     with patch("openai.ChatCompletion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = (el for el in openai_chat_gen)
-            nebuly.init(api_key="test")
+            nebuly.init(api_key="test", disable_checks=True)
             result = ""
             for chunk in openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",

@@ -23,7 +23,7 @@ def test_anthropic_completion__no_context_manager(anthropic_completion):
     with patch("anthropic.resources.Completions.create") as mock_completion:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion.return_value = anthropic_completion
-            nebuly.init(api_key="test")
+            nebuly.init(api_key="test", disable_checks=True)
 
             client = Anthropic(
                 # defaults to os.environ.get("ANTHROPIC_API_KEY")
@@ -53,7 +53,7 @@ def test_anthropic_completion__with_context_manager(anthropic_completion):
     with patch("anthropic.resources.Completions.create") as mock_completion:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion.return_value = anthropic_completion
-            nebuly.init(api_key="test")
+            nebuly.init(api_key="test", disable_checks=True)
 
             client = Anthropic(
                 # defaults to os.environ.get("ANTHROPIC_API_KEY")
@@ -90,7 +90,7 @@ async def test_anthropic_completion__async(anthropic_completion):
     ) as mock_completion:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion.return_value = anthropic_completion
-            nebuly.init(api_key="test")
+            nebuly.init(api_key="test", disable_checks=True)
 
             client = AsyncAnthropic(
                 # defaults to os.environ.get("ANTHROPIC_API_KEY")
@@ -138,7 +138,7 @@ def test_anthropic_completion_gen(anthropic_completion_gen):
             mock_completion.return_value = (
                 completion for completion in anthropic_completion_gen
             )
-            nebuly.init(api_key="test")
+            nebuly.init(api_key="test", disable_checks=True)
 
             client = Anthropic(
                 # defaults to os.environ.get("ANTHROPIC_API_KEY")

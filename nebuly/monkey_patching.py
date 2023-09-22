@@ -11,7 +11,7 @@ from types import ModuleType
 from typing import Any, AsyncGenerator, Callable, Generator, Iterable, cast
 from uuid import UUID
 
-from anthropic import Stream, AsyncStream
+from anthropic import AsyncStream, Stream
 from cohere.responses.chat import StreamingChat
 from cohere.responses.generation import StreamingGenerations
 from langchain.callbacks.manager import CallbackManager

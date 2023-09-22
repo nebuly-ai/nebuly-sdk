@@ -22,11 +22,13 @@ _initialized = False
 def init(
     *,
     api_key: str | None = None,
+    disable_checks: bool = False,  # Needed for tests
 ) -> None:
     if not api_key:
         api_key = _get_api_key()
-    _check_nebuly_is_not_initialized()
-    check_no_packages_already_imported(PACKAGES)
+    if not disable_checks:
+        _check_nebuly_is_not_initialized()
+        check_no_packages_already_imported(PACKAGES)
     observer = _create_observer_and_start_publisher(api_key=api_key)
     import_and_patch_packages(PACKAGES, observer)
     set_tracking_handlers()
