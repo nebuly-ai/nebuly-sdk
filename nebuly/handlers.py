@@ -1,7 +1,4 @@
 import logging
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from functools import cached_property
 from typing import Any
 from uuid import UUID
 
@@ -10,10 +7,9 @@ from langchain.chains.base import Chain
 from langchain.schema import Document
 from langchain.schema.messages import BaseMessage
 from langchain.schema.output import LLMResult
-from typing_extensions import Self
 
 from nebuly.contextmanager import EventData, EventsStorage, get_nearest_open_interaction
-from nebuly.entities import CallbackKwargs, EventHierarchy, EventType, SpanWatch
+from nebuly.entities import EventType
 
 logger = logging.getLogger(__name__)
 

@@ -104,12 +104,12 @@ def _extract_output(output: Any, module: str, function_name: str) -> str:
     if module == "openai":
         if function_name in ["Completion.create", "Completion.acreate"]:
             return output["choices"][0]["text"]
-        elif function_name in ["ChatCompletion.create", "ChatCompletion.acreate"]:
+        if function_name in ["ChatCompletion.create", "ChatCompletion.acreate"]:
             return output["choices"][0]["message"]["content"]
     elif module == "cohere":
         if function_name in ["Client.generate", "AsyncClient.generate"]:
             return output.generations[0].text
-        elif function_name in ["Client.chat", "AsyncClient.chat"]:
+        if function_name in ["Client.chat", "AsyncClient.chat"]:
             return output.text
     elif module == "anthropic":
         if function_name in [
@@ -129,14 +129,14 @@ def _extract_output_generator(
     if module == "openai":
         if function_name in ["Completion.create", "Completion.acreate"]:
             return "".join([output["choices"][0]["text"] for output in outputs])
-        elif function_name in ["ChatCompletion.create", "ChatCompletion.acreate"]:
+        if function_name in ["ChatCompletion.create", "ChatCompletion.acreate"]:
             return "".join(
                 [output["choices"][0]["delta"]["content"] for output in outputs]
             )
-    elif module == "cohere":
+    if module == "cohere":
         if function_name in ["Client.generate", "AsyncClient.generate"]:
             return "".join([output.text for output in outputs])
-        elif function_name in ["Client.chat", "AsyncClient.chat"]:
+        if function_name in ["Client.chat", "AsyncClient.chat"]:
             return "".join(
                 [
                     output.text
@@ -144,7 +144,7 @@ def _extract_output_generator(
                     if output.event_type == "text-generation"
                 ]
             )
-    elif module == "anthropic":
+    if module == "anthropic":
         if function_name in [
             "resources.Completions.create",
             "resources.AsyncCompletions.create",
@@ -152,7 +152,7 @@ def _extract_output_generator(
             return "".join([output.completion for output in outputs])
 
 
-def _add_interaction_span(
+def _add_interaction_span(  # pylint: disable=too-many-arguments
     original_args: tuple[Any, ...],
     original_kwargs: dict[str, Any],
     module: str,
@@ -172,7 +172,7 @@ def _add_interaction_span(
             user_input, history = _extract_input_and_history(
                 original_args, original_kwargs, module, function_name
             )
-        except:
+        except Exception:
             user_input, history = None, None
         with new_interaction() as interaction:
             interaction.set_input(user_input)
@@ -199,29 +199,29 @@ def _extract_input_and_history(
     if module == "openai":
         if function_name in ["Completion.create", "Completion.acreate"]:
             return original_kwargs["prompt"], []
-        elif function_name in ["ChatCompletion.create", "ChatCompletion.acreate"]:
+        if function_name in ["ChatCompletion.create", "ChatCompletion.acreate"]:
             history = [
                 (el["role"], el["content"])
                 for el in original_kwargs["messages"][:-1]
                 if len(original_kwargs["messages"]) > 1
             ]
             return original_kwargs["messages"][-1]["content"], history
-    elif module == "cohere":
+    if module == "cohere":
         if function_name in ["Client.generate", "AsyncClient.generate"]:
             return original_kwargs["prompt"], []
-        elif function_name in ["Client.chat", "AsyncClient.chat"]:
+        if function_name in ["Client.chat", "AsyncClient.chat"]:
             history = [
                 (el["user_name"], el["message"])
                 for el in original_kwargs.get("chat_history", [])
             ]
             return original_kwargs["message"], history
-    elif module == "anthropic":
+    if module == "anthropic":
         if function_name in [
             "resources.Completions.create",
             "resources.AsyncCompletions.create",
         ]:
             return original_kwargs["prompt"], []
-    elif module == "huggingface_hub":
+    if module == "huggingface_hub":
         if function_name == "InferenceClient.conversational":
             history = []
             for user_input, assistant_response in zip(
@@ -356,7 +356,7 @@ def _handle_unpickleable_objects() -> None:
     using the deepcopy function
     """
     try:
-        from cohere.client import Client
+        from cohere.client import Client  # pylint: disable=import-outside-toplevel
 
         def _pickle_cohere_client(c: Client) -> tuple[type[Client], tuple[Any, ...]]:
             return Client, (
@@ -375,7 +375,10 @@ def _handle_unpickleable_objects() -> None:
         pass
 
     try:
-        from anthropic import Anthropic, AsyncAnthropic
+        from anthropic import (  # pylint: disable=import-outside-toplevel
+            Anthropic,
+            AsyncAnthropic,
+        )
 
         def _pickle_anthropic_client(
             c: Anthropic,
@@ -383,14 +386,14 @@ def _handle_unpickleable_objects() -> None:
             return (
                 Anthropic,
                 (),
-                dict(
-                    auth_token=c.auth_token,
-                    base_url=c.base_url,
-                    api_key=c.api_key,
-                    timeout=c.timeout,
-                    max_retries=c.max_retries,
-                    default_headers=c.default_headers,
-                ),
+                {
+                    "auth_token": c.auth_token,
+                    "base_url": c.base_url,
+                    "api_key": c.api_key,
+                    "timeout": c.timeout,
+                    "max_retries": c.max_retries,
+                    "default_headers": c.default_headers,
+                },
             )
 
         def _pickle_async_anthropic_client(
@@ -399,14 +402,14 @@ def _handle_unpickleable_objects() -> None:
             return (
                 AsyncAnthropic,
                 (),
-                dict(
-                    auth_token=c.auth_token,
-                    base_url=c.base_url,
-                    api_key=c.api_key,
-                    timeout=c.timeout,
-                    max_retries=c.max_retries,
-                    default_headers=c.default_headers,
-                ),
+                {
+                    "auth_token": c.auth_token,
+                    "base_url": c.base_url,
+                    "api_key": c.api_key,
+                    "timeout": c.timeout,
+                    "max_retries": c.max_retries,
+                    "default_headers": c.default_headers,
+                },
             )
 
         copyreg.pickle(Anthropic, _pickle_anthropic_client)
@@ -449,7 +452,7 @@ def _get_tracking_info_for_provider_call(**kwargs: Any) -> dict[str, Any]:
     if not isinstance(callbacks, CallbackManager) or callbacks.parent_run_id is None:
         # If the llm/chat_model is called without a CallbackManager, it's not
         # called from a chain, so we don't need to add the run ids info
-        return dict()
+        return {}
 
     # Get the parent_run_id from the CallbackManager
     callback_manager = callbacks
@@ -522,13 +525,12 @@ def coroutine_wrapper(
             if isasyncgenfunction(f):
                 return f(*args, **kwargs, **additional_kwargs)
             return await f(*args, **kwargs, **additional_kwargs)
-        elif module == "langchain" and function_name.startswith("chains.base.Chain"):
+        if module == "langchain" and function_name.startswith("chains.base.Chain"):
             try:
                 get_nearest_open_interaction()
                 if isasyncgenfunction(f):
                     return f(*args, **kwargs)
-                else:
-                    return await f(*args, **kwargs)
+                return await f(*args, **kwargs)
             except NotInInteractionContext:
                 with new_interaction() as interaction:
                     chain_input, history = _get_langchain_input_and_history(
@@ -621,7 +623,7 @@ def function_wrapper(
         ):
             additional_kwargs = _get_tracking_info_for_provider_call(**kwargs)
             return f(*args, **kwargs, **additional_kwargs)
-        elif module == "langchain" and function_name.startswith("chains.base.Chain"):
+        if module == "langchain" and function_name.startswith("chains.base.Chain"):
             try:
                 get_nearest_open_interaction()
                 return f(*args, **kwargs)

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from nebuly.entities import InteractionWatch, SpanWatch
+from nebuly.entities import InteractionWatch
 from nebuly.monkey_patching import _patcher
 from nebuly.observers import NebulyObserver
 

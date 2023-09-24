@@ -82,7 +82,7 @@ class Event:
     def _get_rag_source(self) -> str | None:
         if self.data.type is EventType.TOOL:
             return self.data.kwargs["serialized"]["name"]
-        elif self.data.type is EventType.RETRIEVAL:
+        if self.data.type is EventType.RETRIEVAL:
             return self.data.kwargs["serialized"]["id"][-1]
 
         return None
@@ -168,8 +168,8 @@ class InteractionMustBeLocalVariable(InteractionContextError):
     pass
 
 
-class InteractionContext:
-    def __init__(
+class InteractionContext:  # pylint: disable=too-many-instance-attributes
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         user: str | None = None,
         user_group_profile: str | None = None,

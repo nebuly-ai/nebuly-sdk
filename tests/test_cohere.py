@@ -2,7 +2,7 @@ from unittest.mock import Mock, patch
 
 import cohere
 import pytest
-from cohere.responses import Chat, Generation, Generations, StreamingGenerations
+from cohere.responses import Chat, Generation, Generations
 from cohere.responses.chat import StreamEnd, StreamStart, StreamTextGeneration
 from cohere.responses.generation import StreamingText
 

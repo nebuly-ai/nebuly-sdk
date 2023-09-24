@@ -7,7 +7,7 @@ from langchain.schema import Document
 from langchain.schema.messages import AIMessage, HumanMessage, SystemMessage
 from langchain.schema.output import ChatGeneration, Generation, LLMResult
 
-from nebuly.contextmanager import EventData, EventsStorage
+from nebuly.contextmanager import EventsStorage
 from nebuly.entities import EventType
 from nebuly.handlers import LangChainTrackingHandler
 
