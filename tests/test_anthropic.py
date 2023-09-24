@@ -33,7 +33,8 @@ def test_anthropic_completion__no_context_manager(anthropic_completion):
             result = client.completions.create(
                 model="claude-2",
                 max_tokens_to_sample=300,
-                prompt=f"{HUMAN_PROMPT} how does a court case get to the Supreme Court?{AI_PROMPT}",
+                prompt=f"{HUMAN_PROMPT} how does a court case get to the "
+                       f"Supreme Court?{AI_PROMPT}",
             )
             assert result is not None
             assert mock_observer.call_count == 1
@@ -41,7 +42,8 @@ def test_anthropic_completion__no_context_manager(anthropic_completion):
             assert isinstance(interaction_watch, InteractionWatch)
             assert (
                 interaction_watch.input
-                == f"{HUMAN_PROMPT} how does a court case get to the Supreme Court?{AI_PROMPT}"
+                == f"{HUMAN_PROMPT} how does a court case get to the "
+                   f"Supreme Court?{AI_PROMPT}"
             )
             assert interaction_watch.output == " Hello! My name is Claude."
             assert len(interaction_watch.spans) == 1
@@ -67,7 +69,8 @@ def test_anthropic_completion__with_context_manager(anthropic_completion):
                 result = client.completions.create(
                     model="claude-2",
                     max_tokens_to_sample=300,
-                    prompt=f"{HUMAN_PROMPT} how does a court case get to the Supreme Court?{AI_PROMPT}",
+                    prompt=f"{HUMAN_PROMPT} how does a court case get to the "
+                           f"Supreme Court?{AI_PROMPT}",
                 )
                 interaction.set_output("Sample output 1")
             assert result is not None
@@ -100,7 +103,8 @@ async def test_anthropic_completion__async(anthropic_completion):
             result = await client.completions.create(
                 model="claude-2",
                 max_tokens_to_sample=300,
-                prompt=f"{HUMAN_PROMPT} how does a court case get to the Supreme Court?{AI_PROMPT}",
+                prompt=f"{HUMAN_PROMPT} how does a court case get to the "
+                       f"Supreme Court?{AI_PROMPT}",
             )
             assert result is not None
             assert mock_observer.call_count == 1
@@ -108,7 +112,8 @@ async def test_anthropic_completion__async(anthropic_completion):
             assert isinstance(interaction_watch, InteractionWatch)
             assert (
                 interaction_watch.input
-                == f"{HUMAN_PROMPT} how does a court case get to the Supreme Court?{AI_PROMPT}"
+                == f"{HUMAN_PROMPT} how does a court case get to the "
+                   f"Supreme Court?{AI_PROMPT}"
             )
             assert interaction_watch.output == " Hello! My name is Claude."
             assert len(interaction_watch.spans) == 1
@@ -148,7 +153,8 @@ def test_anthropic_completion_gen(anthropic_completion_gen):
             for _ in client.completions.create(
                 model="claude-2",
                 max_tokens_to_sample=300,
-                prompt=f"{HUMAN_PROMPT} how does a court case get to the Supreme Court?{AI_PROMPT}",
+                prompt=f"{HUMAN_PROMPT} how does a court case get to the "
+                       f"Supreme Court?{AI_PROMPT}",
                 stream=True,
             ):
                 ...
@@ -157,7 +163,8 @@ def test_anthropic_completion_gen(anthropic_completion_gen):
             assert isinstance(interaction_watch, InteractionWatch)
             assert (
                 interaction_watch.input
-                == f"{HUMAN_PROMPT} how does a court case get to the Supreme Court?{AI_PROMPT}"
+                == f"{HUMAN_PROMPT} how does a court case get to the "
+                   f"Supreme Court?{AI_PROMPT}"
             )
             assert interaction_watch.output == " Hello!"
             assert len(interaction_watch.spans) == 1

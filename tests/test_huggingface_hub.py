@@ -12,10 +12,12 @@ from nebuly.observers import NebulyObserver
 @pytest.fixture()
 def hf_hub_sample_input() -> dict:
     return {
-        "generated_text": " My name is samantha, and I am a student at the University of Pittsburgh.",
+        "generated_text": " My name is samantha, and I am a student "
+                          "at the University of Pittsburgh.",
         "conversation": {
             "generated_responses": [
-                " My name is samantha, and I am a student at the University of Pittsburgh."
+                " My name is samantha, and I am a student at "
+                "the University of Pittsburgh."
             ],
             "past_user_inputs": ["Hello, who are you?"],
         },
@@ -28,7 +30,8 @@ def hf_hub_conversational() -> dict:
         "generated_text": " It is, but I am studying to be a nurse. What do you do?",
         "conversation": {
             "generated_responses": [
-                " My name is samantha, and I am a student at the University of Pittsburgh.",
+                " My name is samantha, and I am a student at the "
+                "University of Pittsburgh.",
                 " It is, but I am studying to be a nurse. What do you do?",
             ],
             "past_user_inputs": ["Hello, who are you?", "Wow, that's scary!"],
@@ -92,7 +95,8 @@ def test_hf_hub_conversational__no_context_manager__with_history(
                 ("user", "Hello, who are you?"),
                 (
                     "assistant",
-                    " My name is samantha, and I am a student at the University of Pittsburgh.",
+                    " My name is samantha, and I am a student at "
+                    "the University of Pittsburgh.",
                 ),
             ]
             assert (
@@ -155,7 +159,8 @@ def test_hf_hub_conversational__with_context_manager__with_history(
                         ("user", "Hello, who are you?"),
                         (
                             "assistant",
-                            " My name is samantha, and I am a student at the University of Pittsburgh.",
+                            " My name is samantha, and I am a student at "
+                            "the University of Pittsburgh.",
                         ),
                     ]
                 )
@@ -181,7 +186,8 @@ def test_hf_hub_conversational__with_context_manager__with_history(
                 ("user", "Hello, who are you?"),
                 (
                     "assistant",
-                    " My name is samantha, and I am a student at the University of Pittsburgh.",
+                    " My name is samantha, and I am a student at "
+                    "the University of Pittsburgh.",
                 ),
             ]
             assert (

@@ -20,7 +20,8 @@ def cohere_generate() -> list[Generation]:
             "generations": [
                 {
                     "id": "a3d047ef-27ba-4d28-b3d5-0e5aa2c2cf77",
-                    "text": ' LLMs, or "AI language models", are a type of artificial intelligence that can understand and respond',
+                    "text": ' LLMs, or "AI language models", are a type of '
+                            'artificial intelligence that can understand and respond',
                 }
             ],
             "prompt": "Please explain to me how LLMs work",
@@ -47,7 +48,8 @@ def test_cohere_generate__no_context_manager(cohere_generate):
             assert interaction_watch.input == "Please explain to me how LLMs work"
             assert (
                 interaction_watch.output
-                == ' LLMs, or "AI language models", are a type of artificial intelligence that can understand and respond'
+                == ' LLMs, or "AI language models", are a type of artificial '
+                   'intelligence that can understand and respond'
             )
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
@@ -100,7 +102,8 @@ async def test_cohere_generate__async(cohere_generate):
             assert interaction_watch.input == "Please explain to me how LLMs work"
             assert (
                 interaction_watch.output
-                == ' LLMs, or "AI language models", are a type of artificial intelligence that can understand and respond'
+                == ' LLMs, or "AI language models", are a type of artificial '
+                   'intelligence that can understand and respond'
             )
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
