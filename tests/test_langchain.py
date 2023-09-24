@@ -13,11 +13,15 @@ from nebuly.contextmanager import new_interaction
 from nebuly.entities import InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver
 
-orig_func = langchain.llms.base.BaseLLM.generate
+# Cache original functions
+orig_func_llm_gen = langchain.llms.base.BaseLLM.generate
+orig_func_chat_gen = langchain.chat_models.base.BaseChatModel.generate
 
 
 def nebuly_init():
-    langchain.llms.base.BaseLLM.generate = orig_func
+    # Reset original functions
+    langchain.llms.base.BaseLLM.generate = orig_func_llm_gen
+    langchain.chat_models.base.BaseChatModel.generate = orig_func_chat_gen
     nebuly.init(api_key="test", disable_checks=True)
 
 
@@ -206,31 +210,33 @@ def test_langchain_chat_chain__no_context_manager(openai_chat: dict) -> None:
     with patch("openai.ChatCompletion.create") as mock_chat_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_chat_completion_create.return_value = openai_chat
-            nebuly.init(api_key="test", disable_checks=True)
+            nebuly_init()
             llm = ChatOpenAI()
 
             chat_prompt = ChatPromptTemplate.from_messages(
                 messages=[
-                    ("user", "Hello!"),
+                    ("user", "Hello! I am {name}"),
                     ("assistant", "Hi there! How can I assist you today?"),
                     ("user", "I need help with my computer."),
                 ]
             )
             chain = LLMChain(llm=llm, prompt=chat_prompt)
-            result = chain.run(
-                prompt=chat_prompt,
-            )
+            result = chain.run(prompt=chat_prompt, name="Valerio")
 
             assert result is not None
             assert mock_observer.call_count == 1
             interaction_watch = mock_observer.call_args[0][0]
             assert isinstance(interaction_watch, InteractionWatch)
-            assert interaction_watch.input == [
-                ("user", "Hello!"),
-                ("assistant", "Hi there! How can I assist you today?"),
-                ("user", "I need help with my computer."),
+            assert interaction_watch.input == "I need help with my computer."
+            assert interaction_watch.history == [
+                ("human", "Hello! I am Valerio"),
+                ("ai", "Hi there! How can I assist you today?"),
             ]
-            assert interaction_watch.output == "Hi there! How can I assist you today?"
+            assert interaction_watch.output == {
+                "name": "Valerio",
+                "prompt": chat_prompt,
+                "text": "Hi there! How can I assist you today?",
+            }
             assert len(interaction_watch.spans) == 3
             assert len(interaction_watch.hierarchy) == 3
             for span in interaction_watch.spans:
