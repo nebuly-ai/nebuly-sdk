@@ -9,6 +9,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
+from nebuly.contextmanager import InteractionContext, new_interaction
 from nebuly.entities import InteractionWatch, Package
 from nebuly.monkey_patching import (
     _monkey_patch,
@@ -23,9 +24,10 @@ st_any = st.one_of(
 )
 
 
+@patch("nebuly.monkey_patching._add_interaction_span", return_value=None)
 @given(args=st.tuples(st_any), kwargs=st.dictionaries(st.text(), st_any))
 def test_patcher_doesnt_change_any_behavior(
-    args: tuple[Any, ...], kwargs: dict[str, Any]
+    mock, args: tuple[Any, ...], kwargs: dict[str, Any]
 ) -> None:
     def to_patched(
         *args: tuple[Any, ...], **kwargs: dict[str, Any]

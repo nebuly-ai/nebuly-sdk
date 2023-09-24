@@ -162,9 +162,12 @@ def _add_interaction_span(
         interaction.set_observer(observer)
         interaction.add_span(watched)
     except NotInInteractionContext:
-        user_input, history = _extract_input_and_history(
-            original_args, original_kwargs, module, function_name
-        )
+        try:
+            user_input, history = _extract_input_and_history(
+                original_args, original_kwargs, module, function_name
+            )
+        except:
+            user_input, history = None, None
         with new_interaction() as interaction:
             interaction.set_input(user_input)
             interaction.set_history(history)
