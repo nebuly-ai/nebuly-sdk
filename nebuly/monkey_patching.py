@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copyreg
 import importlib
 import logging
 import sys
@@ -340,6 +341,31 @@ async def watch_from_generator_async(  # pylint: disable=too-many-arguments
     )
 
 
+def _handle_unpickleable_objects() -> None:
+    """
+    Make unpickleable objects pickleable to avoid errors when
+    using the deepcopy function
+    """
+    try:
+        from cohere.client import Client
+
+        def _pickle_cohere_client(c: Client) -> tuple[type[Client], tuple[Any, ...]]:
+            return Client, (
+                c.api_key,
+                c.num_workers,
+                c.request_dict,
+                True,
+                None,
+                c.max_retries,
+                c.timeout,
+                c.api_url,
+            )
+
+        copyreg.pickle(Client, _pickle_cohere_client)
+    except ImportError:
+        pass
+
+
 def _setup_args_kwargs(
     *args: tuple[Any, ...], **kwargs: dict[str, Any]
 ) -> tuple[tuple[Any, ...], dict[str, Any], dict[str, Any], dict[str, Any]]:
@@ -355,12 +381,7 @@ def _setup_args_kwargs(
     """
     nebuly_kwargs, function_kwargs = _split_nebuly_kwargs(kwargs)
 
-    if len(args) > 0 and isinstance(args[0], object):
-        # TODO: this is a hack to make pickling work for cohere, we should write
-        # a more generic solution to handle not picklable objects
-        client = {k: v for k, v in args[0].__dict__.items() if not k.startswith("_")}
-        args = (client, *args[1:])
-
+    _handle_unpickleable_objects()
     original_args = deepcopy(args)
     nebuly_kwargs = deepcopy(nebuly_kwargs)
     original_kwargs = deepcopy(function_kwargs)
