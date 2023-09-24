@@ -42,7 +42,7 @@ def test_hf_hub_conversational__no_context_manager__no_history(
     with patch("huggingface_hub.InferenceClient.conversational") as mock_conversational:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_conversational.return_value = hf_hub_conversational
-            nebuly.init(api_key="test")
+            nebuly.init(api_key="test", disable_checks=True)
 
             client = InferenceClient()
             result = client.conversational(
@@ -70,7 +70,7 @@ def test_hf_hub_conversational__no_context_manager__with_history(
     with patch("huggingface_hub.InferenceClient.conversational") as mock_conversational:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_conversational.return_value = hf_hub_conversational
-            nebuly.init(api_key="test")
+            nebuly.init(api_key="test", disable_checks=True)
 
             client = InferenceClient()
             result = client.conversational(
@@ -110,7 +110,7 @@ def test_hf_hub_conversational__with_context_manager__no_history(
     with patch("huggingface_hub.InferenceClient.conversational") as mock_conversational:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_conversational.return_value = hf_hub_conversational
-            nebuly.init(api_key="test")
+            nebuly.init(api_key="test", disable_checks=True)
             client = InferenceClient()
             with new_interaction(
                 user="test_user", group_profile="test_group"
@@ -144,7 +144,7 @@ def test_hf_hub_conversational__with_context_manager__with_history(
     with patch("huggingface_hub.InferenceClient.conversational") as mock_conversational:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_conversational.return_value = hf_hub_conversational
-            nebuly.init(api_key="test")
+            nebuly.init(api_key="test", disable_checks=True)
             client = InferenceClient()
             with new_interaction(
                 user="test_user", group_profile="test_group"
