@@ -2,15 +2,17 @@ from unittest.mock import patch
 
 import langchain
 import pytest
+from langchain.agents import AgentExecutor, OpenAIFunctionsAgent, tool
 from langchain.chains import LLMChain
 from langchain.chat_models import ChatOpenAI
 from langchain.llms import OpenAI
 from langchain.prompts import PromptTemplate
 from langchain.prompts.chat import ChatPromptTemplate
+from langchain.schema import SystemMessage
 
 import nebuly
 from nebuly.contextmanager import new_interaction
-from nebuly.entities import InteractionWatch, SpanWatch
+from nebuly.entities import EventType, InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver
 
 # Cache original functions
@@ -71,6 +73,8 @@ def test_langchain_llm_chain__no_context_manager(openai_completion: dict) -> Non
             assert len(interaction_watch.hierarchy) == 3
             for span in interaction_watch.spans:
                 assert isinstance(span, SpanWatch)
+                if span.module == "langchain":
+                    assert span.provider_extras.get("event_type") is not None
 
 
 def test_langchain_llm_chain__with_context_manager(openai_completion: dict) -> None:
@@ -102,6 +106,8 @@ def test_langchain_llm_chain__with_context_manager(openai_completion: dict) -> N
             assert len(interaction_watch.hierarchy) == 3
             for span in interaction_watch.spans:
                 assert isinstance(span, SpanWatch)
+                if span.module == "langchain":
+                    assert span.provider_extras.get("event_type") is not None
 
 
 def test_langchain_llm_chain__multiple_chains_in_interaction(
@@ -137,6 +143,8 @@ def test_langchain_llm_chain__multiple_chains_in_interaction(
             assert len(interaction_watch.hierarchy) == 6
             for span in interaction_watch.spans:
                 assert isinstance(span, SpanWatch)
+                if span.module == "langchain":
+                    assert span.provider_extras.get("event_type") is not None
 
 
 def test_langchain_llm_chain__multiple_interactions(openai_completion: dict) -> None:
@@ -183,6 +191,8 @@ def test_langchain_llm_chain__multiple_interactions(openai_completion: dict) -> 
             assert len(interaction_watch_1.hierarchy) == 3
             for span in interaction_watch_1.spans:
                 assert isinstance(span, SpanWatch)
+                if span.module == "langchain":
+                    assert span.provider_extras.get("event_type") is not None
 
 
 @pytest.fixture()
@@ -241,3 +251,78 @@ def test_langchain_chat_chain__no_context_manager(openai_chat: dict) -> None:
             assert len(interaction_watch.hierarchy) == 3
             for span in interaction_watch.spans:
                 assert isinstance(span, SpanWatch)
+                if span.module == "langchain":
+                    assert span.provider_extras.get("event_type") is not None
+
+
+@pytest.fixture()
+def openai_chat_with_function() -> dict:
+    return {
+        "id": "chatcmpl-82LLsqQsyEqBvTMvGUr9jgc7w3NfZ",
+        "object": "chat.completion",
+        "created": 1695569424,
+        "model": "gpt-3.5-turbo-0613",
+        "choices": [
+            {
+                "index": 0,
+                "message": {
+                    "role": "assistant",
+                    "content": None,
+                    "function_call": {
+                        "name": "get_word_length",
+                        "arguments": '{\n  "word": "educa"\n}',
+                    },
+                },
+                "finish_reason": "function_call",
+            }
+        ],
+        "usage": {"prompt_tokens": 80, "completion_tokens": 17, "total_tokens": 97},
+    }
+
+
+def test_langchain__chain_with_function_tool(
+    openai_chat_with_function: dict, openai_chat: dict
+) -> None:
+    with patch("openai.ChatCompletion.create") as mock_chat_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_chat_completion_create.side_effect = [
+                openai_chat_with_function,
+                openai_chat,
+            ]
+            nebuly_init()
+
+            llm = ChatOpenAI(temperature=0)
+
+            @tool
+            def get_word_length(word: str) -> int:
+                """Returns the length of a word."""
+                return len(word)
+
+            tools = [get_word_length]
+
+            system_message = SystemMessage(
+                content="You are very powerful assistant, but bad at calculating lengths of words."
+            )
+            prompt = OpenAIFunctionsAgent.create_prompt(system_message=system_message)
+            agent = OpenAIFunctionsAgent(llm=llm, tools=tools, prompt=prompt)
+            agent_executor = AgentExecutor(agent=agent, tools=tools)
+            agent_executor.run("how many letters in the word educa?")
+
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "how many letters in the word educa?"
+            assert interaction_watch.history is None
+            assert interaction_watch.output == {
+                "input": "how many letters in the word educa?",
+                "output": "Hi there! How can I assist you today?",
+            }
+            assert len(interaction_watch.spans) == 6
+            assert len(interaction_watch.hierarchy) == 6
+            for span in interaction_watch.spans:
+                assert isinstance(span, SpanWatch)
+                if span.module == "langchain":
+                    event_type = span.provider_extras.get("event_type")
+                    assert event_type is not None
+                    if event_type == EventType.TOOL.value:
+                        assert span.rag_source == "get_word_length"

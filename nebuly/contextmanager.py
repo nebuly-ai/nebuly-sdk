@@ -71,6 +71,9 @@ class Event:
             returned=self.data.output,
             generator=False,
             generator_first_element_timestamp=None,
+            provider_extras={
+                "event_type": self.data.type.value,
+            },
             rag_source=self._get_rag_source(),
         )
 

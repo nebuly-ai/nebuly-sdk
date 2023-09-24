@@ -13,7 +13,7 @@ from nebuly.observers import NebulyObserver
 def hf_hub_sample_input() -> dict:
     return {
         "generated_text": " My name is samantha, and I am a student "
-                          "at the University of Pittsburgh.",
+        "at the University of Pittsburgh.",
         "conversation": {
             "generated_responses": [
                 " My name is samantha, and I am a student at "
