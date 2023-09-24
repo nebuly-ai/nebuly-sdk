@@ -365,6 +365,47 @@ def _handle_unpickleable_objects() -> None:
     except ImportError:
         pass
 
+    try:
+        from anthropic import Anthropic, AsyncAnthropic
+
+        def _pickle_anthropic_client(
+            c: Anthropic,
+        ) -> tuple[type[Anthropic], tuple[Any, ...], dict[str, Any]]:
+            return (
+                Anthropic,
+                (),
+                dict(
+                    auth_token=c.auth_token,
+                    base_url=c.base_url,
+                    api_key=c.api_key,
+                    timeout=c.timeout,
+                    max_retries=c.max_retries,
+                    default_headers=c.default_headers,
+                ),
+            )
+
+        def _pickle_async_anthropic_client(
+            c: AsyncAnthropic,
+        ) -> tuple[type[AsyncAnthropic], tuple[Any, ...], dict[str, Any]]:
+            return (
+                AsyncAnthropic,
+                (),
+                dict(
+                    auth_token=c.auth_token,
+                    base_url=c.base_url,
+                    api_key=c.api_key,
+                    timeout=c.timeout,
+                    max_retries=c.max_retries,
+                    default_headers=c.default_headers,
+                ),
+            )
+
+        copyreg.pickle(Anthropic, _pickle_anthropic_client)
+        copyreg.pickle(AsyncAnthropic, _pickle_async_anthropic_client)
+
+    except ImportError:
+        pass
+
 
 def _setup_args_kwargs(
     *args: tuple[Any, ...], **kwargs: dict[str, Any]
