@@ -6,8 +6,6 @@ from typing import Any, Generator
 from uuid import UUID
 
 from nebuly.entities import (
-    CallbackKwargs,
-    EventHierarchy,
     EventType,
     InteractionWatch,
     Observer,
@@ -36,6 +34,12 @@ class EventData:
 
 
 @dataclass
+class EventHierarchy:
+    parent_run_id: UUID
+    root_run_id: UUID
+
+
+@dataclass
 class Event:
     event_id: UUID
     hierarchy: EventHierarchy | None
@@ -43,20 +47,6 @@ class Event:
     module: str
     start_time: datetime
     end_time: datetime | None = None
-
-    @staticmethod
-    def _get_extra_data(
-        inputs: dict[str, Any] | None, outputs: dict[str, Any] | None
-    ) -> CallbackKwargs | None:
-        if inputs is None and outputs is None:
-            return None
-        if inputs is None:
-            return CallbackKwargs(
-                inputs={}, outputs=outputs if outputs is not None else {}
-            )
-        if outputs is None:
-            return CallbackKwargs(inputs=inputs, outputs={})
-        return CallbackKwargs(inputs=inputs, outputs=outputs)
 
     def as_span_watch(self) -> SpanWatch:
         return SpanWatch(
