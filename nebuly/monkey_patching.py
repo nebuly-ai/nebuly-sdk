@@ -4,7 +4,7 @@ import copyreg
 import importlib
 import logging
 import sys
-from copy import deepcopy
+from copy import copy, deepcopy
 from datetime import datetime, timezone
 from functools import wraps
 from inspect import isasyncgenfunction, iscoroutinefunction
@@ -433,9 +433,7 @@ def _setup_args_kwargs(
     return original_args, original_kwargs, function_kwargs, nebuly_kwargs
 
 
-def _add_tracking_info_to_provider_call(
-    f: Callable[[Any], Any], *args: Any, **kwargs: Any
-) -> Callable[[Any], Any]:
+def _get_tracking_info_for_provider_call(**kwargs: Any) -> dict[str, Any]:
     """
     This function is a hack to add the chain run_ids info to the kwargs of the
     provider call. This is needed to associate each call to a provider (ex OpenAI)
@@ -445,7 +443,7 @@ def _add_tracking_info_to_provider_call(
     if not isinstance(callbacks, CallbackManager) or callbacks.parent_run_id is None:
         # If the llm/chat_model is called without a CallbackManager, it's not
         # called from a chain, so we don't need to add the run ids info
-        return f(*args, **kwargs)  # type: ignore
+        return dict()
 
     # Get the parent_run_id from the CallbackManager
     callback_manager = callbacks
@@ -460,7 +458,7 @@ def _add_tracking_info_to_provider_call(
             additional_kwargs["nebuly_root_run_id"] = root_run_id
             break
 
-    return f(*args, **kwargs, **additional_kwargs)  # type: ignore
+    return additional_kwargs
 
 
 def coroutine_wrapper(
@@ -477,10 +475,10 @@ def coroutine_wrapper(
         if module == "langchain" and function_name.startswith(
             ("llms.base.BaseLLM", "chat_models.base.BaseChatModel")
         ):
-            func = _add_tracking_info_to_provider_call(f, *args, **kwargs)
-            if isasyncgenfunction(func):
-                return func(*args, **kwargs)
-            return await func(*args, **kwargs)
+            additional_kwargs = _get_tracking_info_for_provider_call(**kwargs)
+            if isasyncgenfunction(f):
+                return f(*args, **kwargs, **additional_kwargs)
+            return await f(*args, **kwargs, **additional_kwargs)
         elif module == "langchain" and function_name.startswith("chains.base.Chain"):
             try:
                 get_nearest_open_interaction()
@@ -574,7 +572,8 @@ def function_wrapper(
         if module == "langchain" and function_name.startswith(
             ("llms.base.BaseLLM", "chat_models.base.BaseChatModel")
         ):
-            return _add_tracking_info_to_provider_call(f, *args, **kwargs)
+            additional_kwargs = _get_tracking_info_for_provider_call(**kwargs)
+            return f(*args, **kwargs, **additional_kwargs)
         elif module == "langchain" and function_name.startswith("chains.base.Chain"):
             try:
                 get_nearest_open_interaction()

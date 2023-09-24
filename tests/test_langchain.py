@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+import langchain
 import pytest
 from langchain.chains import LLMChain
 from langchain.chat_models import ChatOpenAI
@@ -11,6 +12,13 @@ import nebuly
 from nebuly.contextmanager import new_interaction
 from nebuly.entities import InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver
+
+orig_func = langchain.llms.base.BaseLLM.generate
+
+
+def nebuly_init():
+    langchain.llms.base.BaseLLM.generate = orig_func
+    nebuly.init(api_key="test", disable_checks=True)
 
 
 @pytest.fixture()
@@ -36,7 +44,7 @@ def test_langchain_llm_chain__no_context_manager(openai_completion: dict) -> Non
     with patch("openai.Completion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_completion
-            nebuly.init(api_key="test", disable_checks=True)
+            nebuly_init()
             llm = OpenAI(temperature=0.9)
             prompt = PromptTemplate(
                 input_variables=["product"],
@@ -65,7 +73,7 @@ def test_langchain_llm_chain__with_context_manager(openai_completion: dict) -> N
     with patch("openai.Completion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_completion
-            nebuly.init(api_key="test", disable_checks=True)
+            nebuly_init()
             llm = OpenAI(temperature=0.9)
             prompt = PromptTemplate(
                 input_variables=["product"],
@@ -98,7 +106,7 @@ def test_langchain_llm_chain__multiple_chains_in_interaction(
     with patch("openai.Completion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_completion
-            nebuly.init(api_key="test", disable_checks=True)
+            nebuly_init()
             llm = OpenAI(temperature=0.9)
             prompt = PromptTemplate(
                 input_variables=["product"],
@@ -131,7 +139,7 @@ def test_langchain_llm_chain__multiple_interactions(openai_completion: dict) -> 
     with patch("openai.Completion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_completion
-            nebuly.init(api_key="test", disable_checks=True)
+            nebuly_init()
             llm = OpenAI(temperature=0.9)
             prompt = PromptTemplate(
                 input_variables=["product"],
