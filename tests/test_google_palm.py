@@ -348,3 +348,23 @@ def test_google_palm_chat__reply__with_context_manager(
             assert len(interaction_watch.spans) == 1
             span: SpanWatch = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+
+
+@pytest.mark.asyncio
+async def test_google_palm_chat__async(palm_chat_response):
+    with patch("google.generativeai.chat_async") as mock_chat:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_chat.return_value = palm_chat_response
+            nebuly.init(api_key="test", disable_checks=True)
+            palm.configure(api_key="test")
+
+            result = await palm.chat_async(messages=["Hello."])
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch: InteractionWatch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "Hello."
+            assert interaction_watch.output == "Hello! How can I help you today?"
+            assert len(interaction_watch.spans) == 1
+            span: SpanWatch = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
