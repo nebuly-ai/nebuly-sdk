@@ -44,4 +44,9 @@ PACKAGES = (
         ),
     ),
     Package("huggingface_hub", ("0.12.0",), ("InferenceClient.conversational",)),
+    Package(
+        "google",
+        ("0.0.1",),
+        ("generativeai.generate_text",),
+    ),
 )

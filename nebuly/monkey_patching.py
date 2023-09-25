@@ -106,20 +106,23 @@ def _extract_output(output: Any, module: str, function_name: str) -> str:
             return output["choices"][0]["text"]
         if function_name in ["ChatCompletion.create", "ChatCompletion.acreate"]:
             return output["choices"][0]["message"]["content"]
-    elif module == "cohere":
+    if module == "cohere":
         if function_name in ["Client.generate", "AsyncClient.generate"]:
             return output.generations[0].text
         if function_name in ["Client.chat", "AsyncClient.chat"]:
             return output.text
-    elif module == "anthropic":
+    if module == "anthropic":
         if function_name in [
             "resources.Completions.create",
             "resources.AsyncCompletions.create",
         ]:
             return output.completion
-    elif module == "huggingface_hub":
+    if module == "huggingface_hub":
         if function_name == "InferenceClient.conversational":
             return output["generated_text"]
+    if module == "google":
+        if function_name == "generativeai.generate_text":
+            return output.result
     return str(output)
 
 
@@ -231,6 +234,9 @@ def _extract_input_and_history(
                 history.append(("user", user_input))
                 history.append(("assistant", assistant_response))
             return original_args[1], history
+    if module == "google":
+        if function_name == "generativeai.generate_text":
+            return original_kwargs["prompt"], []
 
 
 def watch_from_generator(  # pylint: disable=too-many-arguments
