@@ -561,9 +561,7 @@ def openai_chat_gen() -> list[dict[str, Any]]:
             "choices": [
                 {
                     "index": 0,
-                    "delta": {
-                        "content": "",
-                    },
+                    "delta": {},
                     "finish_reason": "stop",
                 }
             ],
@@ -585,7 +583,7 @@ def test_openai_chat_gen(openai_chat_gen):
                 ],
                 stream=True,
             ):
-                result += chunk["choices"][0]["delta"]["content"]
+                result += chunk["choices"][0]["delta"].get("content", "")
 
             assert result is not None
             assert mock_observer.call_count == 1

@@ -5,12 +5,7 @@ from datetime import datetime, timezone
 from typing import Any, Generator
 from uuid import UUID
 
-from nebuly.entities import (
-    EventType,
-    InteractionWatch,
-    Observer,
-    SpanWatch,
-)
+from nebuly.entities import EventType, InteractionWatch, Observer, SpanWatch
 
 
 @dataclass

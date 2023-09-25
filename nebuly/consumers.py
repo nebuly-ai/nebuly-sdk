@@ -4,13 +4,13 @@ import atexit
 from queue import Empty, Queue
 from threading import Thread
 
-from nebuly.entities import Publisher, SpanWatch
+from nebuly.entities import InteractionWatch, Publisher
 
 
 class ConsumerWorker:
-    def __init__(self, queue: Queue[SpanWatch], publish: Publisher) -> None:
+    def __init__(self, queue: Queue[InteractionWatch], publish: Publisher) -> None:
         self.publish = publish
-        self.queue: Queue[SpanWatch] = queue
+        self.queue: Queue[InteractionWatch] = queue
         self.running = True
         self.thread = Thread(target=self.run, daemon=True)
         self.thread.start()

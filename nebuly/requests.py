@@ -22,7 +22,7 @@ class CustomJSONEncoder(json.JSONEncoder):
 
 
 def post_message(watched: InteractionWatch, api_key: str) -> None:
-    message = json.dumps({"body": watched, "provider": ""}, cls=CustomJSONEncoder)
+    message = json.dumps({"body": watched}, cls=CustomJSONEncoder)
     url = os.environ.get(
         # TODO: make this url configurable
         "NEBULY_API_URL",

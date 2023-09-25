@@ -131,7 +131,7 @@ def _extract_output_generator(
             return "".join([output["choices"][0]["text"] for output in outputs])
         if function_name in ["ChatCompletion.create", "ChatCompletion.acreate"]:
             return "".join(
-                [output["choices"][0]["delta"]["content"] for output in outputs]
+                [output["choices"][0]["delta"].get("content", "") for output in outputs]
             )
     if module == "cohere":
         if function_name in ["Client.generate", "AsyncClient.generate"]:
