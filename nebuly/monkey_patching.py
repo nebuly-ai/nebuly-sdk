@@ -128,7 +128,7 @@ def _extract_output_generator(
 ) -> str:
     if module == "openai":
         if function_name in ["Completion.create", "Completion.acreate"]:
-            return "".join([output["choices"][0]["text"] for output in outputs])
+            return "".join([output["choices"][0].get("text", "") for output in outputs])
         if function_name in ["ChatCompletion.create", "ChatCompletion.acreate"]:
             return "".join(
                 [output["choices"][0]["delta"].get("content", "") for output in outputs]
