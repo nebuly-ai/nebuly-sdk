@@ -54,4 +54,9 @@ PACKAGES = (
             "generativeai.discuss.ChatResponse.reply",
         ),
     ),
+    Package(
+        "vertexai",
+        ("0.0.1",),
+        ("language_models.TextGenerationModel.predict",),
+    ),
 )

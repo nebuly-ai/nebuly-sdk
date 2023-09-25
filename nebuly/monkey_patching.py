@@ -262,6 +262,9 @@ def _extract_input_and_history(
                 for el in original_args[0].messages
             ]
             return original_args[1], history
+    if module == "vertexai":
+        if function_name == "language_models.TextGenerationModel.predict":
+            return original_args[1], []
 
 
 def watch_from_generator(  # pylint: disable=too-many-arguments
@@ -446,6 +449,20 @@ def _handle_unpickleable_objects() -> None:
         copyreg.pickle(Anthropic, _pickle_anthropic_client)
         copyreg.pickle(AsyncAnthropic, _pickle_async_anthropic_client)
 
+    except ImportError:
+        pass
+
+    try:
+        from vertexai.language_models import (  # pylint: disable=import-outside-toplevel
+            TextGenerationModel,
+        )
+
+        def _pickle_text_generation_model(
+            c: TextGenerationModel,
+        ) -> tuple[type[TextGenerationModel], tuple[Any, ...]]:
+            return TextGenerationModel, (c._model_id, c._endpoint_name)
+
+        copyreg.pickle(TextGenerationModel, _pickle_text_generation_model)
     except ImportError:
         pass
 
