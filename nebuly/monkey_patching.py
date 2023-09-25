@@ -63,7 +63,7 @@ def _monkey_patch(package: Package, observer: Observer) -> None:
     for attr in package.to_patch:
         try:
             _monkey_patch_attribute(attr, module, observer)
-        except AttributeError:
+        except (AttributeError, ImportError) as e:
             logger.warning("Failed to patch %s", attr)
 
 
@@ -71,8 +71,14 @@ def _monkey_patch_attribute(attr: str, module: ModuleType, observer: Observer) -
     version = module.__version__ if hasattr(module, "__version__") else "unknown"
     tmp_component = module
     path = attr.split(".")
-    for component_name in path[:-1]:
-        tmp_component = getattr(tmp_component, component_name)
+    for i, component_name in enumerate(path[:-1]):
+        try:
+            tmp_component = getattr(tmp_component, component_name)
+        except AttributeError:
+            # Handle the case when the module is imported at runtime
+            tmp_component = importlib.import_module(
+                f"{module.__name__}.{'.'.join(path[:i+1])}"
+            )
 
     setattr(
         tmp_component,
@@ -123,6 +129,12 @@ def _extract_output(output: Any, module: str, function_name: str) -> str:
     if module == "google":
         if function_name == "generativeai.generate_text":
             return output.result
+        if function_name in [
+            "generativeai.chat",
+            "generativeai.chat_async",
+            "generativeai.discuss.ChatResponse.reply",
+        ]:
+            return output.messages[-1]["content"]
     return str(output)
 
 
@@ -237,6 +249,19 @@ def _extract_input_and_history(
     if module == "google":
         if function_name == "generativeai.generate_text":
             return original_kwargs["prompt"], []
+        if function_name in ["generativeai.chat", "generativeai.chat_async"]:
+            history = [
+                ("user" if i % 2 == 0 else "assistant", el)
+                for i, el in enumerate(original_kwargs["messages"][:-1])
+                if len(original_kwargs["messages"]) > 1
+            ]
+            return original_kwargs["messages"][-1], history
+        if function_name == "generativeai.discuss.ChatResponse.reply":
+            history = [
+                ("user" if el["author"] == "0" else "assistant", el["content"])
+                for el in original_args[0].messages
+            ]
+            return original_args[1], history
 
 
 def watch_from_generator(  # pylint: disable=too-many-arguments

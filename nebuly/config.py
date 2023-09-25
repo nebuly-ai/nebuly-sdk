@@ -47,6 +47,11 @@ PACKAGES = (
     Package(
         "google",
         ("0.0.1",),
-        ("generativeai.generate_text",),
+        (
+            "generativeai.generate_text",
+            "generativeai.chat",
+            "generativeai.chat_async",
+            "generativeai.discuss.ChatResponse.reply",
+        ),
     ),
 )

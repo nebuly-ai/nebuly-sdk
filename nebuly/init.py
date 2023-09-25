@@ -6,7 +6,7 @@ from queue import Queue
 
 from nebuly.config import PACKAGES
 from nebuly.consumers import ConsumerWorker
-from nebuly.entities import Observer, SpanWatch
+from nebuly.entities import InteractionWatch, Observer
 from nebuly.exceptions import APIKeyNotProvidedError, NebulyAlreadyInitializedError
 from nebuly.handlers import set_tracking_handlers
 from nebuly.monkey_patching import (
@@ -51,7 +51,7 @@ def _check_nebuly_is_not_initialized() -> None:
 
 
 def _create_observer_and_start_publisher(*, api_key: str) -> Observer:
-    queue: Queue[SpanWatch] = Queue()
+    queue: Queue[InteractionWatch] = Queue()
 
     ConsumerWorker(queue, partial(post_message, api_key=api_key))
     observer = NebulyObserver(
