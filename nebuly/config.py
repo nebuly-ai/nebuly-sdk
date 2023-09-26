@@ -61,6 +61,9 @@ PACKAGES = (
             "language_models.TextGenerationModel.predict",
             "language_models.TextGenerationModel.predict_async",
             "language_models.TextGenerationModel.predict_streaming",
+            "language_models.ChatSession.send_message",
+            "language_models.ChatSession.send_message_async",
+            "language_models.ChatSession.send_message_streaming",
         ),
     ),
 )

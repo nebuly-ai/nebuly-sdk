@@ -139,6 +139,8 @@ def _extract_output(output: Any, module: str, function_name: str) -> str:
         if function_name in [
             "language_models.TextGenerationModel.predict",
             "language_models.TextGenerationModel.predict_async",
+            "language_models.ChatSession.send_message",
+            "language_models.ChatSession.send_message_async",
         ]:
             return output.text
     return str(output)
@@ -172,7 +174,10 @@ def _extract_output_generator(
         ]:
             return "".join([output.completion for output in outputs])
     if module == "vertexai":
-        if function_name == "language_models.TextGenerationModel.predict_streaming":
+        if function_name in [
+            "language_models.TextGenerationModel.predict_streaming",
+            "language_models.ChatSession.send_message_streaming",
+        ]:
             return "".join([output.text for output in outputs])
 
 
@@ -276,10 +281,21 @@ def _extract_input_and_history(
             "language_models.TextGenerationModel.predict",
             "language_models.TextGenerationModel.predict_async",
             "language_models.TextGenerationModel.predict_streaming",
+            "language_models.ChatSession.send_message",
+            "language_models.ChatSession.send_message_async",
+            "language_models.ChatSession.send_message_streaming",
         ]:
-            prompt = original_kwargs.get("prompt")
+            prompt = (
+                original_kwargs.get("prompt")
+                if "TextGenerationModel" in function_name
+                else original_kwargs.get("message")
+            )
             prompt = original_args[1] if prompt is None else prompt
-            return prompt, []
+            history = [
+                ("user" if el.author == "user" else "assistant", el.content)
+                for el in getattr(original_args[0], "message_history", [])
+            ]
+            return prompt, history
 
 
 def watch_from_generator(  # pylint: disable=too-many-arguments
@@ -469,6 +485,7 @@ def _handle_unpickleable_objects() -> None:
 
     try:
         from vertexai.language_models import (  # pylint: disable=import-outside-toplevel
+            ChatModel,
             TextGenerationModel,
         )
 
@@ -478,6 +495,7 @@ def _handle_unpickleable_objects() -> None:
             return TextGenerationModel, (c._model_id, c._endpoint_name)
 
         copyreg.pickle(TextGenerationModel, _pickle_text_generation_model)
+        copyreg.pickle(ChatModel, _pickle_text_generation_model)
     except ImportError:
         pass
 
