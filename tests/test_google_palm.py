@@ -11,6 +11,7 @@ import nebuly
 from nebuly.contextmanager import new_interaction
 from nebuly.entities import InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver
+from tests.common import nebuly_init
 
 
 @pytest.fixture()
@@ -57,7 +58,7 @@ def test_google_palm_completion__no_context_manager(palm_completion):
     with patch("google.generativeai.generate_text") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = palm_completion
-            nebuly.init(api_key="test", disable_checks=True)
+            nebuly_init(observer=mock_observer)
             palm.configure(api_key="AIzaSyDuQlj_CeVZUFOj8oRm_dwotC4ucAElF_w")
 
             result = palm.generate_text(prompt="The opposite of hot is")
@@ -76,7 +77,7 @@ def test_google_palm_completion__with_context_manager(palm_completion):
     with patch("google.generativeai.generate_text") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = palm_completion
-            nebuly.init(api_key="test", disable_checks=True)
+            nebuly_init(observer=mock_observer)
             palm.configure(api_key="AIzaSyDuQlj_CeVZUFOj8oRm_dwotC4ucAElF_w")
 
             with new_interaction(
@@ -129,7 +130,7 @@ def test_google_palm_chat__first_interaction__no_context_manager(palm_chat_respo
     with patch("google.generativeai.chat") as mock_chat:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_chat.return_value = palm_chat_response
-            nebuly.init(api_key="test", disable_checks=True)
+            nebuly_init(observer=mock_observer)
             palm.configure(api_key="test")
 
             result = palm.chat(messages=["Hello."])
@@ -148,7 +149,7 @@ def test_google_palm_chat__first_interaction__with_context_manager(palm_chat_res
     with patch("google.generativeai.chat") as mock_chat:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_chat.return_value = palm_chat_response
-            nebuly.init(api_key="test", disable_checks=True)
+            nebuly_init(observer=mock_observer)
             palm.configure(api_key="test")
 
             with new_interaction(
@@ -229,7 +230,7 @@ def test_google_palm_chat__with_history__no_context_manager(
     with patch("google.generativeai.chat") as mock_chat:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_chat.return_value = palm_chat_response_with_history
-            nebuly.init(api_key="test", disable_checks=True)
+            nebuly_init(observer=mock_observer)
             palm.configure(api_key="test")
 
             result = palm.chat(
@@ -263,7 +264,7 @@ def test_google_palm_chat__with_history__with_context_manager(
     with patch("google.generativeai.chat") as mock_chat:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_chat.return_value = palm_chat_response
-            nebuly.init(api_key="test", disable_checks=True)
+            nebuly_init(observer=mock_observer)
             palm.configure(api_key="test")
 
             with new_interaction(
@@ -298,7 +299,7 @@ def test_google_palm_chat__reply__no_context_manager(
     with patch.object(ChatResponse, "reply") as mock_reply:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_reply.return_value = palm_chat_response_with_history
-            nebuly.init(api_key="test", disable_checks=True)
+            nebuly_init(observer=mock_observer)
             palm.configure(api_key="test")
 
             result = palm_chat_response.reply(message="What can you do?")
@@ -327,7 +328,7 @@ def test_google_palm_chat__reply__with_context_manager(
     with patch.object(ChatResponse, "reply") as mock_reply:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_reply.return_value = palm_chat_response_with_history
-            nebuly.init(api_key="test", disable_checks=True)
+            nebuly_init(observer=mock_observer)
             palm.configure(api_key="test")
 
             with new_interaction(
@@ -355,7 +356,7 @@ async def test_google_palm_chat__async(palm_chat_response):
     with patch("google.generativeai.chat_async") as mock_chat:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_chat.return_value = palm_chat_response
-            nebuly.init(api_key="test", disable_checks=True)
+            nebuly_init(observer=mock_observer)
             palm.configure(api_key="test")
 
             result = await palm.chat_async(messages=["Hello."])

@@ -14,6 +14,7 @@ import nebuly
 from nebuly.contextmanager import new_interaction
 from nebuly.entities import InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver
+from tests.common import nebuly_init
 
 
 @pytest.fixture()
@@ -48,7 +49,7 @@ def test_vertexai_completion__no_context_manager(palm_completion):
     ) as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = palm_completion
-            nebuly.init(api_key="test", disable_checks=True)
+            nebuly_init(observer=mock_observer)
 
             parameters = {
                 "temperature": 0,
@@ -82,7 +83,7 @@ def test_vertexai_completion__with_context_manager(palm_completion):
     ) as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = palm_completion
-            nebuly.init(api_key="test", disable_checks=True)
+            nebuly_init(observer=mock_observer)
 
             with new_interaction(
                 "Give me ten interview questions for the role of program manager."
@@ -121,7 +122,7 @@ async def test_vertexai_completion__async(palm_completion):
     ) as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = palm_completion
-            nebuly.init(api_key="test", disable_checks=True)
+            nebuly_init(observer=mock_observer)
 
             parameters = {
                 "temperature": 0,
@@ -209,7 +210,7 @@ def test_vertexai_completion_stream(palm_completion_stream):
     ) as mock_completion_stream:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_stream.return_value = (el for el in palm_completion_stream)
-            nebuly.init(api_key="test", disable_checks=True)
+            nebuly_init(observer=mock_observer)
             parameters = {
                 "temperature": 0,
                 # Temperature controls the degree of randomness in token selection.
@@ -251,7 +252,7 @@ def test_vertexai_chat__no_context_manager(palm_completion):
     ) as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = palm_completion
-            nebuly.init(api_key="test", disable_checks=True)
+            nebuly_init(observer=mock_observer)
 
             parameters = {
                 "temperature": 0,
@@ -293,7 +294,7 @@ def test_vertexai_chat__no_context_manager__with_history(palm_completion):
     ) as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = palm_completion
-            nebuly.init(api_key="test", disable_checks=True)
+            nebuly_init(observer=mock_observer)
 
             parameters = {
                 "temperature": 0,
@@ -348,42 +349,43 @@ def test_vertexai_chat__with_context_manager(palm_completion):
     with patch(
         "vertexai.language_models.ChatSession.send_message"
     ) as mock_completion_create:
-        mock_completion_create.return_value = palm_completion
-        nebuly.init(api_key="test", disable_checks=True)
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_create.return_value = palm_completion
+            nebuly_init(observer=mock_observer)
 
-        with new_interaction(
-            "How many planets are there in the solar system?"
-        ) as interaction_watch:
-            interaction_watch.set_input(
+            with new_interaction(
                 "How many planets are there in the solar system?"
-            )
-            parameters = {
-                "temperature": 0,
-                "max_output_tokens": 256,
-                "top_p": 0.95,
-                "top_k": 40,
-            }
-            chat_model = ChatModel.from_pretrained("chat-bison@001")
-            chat = chat_model.start_chat(
-                context="My name is Miles. You are an astronomer, knowledgeable about the solar system.",
-                examples=[
-                    InputOutputTextPair(
-                        input_text="How many moons does Mars have?",
-                        output_text="The planet Mars has two moons, Phobos and Deimos.",
-                    ),
-                ],
-            )
+            ) as interaction_watch:
+                interaction_watch.set_input(
+                    "How many planets are there in the solar system?"
+                )
+                parameters = {
+                    "temperature": 0,
+                    "max_output_tokens": 256,
+                    "top_p": 0.95,
+                    "top_k": 40,
+                }
+                chat_model = ChatModel.from_pretrained("chat-bison@001")
+                chat = chat_model.start_chat(
+                    context="My name is Miles. You are an astronomer, knowledgeable about the solar system.",
+                    examples=[
+                        InputOutputTextPair(
+                            input_text="How many moons does Mars have?",
+                            output_text="The planet Mars has two moons, Phobos and Deimos.",
+                        ),
+                    ],
+                )
 
-            result = chat.send_message(
-                "How many planets are there in the solar system?", **parameters
-            )
-            interaction_watch.set_output(result.text)
-        assert result is not None
-        assert mock_completion_create.call_count == 1
-        assert interaction_watch.output == palm_completion.text
-        assert len(interaction_watch.spans) == 1
-        span = interaction_watch.spans[0]
-        assert isinstance(span, SpanWatch)
+                result = chat.send_message(
+                    "How many planets are there in the solar system?", **parameters
+                )
+                interaction_watch.set_output(result.text)
+            assert result is not None
+            assert mock_completion_create.call_count == 1
+            assert interaction_watch.output == palm_completion.text
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
 
 
 @pytest.mark.asyncio
@@ -393,7 +395,7 @@ async def test_vertexai_chat__async(palm_completion):
     ) as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = palm_completion
-            nebuly.init(api_key="test", disable_checks=True)
+            nebuly_init(observer=mock_observer)
 
             parameters = {
                 "temperature": 0,
@@ -437,7 +439,7 @@ def test_vertexai_chat__stream(palm_completion_stream):
     ) as mock_completion_stream:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_stream.return_value = (el for el in palm_completion_stream)
-            nebuly.init(api_key="test", disable_checks=True)
+            nebuly_init(observer=mock_observer)
 
             parameters = {
                 "temperature": 0,
