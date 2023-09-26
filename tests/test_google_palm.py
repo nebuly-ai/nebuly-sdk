@@ -301,7 +301,7 @@ def test_google_palm_chat__reply__no_context_manager(
             nebuly.init(api_key="test", disable_checks=True)
             palm.configure(api_key="test")
 
-            result = palm_chat_response.reply("What can you do?")
+            result = palm_chat_response.reply(message="What can you do?")
 
             assert result is not None
             assert mock_observer.call_count == 1

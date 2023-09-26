@@ -39,7 +39,7 @@ def test_cohere_generate__no_context_manager(cohere_generate):
 
             co = cohere.Client("test")
             result = co.generate(
-                prompt="Please explain to me how LLMs work",
+                "Please explain to me how LLMs work",
             )
             assert result is not None
             assert mock_observer.call_count == 1
@@ -139,7 +139,7 @@ def test_cohere_chat__no_context_manager(cohere_chat):
 
             co = cohere.Client("test")
             result = co.chat(
-                message="How are you?",
+                "How are you?",
                 chat_history=[
                     {"user_name": "User", "message": "Hi!"},
                     {"user_name": "Chatbot", "message": "How can I help you today?"},

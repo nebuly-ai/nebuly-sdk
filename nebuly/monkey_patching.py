@@ -219,6 +219,22 @@ def _add_interaction_span(  # pylint: disable=too-many-arguments
             )
 
 
+def _get_argument(
+    args: tuple[Any, ...], kwargs: dict[str, Any], arg_name: str, arg_idx: int
+) -> Any:
+    """
+    Get the argument both when it's passed as a positional argument or as a
+    keyword argument
+    """
+    if kwargs.get(arg_name) is not None:
+        return kwargs.get(arg_name)
+
+    if len(args) > arg_idx:
+        return args[arg_idx]
+
+    return None
+
+
 def _extract_input_and_history(
     original_args: tuple[Any, ...],
     original_kwargs: dict[str, Any],
@@ -227,55 +243,65 @@ def _extract_input_and_history(
 ) -> tuple[str, list[tuple[str, Any]]]:
     if module == "openai":
         if function_name in ["Completion.create", "Completion.acreate"]:
-            return original_kwargs["prompt"], []
+            return original_kwargs.get("prompt"), []
         if function_name in ["ChatCompletion.create", "ChatCompletion.acreate"]:
             history = [
                 (el["role"], el["content"])
-                for el in original_kwargs["messages"][:-1]
-                if len(original_kwargs["messages"]) > 1
+                for el in original_kwargs.get("messages")[:-1]
+                if len(original_kwargs.get("messages", [])) > 1
             ]
-            return original_kwargs["messages"][-1]["content"], history
+            return original_kwargs.get("messages")[-1]["content"], history
     if module == "cohere":
         if function_name in ["Client.generate", "AsyncClient.generate"]:
-            return original_kwargs["prompt"], []
+            prompt = _get_argument(original_args, original_kwargs, "prompt", 1)
+            return prompt, []
         if function_name in ["Client.chat", "AsyncClient.chat"]:
-            history = [
-                (el["user_name"], el["message"])
-                for el in original_kwargs.get("chat_history", [])
-            ]
-            return original_kwargs["message"], history
+            prompt = _get_argument(original_args, original_kwargs, "message", 1)
+            chat_history = _get_argument(
+                original_args, original_kwargs, "chat_history", 7
+            )
+            history = [(el["user_name"], el["message"]) for el in chat_history]
+            return prompt, history
     if module == "anthropic":
         if function_name in [
             "resources.Completions.create",
             "resources.AsyncCompletions.create",
         ]:
-            return original_kwargs["prompt"], []
+            return original_kwargs.get("prompt"), []
     if module == "huggingface_hub":
         if function_name == "InferenceClient.conversational":
+            prompt = _get_argument(original_args, original_kwargs, "text", 1)
+            generated_responses = _get_argument(
+                original_args, original_kwargs, "generated_responses", 2
+            )
+            past_user_inputs = _get_argument(
+                original_args, original_kwargs, "past_user_inputs", 3
+            )
             history = []
             for user_input, assistant_response in zip(
-                original_kwargs.get("past_user_inputs", []),
-                original_kwargs.get("generated_responses", []),
+                past_user_inputs if past_user_inputs is not None else [],
+                generated_responses if generated_responses is not None else [],
             ):
                 history.append(("user", user_input))
                 history.append(("assistant", assistant_response))
-            return original_args[1], history
+            return prompt, history
     if module == "google":
         if function_name == "generativeai.generate_text":
-            return original_kwargs["prompt"], []
+            return original_kwargs.get("prompt"), []
         if function_name in ["generativeai.chat", "generativeai.chat_async"]:
             history = [
                 ("user" if i % 2 == 0 else "assistant", el)
-                for i, el in enumerate(original_kwargs["messages"][:-1])
-                if len(original_kwargs["messages"]) > 1
+                for i, el in enumerate(original_kwargs.get("messages")[:-1])
+                if len(original_kwargs.get("messages")) > 1
             ]
-            return original_kwargs["messages"][-1], history
+            return original_kwargs.get("messages")[-1], history
         if function_name == "generativeai.discuss.ChatResponse.reply":
+            prompt = _get_argument(original_args, original_kwargs, "message", 1)
             history = [
                 ("user" if el["author"] == "0" else "assistant", el["content"])
-                for el in original_args[0].messages
+                for el in getattr(original_args[0], "messages", [])
             ]
-            return original_args[1], history
+            return prompt, history
     if module == "vertexai":
         if function_name in [
             "language_models.TextGenerationModel.predict",
@@ -285,12 +311,14 @@ def _extract_input_and_history(
             "language_models.ChatSession.send_message_async",
             "language_models.ChatSession.send_message_streaming",
         ]:
-            prompt = (
-                original_kwargs.get("prompt")
+            prompt = _get_argument(
+                args=original_args,
+                kwargs=original_kwargs,
+                arg_name="prompt"
                 if "TextGenerationModel" in function_name
-                else original_kwargs.get("message")
+                else "message",
+                arg_idx=1,
             )
-            prompt = original_args[1] if prompt is None else prompt
             history = [
                 ("user" if el.author == "user" else "assistant", el.content)
                 for el in getattr(original_args[0], "message_history", [])

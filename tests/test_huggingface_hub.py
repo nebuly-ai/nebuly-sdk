@@ -49,7 +49,7 @@ def test_hf_hub_conversational__no_context_manager__no_history(
 
             client = InferenceClient()
             result = client.conversational(
-                "Wow, that's scary!",
+                text="Wow, that's scary!",
             )
 
             assert result is not None
