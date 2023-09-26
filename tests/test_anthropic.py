@@ -4,7 +4,6 @@ import pytest
 from anthropic import AI_PROMPT, HUMAN_PROMPT, Anthropic, AsyncAnthropic
 from anthropic.types import Completion
 
-import nebuly
 from nebuly.contextmanager import new_interaction
 from nebuly.entities import InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver

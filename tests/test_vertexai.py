@@ -10,7 +10,6 @@ from vertexai.language_models import (
     TextGenerationResponse,
 )
 
-import nebuly
 from nebuly.contextmanager import new_interaction
 from nebuly.entities import InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver

@@ -63,7 +63,7 @@ def _monkey_patch(package: Package, observer: Observer) -> None:
     for attr in package.to_patch:
         try:
             _monkey_patch_attribute(attr, module, observer)
-        except (AttributeError, ImportError) as e:
+        except (AttributeError, ImportError):
             logger.warning("Failed to patch %s", attr)
 
 

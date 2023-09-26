@@ -7,7 +7,6 @@ from google.generativeai.text import Completion
 from google.generativeai.types.discuss_types import MessageDict
 from google.generativeai.types.safety_types import HarmCategory, HarmProbability
 
-import nebuly
 from nebuly.contextmanager import new_interaction
 from nebuly.entities import InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver

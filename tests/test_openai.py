@@ -4,7 +4,6 @@ from unittest.mock import patch
 import openai
 import pytest
 
-import nebuly
 from nebuly.contextmanager import new_interaction
 from nebuly.entities import InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver

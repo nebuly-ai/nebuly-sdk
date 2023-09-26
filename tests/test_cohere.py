@@ -6,7 +6,6 @@ from cohere.responses import Chat, Generation, Generations
 from cohere.responses.chat import StreamEnd, StreamStart, StreamTextGeneration
 from cohere.responses.generation import StreamingText
 
-import nebuly
 from nebuly.contextmanager import new_interaction
 from nebuly.entities import InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver

@@ -3,7 +3,6 @@ from unittest.mock import patch
 import pytest
 from huggingface_hub import InferenceClient
 
-import nebuly
 from nebuly.contextmanager import new_interaction
 from nebuly.entities import InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver
