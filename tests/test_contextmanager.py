@@ -44,6 +44,8 @@ def test_multithreading_context() -> None:
     def thread_func() -> None:
         with new_interaction("test_user", "test_group_profile") as interaction:
             sleep(random.random())
+            observer = []
+            interaction.set_observer(observer.append)
             assert get_nearest_open_interaction() is interaction
 
     threads = []
