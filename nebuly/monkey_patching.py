@@ -135,6 +135,12 @@ def _extract_output(output: Any, module: str, function_name: str) -> str:
             "generativeai.discuss.ChatResponse.reply",
         ]:
             return output.messages[-1]["content"]
+    if module == "vertexai":
+        if function_name in [
+            "language_models.TextGenerationModel.predict",
+            "language_models.TextGenerationModel.predict_async",
+        ]:
+            return output.text
     return str(output)
 
 
@@ -165,6 +171,9 @@ def _extract_output_generator(
             "resources.AsyncCompletions.create",
         ]:
             return "".join([output.completion for output in outputs])
+    if module == "vertexai":
+        if function_name == "language_models.TextGenerationModel.predict_streaming":
+            return "".join([output.text for output in outputs])
 
 
 def _add_interaction_span(  # pylint: disable=too-many-arguments
@@ -263,8 +272,14 @@ def _extract_input_and_history(
             ]
             return original_args[1], history
     if module == "vertexai":
-        if function_name == "language_models.TextGenerationModel.predict":
-            return original_args[1], []
+        if function_name in [
+            "language_models.TextGenerationModel.predict",
+            "language_models.TextGenerationModel.predict_async",
+            "language_models.TextGenerationModel.predict_streaming",
+        ]:
+            prompt = original_kwargs.get("prompt")
+            prompt = original_args[1] if prompt is None else prompt
+            return prompt, []
 
 
 def watch_from_generator(  # pylint: disable=too-many-arguments

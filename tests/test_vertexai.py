@@ -110,3 +110,135 @@ def test_vertexai_completion__with_context_manager(palm_completion):
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+
+
+@pytest.mark.asyncio
+async def test_vertexai_completion__async(palm_completion):
+    with patch(
+        "vertexai.language_models.TextGenerationModel.predict_async"
+    ) as mock_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_create.return_value = palm_completion
+            nebuly.init(api_key="test", disable_checks=True)
+
+            parameters = {
+                "temperature": 0,
+                # Temperature controls the degree of randomness in token selection.
+                "max_output_tokens": 256,
+                # Token limit determines the maximum amount of text output.
+                "top_p": 0.8,
+                # Tokens are selected from most probable to least until the sum of their probabilities equals the top_p value.
+                "top_k": 40,
+                # A top_k of 1 means the selected token is the most probable among all tokens.
+            }
+
+            model = TextGenerationModel.from_pretrained("text-bison@001")
+            result = await model.predict_async(
+                "Give me ten interview questions for the role of program manager.",
+                **parameters,
+            )
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert (
+                interaction_watch.input
+                == "Give me ten interview questions for the role of program manager."
+            )
+            assert interaction_watch.output == palm_completion.text
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+
+
+@pytest.fixture()
+def palm_completion_stream() -> list[TextGenerationResponse]:
+    return [
+        TextGenerationResponse(
+            is_blocked=False,
+            _prediction_response=aiplatform.models.Prediction(
+                predictions=[
+                    {
+                        "content": "1. What is your experience with project management?\n",
+                        "citationMetadata": {"citations": []},
+                        "safetyAttributes": {
+                            "blocked": False,
+                            "scores": [0.7, 0.1, 0.1],
+                            "categories": ["Finance", "Health", "Toxic"],
+                        },
+                    }
+                ],
+                deployed_model_id="",
+                model_version_id="",
+                model_resource_name="",
+                explanations=None,
+            ),
+            safety_attributes={"Finance": 0.7, "Health": 0.1, "Toxic": 0.1},
+            text="1. What is your experience with project management?\n",
+        ),
+        TextGenerationResponse(
+            is_blocked=False,
+            _prediction_response=aiplatform.models.Prediction(
+                predictions=[
+                    {
+                        "content": "2. What are your strengths and weaknesses as a project manager?\n",
+                        "citationMetadata": {"citations": []},
+                        "safetyAttributes": {
+                            "blocked": False,
+                            "scores": [0.7, 0.1, 0.1],
+                            "categories": ["Finance", "Health", "Toxic"],
+                        },
+                    }
+                ],
+                deployed_model_id="",
+                model_version_id="",
+                model_resource_name="",
+                explanations=None,
+            ),
+            safety_attributes={"Finance": 0.7, "Health": 0.1, "Toxic": 0.1},
+            text="2. What are your strengths and weaknesses as a project manager?\n",
+        ),
+    ]
+
+
+def test_vertexai_completion_stream(palm_completion_stream):
+    with patch(
+        "vertexai.language_models.TextGenerationModel.predict_streaming"
+    ) as mock_completion_stream:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_stream.return_value = (el for el in palm_completion_stream)
+            nebuly.init(api_key="test", disable_checks=True)
+            parameters = {
+                "temperature": 0,
+                # Temperature controls the degree of randomness in token selection.
+                "max_output_tokens": 256,
+                # Token limit determines the maximum amount of text output.
+                "top_p": 0.8,
+                # Tokens are selected from most probable to least until the sum of their probabilities equals the top_p value.
+                "top_k": 40,
+                # A top_k of 1 means the selected token is the most probable among all tokens.
+            }
+
+            model = TextGenerationModel.from_pretrained("text-bison@001")
+            result = ""
+            for chunk in model.predict_streaming(
+                "Give me two interview questions for the role of program manager.",
+                **parameters,
+            ):
+                result += chunk.text
+
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert (
+                interaction_watch.input
+                == "Give me two interview questions for the role of program manager."
+            )
+            assert (
+                interaction_watch.output
+                == "1. What is your experience with project management?\n2. What are your strengths and weaknesses as a project manager?\n"
+            )
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)

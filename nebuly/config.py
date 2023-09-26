@@ -57,6 +57,10 @@ PACKAGES = (
     Package(
         "vertexai",
         ("0.0.1",),
-        ("language_models.TextGenerationModel.predict",),
+        (
+            "language_models.TextGenerationModel.predict",
+            "language_models.TextGenerationModel.predict_async",
+            "language_models.TextGenerationModel.predict_streaming",
+        ),
     ),
 )
