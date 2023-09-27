@@ -9,7 +9,7 @@ from langchain.schema.output import ChatGeneration, Generation, LLMResult
 
 from nebuly.contextmanager import EventsStorage
 from nebuly.entities import EventType
-from nebuly.handlers import LangChainTrackingHandler
+from nebuly.tracking_handlers import LangChainTrackingHandler
 
 
 def test_langchain_tracking_handler__can_instantiate() -> None:

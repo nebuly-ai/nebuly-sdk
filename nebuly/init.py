@@ -8,13 +8,13 @@ from nebuly.config import PACKAGES
 from nebuly.consumers import ConsumerWorker
 from nebuly.entities import InteractionWatch, Observer
 from nebuly.exceptions import APIKeyNotProvidedError, NebulyAlreadyInitializedError
-from nebuly.handlers import set_tracking_handlers
 from nebuly.monkey_patching import (
     check_no_packages_already_imported,
     import_and_patch_packages,
 )
 from nebuly.observers import NebulyObserver
 from nebuly.requests import post_message
+from nebuly.tracking_handlers import set_tracking_handlers
 
 _initialized = False
 

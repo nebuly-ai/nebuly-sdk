@@ -29,7 +29,7 @@ from nebuly.contextmanager import (
     new_interaction,
 )
 from nebuly.entities import Observer, Package, SpanWatch
-from nebuly.handlers import LangChainTrackingHandler
+from nebuly.tracking_handlers import LangChainTrackingHandler
 
 logger = logging.getLogger(__name__)
 
