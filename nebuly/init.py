@@ -14,7 +14,6 @@ from nebuly.monkey_patching import (
 )
 from nebuly.observers import NebulyObserver
 from nebuly.requests import post_message
-from nebuly.tracking_handlers import set_tracking_handlers
 
 _initialized = False
 
@@ -30,7 +29,13 @@ def init(
     check_no_packages_already_imported(PACKAGES)
     observer = _create_observer_and_start_publisher(api_key=api_key)
     import_and_patch_packages(PACKAGES, observer)
-    set_tracking_handlers()
+
+    try:
+        from nebuly.tracking_handlers import set_tracking_handlers
+
+        set_tracking_handlers()
+    except ImportError:
+        pass
 
 
 def _get_api_key() -> str:
