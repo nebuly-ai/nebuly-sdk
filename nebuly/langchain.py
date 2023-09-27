@@ -1,5 +1,5 @@
 from inspect import isasyncgenfunction
-from typing import Callable, Any, cast
+from typing import Any, Callable, cast
 from uuid import UUID
 
 from langchain.callbacks.manager import CallbackManager
@@ -10,8 +10,11 @@ from langchain.prompts.chat import (
     SystemMessagePromptTemplate,
 )
 
-from nebuly.contextmanager import get_nearest_open_interaction, NotInInteractionContext, \
-    new_interaction
+from nebuly.contextmanager import (
+    NotInInteractionContext,
+    get_nearest_open_interaction,
+    new_interaction,
+)
 from nebuly.tracking_handlers import LangChainTrackingHandler
 
 
@@ -81,10 +84,13 @@ def _get_input_and_history(
 
 
 def wrap_langchain(
-    function_name: str, f: Callable[[Any], Any], args: tuple[Any], kwargs: dict[str, Any]
+    function_name: str,
+    f: Callable[[Any], Any],
+    args: tuple[Any],
+    kwargs: dict[str, Any],
 ):
     if function_name.startswith(
-            ("llms.base.BaseLLM", "chat_models.base.BaseChatModel")
+        ("llms.base.BaseLLM", "chat_models.base.BaseChatModel")
     ):
         additional_kwargs = _get_tracking_info_for_provider_call(**kwargs)
         return f(*args, **kwargs, **additional_kwargs)
@@ -94,9 +100,7 @@ def wrap_langchain(
             return f(*args, **kwargs)
         except NotInInteractionContext:
             with new_interaction() as interaction:
-                chain_input, history = _get_input_and_history(
-                    kwargs.get("inputs")
-                )
+                chain_input, history = _get_input_and_history(kwargs.get("inputs"))
                 interaction.set_input(chain_input)
                 interaction.set_history(history)
                 original_res = f(*args, **kwargs)
@@ -105,10 +109,13 @@ def wrap_langchain(
 
 
 async def wrap_langchain_async(
-    function_name: str, f: Callable[[Any], Any], args: tuple[Any], kwargs: dict[str, Any]
+    function_name: str,
+    f: Callable[[Any], Any],
+    args: tuple[Any],
+    kwargs: dict[str, Any],
 ):
-    if  function_name.startswith(
-            ("llms.base.BaseLLM", "chat_models.base.BaseChatModel")
+    if function_name.startswith(
+        ("llms.base.BaseLLM", "chat_models.base.BaseChatModel")
     ):
         additional_kwargs = _get_tracking_info_for_provider_call(**kwargs)
         if isasyncgenfunction(f):
@@ -122,9 +129,7 @@ async def wrap_langchain_async(
             return await f(*args, **kwargs)
         except NotInInteractionContext:
             with new_interaction() as interaction:
-                chain_input, history = _get_input_and_history(
-                    kwargs.get("inputs")
-                )
+                chain_input, history = _get_input_and_history(kwargs.get("inputs"))
                 interaction.set_input(chain_input)
                 interaction.set_history(history)
                 if isasyncgenfunction(f):

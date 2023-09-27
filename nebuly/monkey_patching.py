@@ -555,6 +555,7 @@ def coroutine_wrapper(
 
         if module == "langchain":
             from nebuly.langchain import wrap_langchain_async
+
             return wrap_langchain_async(
                 function_name=function_name, f=f, args=args, kwargs=kwargs
             )
@@ -634,6 +635,7 @@ def function_wrapper(
 
         if module == "langchain":
             from nebuly.langchain import wrap_langchain
+
             return wrap_langchain(
                 function_name=function_name, f=f, args=args, kwargs=kwargs
             )
