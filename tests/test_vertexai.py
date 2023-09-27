@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from google.cloud import aiplatform
@@ -57,7 +57,7 @@ def test_vertexai_completion__no_context_manager(palm_completion):
                 "top_k": 40,
             }
 
-            model = TextGenerationModel.from_pretrained("text-bison@001")
+            model = TextGenerationModel(model_id="text-bison@001")
             result = model.predict(
                 "Give me ten interview questions for the role of program manager.",
                 **parameters,
@@ -100,7 +100,7 @@ def test_vertexai_completion__with_context_manager(palm_completion):
                     "top_k": 40,
                     # A top_k of 1 means the selected token is the most probable among all tokens.
                 }
-                model = TextGenerationModel.from_pretrained("text-bison@001")
+                model = TextGenerationModel(model_id="text-bison@001")
                 result = model.predict(
                     "Give me ten interview questions for the role of program manager.",
                     **parameters,
@@ -134,7 +134,7 @@ async def test_vertexai_completion__async(palm_completion):
                 # A top_k of 1 means the selected token is the most probable among all tokens.
             }
 
-            model = TextGenerationModel.from_pretrained("text-bison@001")
+            model = TextGenerationModel(model_id="text-bison@001")
             result = await model.predict_async(
                 "Give me ten interview questions for the role of program manager.",
                 **parameters,
@@ -221,7 +221,7 @@ def test_vertexai_completion_stream(palm_completion_stream):
                 # A top_k of 1 means the selected token is the most probable among all tokens.
             }
 
-            model = TextGenerationModel.from_pretrained("text-bison@001")
+            model = TextGenerationModel(model_id="text-bison@001")
             result = ""
             for chunk in model.predict_streaming(
                 prompt="Give me two interview questions for the role of program manager.",
@@ -259,7 +259,7 @@ def test_vertexai_chat__no_context_manager(palm_completion):
                 "top_p": 0.95,
                 "top_k": 40,
             }
-            chat_model = ChatModel.from_pretrained("chat-bison@001")
+            chat_model = ChatModel("chat-bison@001")
             chat = chat_model.start_chat(
                 context="My name is Miles. You are an astronomer, knowledgeable about the solar system.",
                 examples=[
@@ -301,7 +301,7 @@ def test_vertexai_chat__no_context_manager__with_history(palm_completion):
                 "top_p": 0.95,
                 "top_k": 40,
             }
-            chat_model = ChatModel.from_pretrained("chat-bison@001")
+            chat_model = ChatModel("chat-bison@001")
             chat = chat_model.start_chat(
                 context="My name is Miles. You are an astronomer, knowledgeable about the solar system.",
                 examples=[
@@ -364,7 +364,7 @@ def test_vertexai_chat__with_context_manager(palm_completion):
                     "top_p": 0.95,
                     "top_k": 40,
                 }
-                chat_model = ChatModel.from_pretrained("chat-bison@001")
+                chat_model = ChatModel("chat-bison@001")
                 chat = chat_model.start_chat(
                     context="My name is Miles. You are an astronomer, knowledgeable about the solar system.",
                     examples=[
@@ -403,7 +403,7 @@ async def test_vertexai_chat__async(palm_completion):
                 "top_k": 40,
             }
 
-            chat_model = ChatModel.from_pretrained("chat-bison@001")
+            chat_model = ChatModel("chat-bison@001")
             chat = chat_model.start_chat(
                 context="My name is Miles. You are an astronomer, knowledgeable about the solar system.",
                 examples=[
@@ -447,7 +447,7 @@ def test_vertexai_chat__stream(palm_completion_stream):
                 "top_k": 40,
             }
 
-            chat_model = ChatModel.from_pretrained("chat-bison@001")
+            chat_model = ChatModel("chat-bison@001")
             chat = chat_model.start_chat(
                 context="My name is Miles. You are an astronomer, knowledgeable about the solar system.",
                 examples=[

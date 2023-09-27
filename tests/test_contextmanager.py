@@ -18,19 +18,19 @@ from nebuly.contextmanager import (
 def test_interaction_context() -> None:
     with new_interaction("test_user", "test_group_profile") as interaction:
         observer = []
-        interaction.set_observer(observer.append)
+        interaction._set_observer(observer.append)
         assert get_nearest_open_interaction() is interaction
 
 
 def test_interaction_context_finish() -> None:
     with new_interaction("test_user", "test_group_profile") as interaction:
         observer = []
-        interaction.set_observer(observer.append)
+        interaction._set_observer(observer.append)
         assert get_nearest_open_interaction() is interaction
 
     with new_interaction("test_other_user", "test_other_group_profile") as interaction:
         observer = []
-        interaction.set_observer(observer.append)
+        interaction._set_observer(observer.append)
         assert get_nearest_open_interaction() is interaction
 
 
@@ -45,7 +45,7 @@ def test_multithreading_context() -> None:
         with new_interaction("test_user", "test_group_profile") as interaction:
             sleep(random.random())
             observer = []
-            interaction.set_observer(observer.append)
+            interaction._set_observer(observer.append)
             assert get_nearest_open_interaction() is interaction
 
     threads = []
@@ -63,7 +63,7 @@ async def test_asyncio_context() -> None:
     async def async_func() -> None:
         with new_interaction("test_user", "test_group_profile") as interaction:
             observer = []
-            interaction.set_observer(observer.append)
+            interaction._set_observer(observer.append)
             await asyncio.sleep(random.random())
             assert get_nearest_open_interaction() is interaction
 
@@ -80,7 +80,7 @@ def test_cannot_create_interaction_inside_interaction() -> None:
         "test_user", "test_group_profile"
     ) as interaction:  # noqa: F841 pylint: disable=unused-variable
         observer = []
-        interaction.set_observer(observer.append)
+        interaction._set_observer(observer.append)
         with pytest.raises(AlreadyInInteractionContext):
             with new_interaction(
                 "test_user"
@@ -93,4 +93,4 @@ def test_calls_finish_when_exception_raised() -> None:
         with new_interaction("test_user") as interaction:
             raise Exception("test")  # pylint: disable=broad-exception-raised
 
-    assert interaction.finished
+    assert interaction._finished

@@ -71,7 +71,7 @@ def set_tracking_handlers() -> None:
 class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
     @property
     def current_interaction_storage(self) -> EventsStorage:
-        return get_nearest_open_interaction().events_storage
+        return get_nearest_open_interaction()._events_storage
 
     def on_tool_start(
         self,

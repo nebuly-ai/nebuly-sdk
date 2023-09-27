@@ -49,7 +49,7 @@ def check_no_packages_already_imported(packages: Iterable[Package]) -> None:
 
 def import_and_patch_packages(packages: Iterable[Package], observer: Observer) -> None:
     """
-    Import each package in packages and patch it with the observer.
+    Import each package in packages and patch it with the _observer.
     """
     for package in packages:
         try:
@@ -194,8 +194,8 @@ def _add_interaction_span(  # pylint: disable=too-many-arguments
 ) -> None:
     try:
         interaction = get_nearest_open_interaction()
-        interaction.set_observer(observer)
-        interaction.add_span(watched)
+        interaction._set_observer(observer)
+        interaction._add_span(watched)
     except NotInInteractionContext:
         try:
             user_input, history = _extract_input_and_history(
@@ -206,10 +206,10 @@ def _add_interaction_span(  # pylint: disable=too-many-arguments
         with new_interaction() as interaction:
             interaction.set_input(user_input)
             interaction.set_history(history)
-            interaction.set_observer(observer)
-            interaction.add_span(watched)
-            interaction.set_user(nebuly_kwargs.get("nebuly_user"))
-            interaction.set_user_group_profile(
+            interaction._set_observer(observer)
+            interaction._add_span(watched)
+            interaction._set_user(nebuly_kwargs.get("nebuly_user"))
+            interaction._set_user_group_profile(
                 nebuly_kwargs.get("nebuly_user_group_profile")
             )
             interaction.set_output(
@@ -342,7 +342,7 @@ def watch_from_generator(  # pylint: disable=too-many-arguments
     Watch a generator
 
     Creates the SpanWatch object while the generator is being iterated over.
-    Waits until the iteration is done to call the observer.
+    Waits until the iteration is done to call the _observer.
     """
     original_result = []
     generator_first_element_timestamp = None
@@ -401,7 +401,7 @@ async def watch_from_generator_async(  # pylint: disable=too-many-arguments
     Watch a generator
 
     Creates the SpanWatch object while the generator is being iterated over.
-    Waits until the iteration is done to call the observer.
+    Waits until the iteration is done to call the _observer.
     """
     original_result = []
     generator_first_element_timestamp = None
@@ -572,7 +572,7 @@ def _get_tracking_info_for_provider_call(**kwargs: Any) -> dict[str, Any]:
     for handler in callback_manager.handlers:
         if isinstance(handler, LangChainTrackingHandler):
             interaction = get_nearest_open_interaction()
-            root_run_id = interaction.events_storage.get_root_id(parent_run_id)
+            root_run_id = interaction._events_storage.get_root_id(parent_run_id)
             additional_kwargs["nebuly_root_run_id"] = root_run_id
             break
 
@@ -808,10 +808,10 @@ def _patcher(
     observer: Observer, module: str, version: str, function_name: str
 ) -> Callable[[Any], Any]:
     """
-    Decorator that calls observer with a SpanWatch instance when the decorated
+    Decorator that calls _observer with a SpanWatch instance when the decorated
     function is called
 
-    kwargs that start with nebuly_ are passed to the observer and not the
+    kwargs that start with nebuly_ are passed to the _observer and not the
     decorated function
     """
 

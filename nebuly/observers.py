@@ -5,7 +5,7 @@ from nebuly.entities import InteractionWatch, Publisher
 
 class NebulyObserver:
     """
-    NebulyObserver is an observer that sends a message to the API when a
+    NebulyObserver is an _observer that sends a message to the API when a
     patched function is called.
     """
 

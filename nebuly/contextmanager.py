@@ -173,7 +173,10 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
                 "Interaction cannot be directly instantiate, use the"
                 " 'new_interaction' contextmanager"
             )
-        self.events_storage = EventsStorage()
+        self._events_storage = EventsStorage()
+        self._observer = None
+        self._finished = False
+
         self.user = user
         self.user_group_profile = user_group_profile
         self.input = input
@@ -182,8 +185,6 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
         self.history = [] if history is None else history
         self.hierarchy = {} if hierarchy is None else hierarchy
         self.time_start = datetime.now(timezone.utc)
-        self.observer = None
-        self.finished = False
 
     def set_input(self, value: str) -> None:
         self.input = value
@@ -194,22 +195,22 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
     def set_output(self, value: str) -> None:
         self.output = value
 
-    def set_observer(self, observer: Observer) -> None:
-        if self.observer is None:
-            self.observer = observer
+    def _set_observer(self, observer: Observer) -> None:
+        if self._observer is None:
+            self._observer = observer
 
-    def add_span(self, value: SpanWatch) -> None:
+    def _add_span(self, value: SpanWatch) -> None:
         self.spans.append(value)
 
-    def finish(self) -> None:
-        self.finished = True
-        if len(self.events_storage.events) > 0:
-            self.spans += self.events_storage.get_spans()
+    def _finish(self) -> None:
+        self._finished = True
+        if len(self._events_storage.events) > 0:
+            self.spans += self._events_storage.get_spans()
             self.hierarchy = {
                 event.event_id: event.hierarchy.parent_run_id
                 if event.hierarchy is not None
                 else None
-                for event in self.events_storage.events.values()
+                for event in self._events_storage.events.values()
             }
         for span in self.spans:
             if span.provider_extras is None:
@@ -217,15 +218,15 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
             parent_id = span.provider_extras.get("nebuly_parent_run_id")
             if parent_id is not None:
                 self.hierarchy[span.span_id] = parent_id
-        self.observer(self.as_interaction_watch())
+        self._observer(self._as_interaction_watch())
 
-    def set_user(self, value: str) -> None:
+    def _set_user(self, value: str) -> None:
         self.user = value
 
-    def set_user_group_profile(self, value: str) -> None:
+    def _set_user_group_profile(self, value: str) -> None:
         self.user_group_profile = value
 
-    def as_interaction_watch(self) -> InteractionWatch:
+    def _as_interaction_watch(self) -> InteractionWatch:
         return InteractionWatch(
             input=self.input,
             output=self.output,
@@ -243,7 +244,7 @@ def get_nearest_open_interaction() -> InteractionContext:
     frames = inspect.stack()
     for frame in frames[::-1]:
         for v in frame.frame.f_locals.values():
-            if isinstance(v, InteractionContext) and not v.finished:
+            if isinstance(v, InteractionContext) and not v._finished:
                 return v
     raise NotInInteractionContext()
 
@@ -266,4 +267,4 @@ def new_interaction(
         except NotInInteractionContext:
             raise InteractionMustBeLocalVariable()  # pylint: disable=raise-missing-from
         else:
-            interaction.finish()
+            interaction._finish()
