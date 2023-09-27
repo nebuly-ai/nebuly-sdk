@@ -85,6 +85,22 @@ class InteractionWatch:
     end_user: str | None = None
     end_user_group_profile: str | None = None
 
+    def to_dict(self) -> dict[str, Any]:
+        """
+        to_dict returns a dictionary representation of the InteractionWatch instance.
+        """
+        return {
+            "input": self.input,
+            "output": self.output,
+            "time_end": self.time_end.isoformat(),
+            "time_start": self.time_start.isoformat(),
+            "spans": [span.to_dict() for span in self.spans],
+            "history": self.history,
+            "hierarchy": {str(k): str(v) for k, v in self.hierarchy.items()},
+            "end_user": self.end_user,
+            "end_user_group_profile": self.end_user_group_profile,
+        }
+
 
 Observer = Callable[[InteractionWatch], None]
 

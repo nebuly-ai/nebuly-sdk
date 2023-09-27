@@ -1,12 +1,11 @@
 import asyncio
 import os
 
-from nebuly.entities import DevelopmentPhase
 from nebuly.init import init
 
 API_KEY = str(os.environ.get("NEBULY_API_KEY"))
 
-init(api_key=API_KEY, project="my_project", phase=DevelopmentPhase.EXPERIMENTATION)
+init(api_key=API_KEY)
 
 import openai  # noqa  # pylint: disable=wrong-import-position, wrong-import-order
 
