@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from google.cloud import aiplatform
@@ -23,7 +23,17 @@ def palm_completion() -> TextGenerationResponse:
         _prediction_response=aiplatform.models.Prediction(
             predictions=[
                 {
-                    "content": "1. What is your experience with project management?\n2. What are your strengths and weaknesses as a project manager?\n3. How do you handle conflict and difficult situations?\n4. How do you communicate with stakeholders and keep them informed?\n5. How do you manage your time and resources effectively?\n6. What is your approach to risk management?\n7. How do you measure the success of your projects?\n8. What are your goals for the future?\n9. What are your salary expectations?\n10. Why do you want to work for our company?",
+                    "content": "1. What is your experience with project management?\n2."
+                    " What are your strengths and weaknesses as a project "
+                    "manager?\n3. How do you handle conflict and difficult "
+                    "situations?\n4. How do you communicate with "
+                    "stakeholders and keep them informed?\n5. How do you "
+                    "manage your time and resources effectively?\n6. What "
+                    "is your approach to risk management?\n7. How do you "
+                    "measure the success of your projects?\n8. What are "
+                    "your goals for the future?\n9. What are your salary "
+                    "expectations?\n10. Why do you want to work for our "
+                    "company?",
                     "citationMetadata": {"citations": []},
                     "safetyAttributes": {
                         "blocked": False,
@@ -38,7 +48,17 @@ def palm_completion() -> TextGenerationResponse:
             explanations=None,
         ),
         safety_attributes={"Finance": 0.7, "Health": 0.1, "Toxic": 0.1},
-        text="1. What is your experience with project management?\n2. What are your strengths and weaknesses as a project manager?\n3. How do you handle conflict and difficult situations?\n4. How do you communicate with stakeholders and keep them informed?\n5. How do you manage your time and resources effectively?\n6. What is your approach to risk management?\n7. How do you measure the success of your projects?\n8. What are your goals for the future?\n9. What are your salary expectations?\n10. Why do you want to work for our company?",
+        text="1. What is your experience with project management?\n2."
+        " What are your strengths and weaknesses as a project "
+        "manager?\n3. How do you handle conflict and difficult "
+        "situations?\n4. How do you communicate with "
+        "stakeholders and keep them informed?\n5. How do you "
+        "manage your time and resources effectively?\n6. What "
+        "is your approach to risk management?\n7. How do you "
+        "measure the success of your projects?\n8. What are "
+        "your goals for the future?\n9. What are your salary "
+        "expectations?\n10. Why do you want to work for our "
+        "company?",
     )
 
 
@@ -92,13 +112,9 @@ def test_vertexai_completion__with_context_manager(palm_completion):
                 )
                 parameters = {
                     "temperature": 0,
-                    # Temperature controls the degree of randomness in token selection.
                     "max_output_tokens": 256,
-                    # Token limit determines the maximum amount of text output.
                     "top_p": 0.8,
-                    # Tokens are selected from most probable to least until the sum of their probabilities equals the top_p value.
                     "top_k": 40,
-                    # A top_k of 1 means the selected token is the most probable among all tokens.
                 }
                 model = TextGenerationModel(model_id="text-bison@001")
                 result = model.predict(
@@ -125,13 +141,9 @@ async def test_vertexai_completion__async(palm_completion):
 
             parameters = {
                 "temperature": 0,
-                # Temperature controls the degree of randomness in token selection.
                 "max_output_tokens": 256,
-                # Token limit determines the maximum amount of text output.
                 "top_p": 0.8,
-                # Tokens are selected from most probable to least until the sum of their probabilities equals the top_p value.
                 "top_k": 40,
-                # A top_k of 1 means the selected token is the most probable among all tokens.
             }
 
             model = TextGenerationModel(model_id="text-bison@001")
@@ -161,7 +173,8 @@ def palm_completion_stream() -> list[TextGenerationResponse]:
             _prediction_response=aiplatform.models.Prediction(
                 predictions=[
                     {
-                        "content": "1. What is your experience with project management?\n",
+                        "content": "1. What is your experience with project "
+                        "management?\n",
                         "citationMetadata": {"citations": []},
                         "safetyAttributes": {
                             "blocked": False,
@@ -183,7 +196,8 @@ def palm_completion_stream() -> list[TextGenerationResponse]:
             _prediction_response=aiplatform.models.Prediction(
                 predictions=[
                     {
-                        "content": "2. What are your strengths and weaknesses as a project manager?\n",
+                        "content": "2. What are your strengths and weaknesses as "
+                        "a project manager?\n",
                         "citationMetadata": {"citations": []},
                         "safetyAttributes": {
                             "blocked": False,
@@ -212,19 +226,16 @@ def test_vertexai_completion_stream(palm_completion_stream):
             nebuly_init(observer=mock_observer)
             parameters = {
                 "temperature": 0,
-                # Temperature controls the degree of randomness in token selection.
                 "max_output_tokens": 256,
-                # Token limit determines the maximum amount of text output.
                 "top_p": 0.8,
-                # Tokens are selected from most probable to least until the sum of their probabilities equals the top_p value.
                 "top_k": 40,
-                # A top_k of 1 means the selected token is the most probable among all tokens.
             }
 
             model = TextGenerationModel(model_id="text-bison@001")
             result = ""
             for chunk in model.predict_streaming(
-                prompt="Give me two interview questions for the role of program manager.",
+                prompt="Give me two interview questions for the role of program "
+                "manager.",
                 **parameters,
             ):
                 result += chunk.text
@@ -261,7 +272,8 @@ def test_vertexai_chat__no_context_manager(palm_completion):
             }
             chat_model = ChatModel("chat-bison@001")
             chat = chat_model.start_chat(
-                context="My name is Miles. You are an astronomer, knowledgeable about the solar system.",
+                context="My name is Miles. You are an astronomer, knowledgeable about "
+                "the solar system.",
                 examples=[
                     InputOutputTextPair(
                         input_text="How many moons does Mars have?",
@@ -303,7 +315,8 @@ def test_vertexai_chat__no_context_manager__with_history(palm_completion):
             }
             chat_model = ChatModel("chat-bison@001")
             chat = chat_model.start_chat(
-                context="My name is Miles. You are an astronomer, knowledgeable about the solar system.",
+                context="My name is Miles. You are an astronomer, knowledgeable about "
+                "the solar system.",
                 examples=[
                     InputOutputTextPair(
                         input_text="How many moons does Mars have?",
@@ -366,11 +379,13 @@ def test_vertexai_chat__with_context_manager(palm_completion):
                 }
                 chat_model = ChatModel("chat-bison@001")
                 chat = chat_model.start_chat(
-                    context="My name is Miles. You are an astronomer, knowledgeable about the solar system.",
+                    context="My name is Miles. You are an astronomer, knowledgeable "
+                    "about the solar system.",
                     examples=[
                         InputOutputTextPair(
                             input_text="How many moons does Mars have?",
-                            output_text="The planet Mars has two moons, Phobos and Deimos.",
+                            output_text="The planet Mars has two moons, Phobos and "
+                            "Deimos.",
                         ),
                     ],
                 )
@@ -405,7 +420,8 @@ async def test_vertexai_chat__async(palm_completion):
 
             chat_model = ChatModel("chat-bison@001")
             chat = chat_model.start_chat(
-                context="My name is Miles. You are an astronomer, knowledgeable about the solar system.",
+                context="My name is Miles. You are an astronomer, knowledgeable about "
+                "the solar system.",
                 examples=[
                     InputOutputTextPair(
                         input_text="How many moons does Mars have?",
@@ -449,7 +465,8 @@ def test_vertexai_chat__stream(palm_completion_stream):
 
             chat_model = ChatModel("chat-bison@001")
             chat = chat_model.start_chat(
-                context="My name is Miles. You are an astronomer, knowledgeable about the solar system.",
+                context="My name is Miles. You are an astronomer, knowledgeable about "
+                "the solar system.",
                 examples=[
                     InputOutputTextPair(
                         input_text="How many moons does Mars have?",

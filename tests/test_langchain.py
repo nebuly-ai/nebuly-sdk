@@ -301,7 +301,8 @@ def test_langchain__chain_with_function_tool(
             tools = [get_word_length]
 
             system_message = SystemMessage(
-                content="You are very powerful assistant, but bad at calculating lengths of words."
+                content="You are very powerful assistant, but bad at "
+                "calculating lengths of words."
             )
             prompt = OpenAIFunctionsAgent.create_prompt(system_message=system_message)
             agent = OpenAIFunctionsAgent(llm=llm, tools=tools, prompt=prompt)

@@ -88,7 +88,7 @@ def _split_nebuly_kwargs(
     return nebuly_kwargs, function_kwargs
 
 
-def _extract_output(output: Any, module: Provider, function_name: str) -> str:
+def _extract_output(output: Any, module: str, function_name: str) -> str:
     if module == "openai":
         from nebuly.providers.openai import extract_openai_output
 
@@ -116,9 +116,7 @@ def _extract_output(output: Any, module: Provider, function_name: str) -> str:
     return str(output)
 
 
-def _extract_output_generator(
-    outputs: Any, module: Provider, function_name: str
-) -> str:
+def _extract_output_generator(outputs: Any, module: str, function_name: str) -> str:
     if module == "openai":
         from nebuly.providers.openai import extract_openai_output_generator
 
