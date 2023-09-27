@@ -11,10 +11,6 @@ from inspect import isasyncgenfunction, iscoroutinefunction
 from types import ModuleType
 from typing import Any, AsyncGenerator, Callable, Generator, Iterable
 
-from anthropic import AsyncStream, Stream
-from cohere.responses.chat import StreamingChat
-from cohere.responses.generation import StreamingGenerations
-
 from nebuly.contextmanager import (
     NotInInteractionContext,
     get_nearest_open_interaction,
@@ -23,10 +19,6 @@ from nebuly.contextmanager import (
 from nebuly.entities import Observer, Package, SpanWatch
 
 logger = logging.getLogger(__name__)
-
-
-AsyncGen = AsyncGenerator | StreamingGenerations | StreamingChat | AsyncStream
-SyncGen = Generator | StreamingGenerations | StreamingChat | Stream
 
 
 def check_no_packages_already_imported(packages: Iterable[Package]) -> None:
@@ -503,7 +495,7 @@ def _handle_unpickleable_objects() -> None:
         pass
 
     try:
-        from vertexai.language_models import (  # pylint: disable=import-outside-toplevel
+        from vertexai.language_models import (  # pylint: disable=import-outside-toplevel  # noqa: E501
             ChatModel,
             TextGenerationModel,
         )
@@ -542,6 +534,27 @@ def _setup_args_kwargs(
     return original_args, original_kwargs, function_kwargs, nebuly_kwargs
 
 
+def _is_generator(obj: Any):
+    if isinstance(obj, (Generator, AsyncGenerator)):
+        return True
+
+    try:
+        from nebuly.providers.cohere import is_cohere_generator
+
+        if is_cohere_generator(obj):
+            return True
+    except ImportError:
+        pass
+
+    try:
+        from nebuly.providers.anthropic import is_anthropic_generator
+
+        if is_anthropic_generator(obj):
+            return True
+    except ImportError:
+        pass
+
+
 def coroutine_wrapper(
     f: Callable[[Any], Any],
     observer: Observer,
@@ -554,7 +567,7 @@ def coroutine_wrapper(
         logger.debug("Calling %s.%s", module, function_name)
 
         if module == "langchain":
-            from nebuly.langchain import wrap_langchain_async
+            from nebuly.providers.langchain import wrap_langchain_async
 
             return wrap_langchain_async(
                 function_name=function_name, f=f, args=args, kwargs=kwargs
@@ -576,7 +589,7 @@ def coroutine_wrapper(
         else:
             result = await f(*args, **function_kwargs)
 
-        if isinstance(result, AsyncGen):
+        if _is_generator(result):
             logger.debug("Result is a generator")
             return watch_from_generator_async(
                 generator=result,
@@ -634,7 +647,7 @@ def function_wrapper(
         logger.debug("Calling %s.%s", module, function_name)
 
         if module == "langchain":
-            from nebuly.langchain import wrap_langchain
+            from nebuly.providers.langchain import wrap_langchain
 
             return wrap_langchain(
                 function_name=function_name, f=f, args=args, kwargs=kwargs
@@ -651,7 +664,7 @@ def function_wrapper(
         called_start = datetime.now(timezone.utc)
         result = f(*args, **function_kwargs)
 
-        if isinstance(result, SyncGen):
+        if _is_generator(result):
             logger.debug("Result is a generator")
             return watch_from_generator(
                 generator=result,
