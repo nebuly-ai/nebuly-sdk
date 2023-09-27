@@ -163,9 +163,9 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
         user_group_profile: str | None = None,
         input: str | None = None,
         output: str | None = None,
-        history: list[tuple[str, str]] = None,
-        hierarchy: dict[UUID, UUID] = None,
-        spans: list[SpanWatch] = None,
+        history: list[tuple[str, str]] | None = None,
+        hierarchy: dict[UUID, UUID] | None = None,
+        spans: list[SpanWatch] | None = None,
         do_not_call_directly: bool = False,
     ) -> None:
         if not do_not_call_directly:
