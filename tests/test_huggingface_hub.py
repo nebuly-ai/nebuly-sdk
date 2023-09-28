@@ -3,12 +3,188 @@ from unittest.mock import patch
 
 import pytest
 from huggingface_hub import InferenceClient
+from huggingface_hub.inference._text_generation import (
+    Details,
+    FinishReason,
+    StreamDetails,
+    TextGenerationResponse,
+    TextGenerationStreamResponse,
+    Token,
+)
 
 from nebuly.contextmanager import new_interaction
 from nebuly.entities import InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver
 from nebuly.requests import CustomJSONEncoder
 from tests.common import nebuly_init
+
+
+@pytest.fixture()
+def hf_hub_text_generation_str() -> str:
+    return "a beautiful library for interacting with the Hugging Face Hub."
+
+
+def test_hf_hub_text_generation_str(hf_hub_text_generation_str):
+    with patch("huggingface_hub.InferenceClient.text_generation") as mock_generation:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_generation.return_value = hf_hub_text_generation_str
+            nebuly_init(observer=mock_observer)
+
+            client = InferenceClient()
+            result = client.text_generation("The huggingface_hub library is ")
+
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "The huggingface_hub library is "
+            assert interaction_watch.history == []
+            assert interaction_watch.output == hf_hub_text_generation_str
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+@pytest.fixture()
+def hf_hub_text_generation_list() -> list[str]:
+    return ["a", " beautiful", " library", "."]
+
+
+def test_hf_hub_text_generation_stream(hf_hub_text_generation_list):
+    with patch("huggingface_hub.InferenceClient.text_generation") as mock_generation:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_generation.return_value = (el for el in hf_hub_text_generation_list)
+            nebuly_init(observer=mock_observer)
+
+            client = InferenceClient()
+            for _ in client.text_generation(
+                "The huggingface_hub library is ", stream=True
+            ):
+                ...
+
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "The huggingface_hub library is "
+            assert interaction_watch.history == []
+            assert interaction_watch.output == "".join(hf_hub_text_generation_list)
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+@pytest.fixture()
+def hf_hub_text_generation_details():
+    return TextGenerationResponse(
+        generated_text="100% open source and built to be easy to use.\n\nTo install it, you can",
+        details=Details(
+            finish_reason=FinishReason.Length,
+            generated_tokens=20,
+            seed=None,
+            prefill=[],
+            tokens=[
+                Token(id=1425, text="100", logprob=-1.0175781, special=False),
+                Token(id=16, text="%", logprob=-0.046295166, special=False),
+            ],
+            best_of_sequences=None,
+        ),
+    )
+
+
+def test_hf_hub_text_generation_details(hf_hub_text_generation_details):
+    with patch("huggingface_hub.InferenceClient.text_generation") as mock_generation:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_generation.return_value = hf_hub_text_generation_details
+            nebuly_init(observer=mock_observer)
+
+            client = InferenceClient()
+            result = client.text_generation(
+                "The huggingface_hub library is ", details=True
+            )
+
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "The huggingface_hub library is "
+            assert interaction_watch.history == []
+            assert (
+                interaction_watch.output
+                == hf_hub_text_generation_details.generated_text
+            )
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+@pytest.fixture()
+def hf_hub_text_generation_details_list() -> list[TextGenerationStreamResponse]:
+    return [
+        TextGenerationStreamResponse(
+            token=Token(id=1425, text="100", logprob=-1.0175781, special=False),
+            generated_text=None,
+            details=None,
+        ),
+        TextGenerationStreamResponse(
+            token=Token(id=1425, text="100", logprob=-1.0175781, special=False),
+            generated_text=None,
+            details=None,
+        ),
+        TextGenerationStreamResponse(
+            token=Token(id=1425, text="100", logprob=-1.0175781, special=False),
+            generated_text="a beautiful.",
+            details=StreamDetails(
+                finish_reason=FinishReason.Length, generated_tokens=20, seed=None
+            ),
+        ),
+    ]
+
+
+def test_hf_hub_text_generation_details_stream(hf_hub_text_generation_details_list):
+    with patch("huggingface_hub.InferenceClient.text_generation") as mock_generation:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_generation.return_value = (
+                el for el in hf_hub_text_generation_details_list
+            )
+            nebuly_init(observer=mock_observer)
+
+            client = InferenceClient()
+            for _ in client.text_generation(
+                "The huggingface_hub library is ", stream=True, details=True
+            ):
+                ...
+
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "The huggingface_hub library is "
+            assert interaction_watch.history == []
+            assert interaction_watch.output == "".join(
+                [
+                    el.generated_text
+                    for el in hf_hub_text_generation_details_list
+                    if el.generated_text is not None
+                ]
+            )
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 @pytest.fixture()

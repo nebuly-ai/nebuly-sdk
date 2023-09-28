@@ -43,7 +43,11 @@ PACKAGES = (
             "resources.AsyncCompletions.create",
         ),
     ),
-    Package("huggingface_hub", ("0.12.0",), ("InferenceClient.conversational",)),
+    Package(
+        "huggingface_hub",
+        ("0.12.0",),
+        ("InferenceClient.conversational", "InferenceClient.text_generation"),
+    ),
     Package(
         "google",
         ("0.0.1",),

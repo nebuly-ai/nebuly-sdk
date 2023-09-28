@@ -1,5 +1,9 @@
-from typing import Any
+from typing import Any, Iterator
 
+from huggingface_hub.inference._text_generation import (
+    TextGenerationResponse,
+    TextGenerationStreamResponse,
+)
 from huggingface_hub.inference._types import ConversationalOutput
 
 from nebuly.providers.utils import get_argument
@@ -26,8 +30,33 @@ def extract_hf_hub_input_and_history(
             history.append(("user", user_input))
             history.append(("assistant", assistant_response))
         return prompt, history
+    if function_name == "InferenceClient.text_generation":
+        prompt = get_argument(original_args, original_kwargs, "prompt", 1)
+        return prompt, []
 
 
-def extract_hf_hub_output(function_name: str, output: ConversationalOutput) -> str:
+def extract_hf_hub_output(
+    function_name: str, output: str | ConversationalOutput | TextGenerationResponse
+) -> str:
     if function_name == "InferenceClient.conversational":
         return output["generated_text"]
+    if function_name == "InferenceClient.text_generation":
+        if isinstance(output, TextGenerationResponse):
+            return output.generated_text
+        return output
+
+
+def extract_hf_hub_output_generator(
+    function_name: str, outputs: Iterator[str | TextGenerationStreamResponse]
+) -> str:
+    if function_name == "InferenceClient.text_generation":
+        return "".join(
+            [
+                output
+                if isinstance(output, str)
+                else output.generated_text
+                if output.generated_text is not None
+                else ""
+                for output in outputs
+            ]
+        )

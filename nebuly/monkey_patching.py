@@ -129,6 +129,10 @@ def _extract_output_generator(outputs: Any, module: str, function_name: str) -> 
         from nebuly.providers.anthropic import extract_anthropic_output_generator
 
         return extract_anthropic_output_generator(function_name, outputs)
+    if module == "huggingface_hub":
+        from nebuly.providers.huggingface_hub import extract_hf_hub_output_generator
+
+        return extract_hf_hub_output_generator(function_name, outputs)
     if module == "vertexai":
         from nebuly.providers.vertexai import extract_vertexai_output_generator
 
