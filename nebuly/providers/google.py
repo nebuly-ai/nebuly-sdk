@@ -1,10 +1,42 @@
 from __future__ import annotations
 
+import copyreg
 from typing import Any
 
+from google.generativeai.discuss import ChatResponse
+from google.generativeai.text import Completion
 from google.generativeai.types import text_types
 
 from nebuly.providers.utils import get_argument
+
+
+class EditedCompletion(Completion):
+    """The Completion class must be overridden to be pickled."""
+
+    def __init__(self, **kwargs: Any):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+        self.result = None
+        if hasattr(self, "candidates") and self.candidates:
+            self.result = self.candidates[0]["output"]
+
+
+def handle_google_unpickable_objects() -> None:
+    def _pickle_google_completion(
+        obj: Completion,
+    ) -> tuple[type[EditedCompletion], tuple[Any, ...], dict[str, Any]]:
+        state = {key: value for key, value in obj.__dict__.items() if key != "_client"}
+        return EditedCompletion, (), state
+
+    def _pickle_google_chat(
+        obj: ChatResponse,
+    ) -> tuple[type[ChatResponse], tuple[Any, ...], dict[str, Any]]:
+        state = {key: value for key, value in obj.__dict__.items() if key != "_client"}
+        return ChatResponse, (), state
+
+    copyreg.pickle(Completion, _pickle_google_completion)
+    copyreg.pickle(ChatResponse, _pickle_google_chat)
 
 
 def extract_google_input_and_history(

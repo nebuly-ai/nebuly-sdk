@@ -354,6 +354,13 @@ def _handle_unpickleable_objects() -> None:
         pass
 
     try:
+        from nebuly.providers.google import handle_google_unpickable_objects
+
+        handle_google_unpickable_objects()
+    except ImportError:
+        pass
+
+    try:
         from nebuly.providers.vertexai import handle_vertexai_unpickable_objects
 
         handle_vertexai_unpickable_objects()
