@@ -41,6 +41,8 @@ def test_openai_completion__no_context_manager(openai_completion):
                 prompt="Say this is a test",
                 max_tokens=7,
                 temperature=0,
+                nebuly_user="test_user",
+                nebuly_user_group_profile="test_group",
             )
             assert result is not None
             assert mock_observer.call_count == 1
@@ -48,6 +50,8 @@ def test_openai_completion__no_context_manager(openai_completion):
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == "Say this is a test"
             assert interaction_watch.output == "\n\nThis is a test."
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_group"
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)

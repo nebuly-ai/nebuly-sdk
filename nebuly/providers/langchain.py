@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from inspect import isasyncgenfunction
 from typing import Any, Callable, cast
 from uuid import UUID
@@ -53,7 +55,15 @@ def _get_input_and_history(
     if isinstance(inputs, str):
         return inputs, None
 
-    prompt = getattr(chain, "prompt", None)
+    chains = getattr(chain, "chains", None)
+    if chains is not None:
+        # If the chain is a SequentialChain, we need to get the
+        # prompt from the first chain
+        prompt = getattr(chains[0], "prompt", None)
+    else:
+        # If the chain is not a SequentialChain, we need to get
+        # the prompt from the chain
+        prompt = getattr(chain, "prompt", None)
     if "prompt" in inputs:
         prompt = inputs["prompt"]
 
@@ -104,11 +114,13 @@ def wrap_langchain(
         except NotInInteractionContext:
             with new_interaction() as interaction:
                 inputs = kwargs.get("inputs")
-                if isinstance(inputs, dict):
-                    user = inputs.pop("nebuly_user", None)
-                    user_group = inputs.pop("nebuly_user_group_profile", None)
-                    interaction._set_user(user)
-                    interaction._set_user_group_profile(user_group)
+                handler = [
+                    handler
+                    for handler in kwargs.get("callbacks")
+                    if isinstance(handler, LangChainTrackingHandler)
+                ][0]
+                interaction._set_user(handler.nebuly_user)
+                interaction._set_user_group_profile(handler.nebuly_user_group)
                 interaction._set_observer(observer)
                 chain_input, history = _get_input_and_history(args[0], inputs)
                 interaction.set_input(chain_input)
@@ -156,3 +168,6 @@ async def wrap_langchain_async(
                     original_res = await f(*args, **kwargs)
                 interaction.set_output(original_res)
                 return original_res
+
+
+# TODO: Add test for sequential chains

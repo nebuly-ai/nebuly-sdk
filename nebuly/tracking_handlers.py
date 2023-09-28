@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from typing import Any
 from uuid import UUID
@@ -34,12 +36,23 @@ def set_tracking_handlers() -> None:
 
     def tracked_call(
         self: Any,
-        inputs: dict[str, Any],
+        inputs: dict[str, Any] | Any,
         return_only_outputs: bool = False,
         callbacks: Callbacks = None,
         **kwargs: Any,
     ) -> Any:
         callbacks = set_callbacks_arg(callbacks)
+        if isinstance(inputs, dict):
+            tracking_handler.nebuly_user = inputs.pop("nebuly_user", None)
+            tracking_handler.nebuly_user_group = inputs.pop(
+                "nebuly_user_group_profile", None
+            )
+        if tracking_handler.nebuly_user is None:
+            tracking_handler.nebuly_user = kwargs.pop("nebuly_user", None)
+        if tracking_handler.nebuly_user_group is None:
+            tracking_handler.nebuly_user_group = kwargs.pop(
+                "nebuly_user_group_profile", None
+            )
         return original_call(
             self,
             inputs=inputs,
@@ -56,6 +69,10 @@ def set_tracking_handlers() -> None:
         **kwargs: Any,
     ) -> Any:
         callbacks = set_callbacks_arg(callbacks)
+        tracking_handler.nebuly_user = kwargs.pop("nebuly_user", None)
+        tracking_handler.nebuly_user_group = kwargs.pop(
+            "nebuly_user_group_profile", None
+        )
         return original_acall(
             self,
             inputs=inputs,
@@ -69,6 +86,10 @@ def set_tracking_handlers() -> None:
 
 
 class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
+    def __init__(self) -> None:
+        self.nebuly_user = None
+        self.nebuly_user_group = None
+
     @property
     def current_interaction_storage(self) -> EventsStorage:
         return get_nearest_open_interaction()._events_storage

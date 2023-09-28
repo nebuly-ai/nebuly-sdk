@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any, Iterator
 
 from huggingface_hub.inference._text_generation import (

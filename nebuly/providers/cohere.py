@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import copyreg
 from typing import Any, Callable
 
