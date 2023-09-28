@@ -42,6 +42,8 @@ def test_cohere_generate__no_context_manager(cohere_generate):
             co = cohere.Client("test")
             result = co.generate(
                 "Please explain to me how LLMs work",
+                platform_user="test_user",
+                platform_user_group_profile="test_group",
             )
             assert result is not None
             assert mock_observer.call_count == 1
@@ -53,6 +55,8 @@ def test_cohere_generate__no_context_manager(cohere_generate):
                 == ' LLMs, or "AI language models", are a type of artificial '
                 "intelligence that can understand and respond"
             )
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_group"
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
@@ -70,7 +74,7 @@ def test_cohere_generate__with_context_manager(cohere_generate):
 
             co = cohere.Client("test")
             with new_interaction(
-                user="test_user", group_profile="test_group"
+                platform_user="test_user", platform_user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Sample input 1")
                 result = co.generate(
@@ -186,7 +190,7 @@ def test_cohere_chat__with_context_manager(cohere_chat):
 
             co = cohere.Client("test")
             with new_interaction(
-                user="test_user", group_profile="test_group"
+                platform_user="test_user", platform_user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Sample input 1")
                 interaction.set_history(

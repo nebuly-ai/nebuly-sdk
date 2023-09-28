@@ -81,7 +81,7 @@ def _split_nebuly_kwargs(
     nebuly_kwargs = {}
     function_kwargs = {}
     for key in kwargs:
-        if key.startswith("nebuly_"):
+        if key.startswith("platform_"):
             nebuly_kwargs[key] = kwargs[key]
         else:
             function_kwargs[key] = kwargs[key]
@@ -166,9 +166,9 @@ def _add_interaction_span(  # pylint: disable=too-many-arguments
             interaction.set_history(history)
             interaction._set_observer(observer)
             interaction._add_span(watched)
-            interaction._set_user(nebuly_kwargs.get("nebuly_user"))
+            interaction._set_user(nebuly_kwargs.get("platform_user"))
             interaction._set_user_group_profile(
-                nebuly_kwargs.get("nebuly_user_group_profile")
+                nebuly_kwargs.get("platform_user_group_profile")
             )
             interaction.set_output(
                 _extract_output(output, module, function_name)

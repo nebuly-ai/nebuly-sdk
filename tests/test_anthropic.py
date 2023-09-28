@@ -37,6 +37,8 @@ def test_anthropic_completion__no_context_manager(anthropic_completion):
                 max_tokens_to_sample=300,
                 prompt=f"{HUMAN_PROMPT} how does a court case get to the "
                 f"Supreme Court?{AI_PROMPT}",
+                platform_user="test_user",
+                platform_user_group_profile="test_group",
             )
             assert result is not None
             assert mock_observer.call_count == 1
@@ -48,6 +50,8 @@ def test_anthropic_completion__no_context_manager(anthropic_completion):
                 f"Supreme Court?{AI_PROMPT}"
             )
             assert interaction_watch.output == " Hello! My name is Claude."
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_group"
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
@@ -69,7 +73,7 @@ def test_anthropic_completion__with_context_manager(anthropic_completion):
             )
 
             with new_interaction(
-                user="test_user", group_profile="test_group"
+                platform_user="test_user", platform_user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Sample input 1")
                 result = client.completions.create(

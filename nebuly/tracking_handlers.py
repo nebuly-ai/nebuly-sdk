@@ -43,15 +43,15 @@ def set_tracking_handlers() -> None:
     ) -> Any:
         callbacks = set_callbacks_arg(callbacks)
         if isinstance(inputs, dict):
-            tracking_handler.nebuly_user = inputs.pop("nebuly_user", None)
+            tracking_handler.nebuly_user = inputs.pop("platform_user", None)
             tracking_handler.nebuly_user_group = inputs.pop(
-                "nebuly_user_group_profile", None
+                "platform_user_group_profile", None
             )
         if tracking_handler.nebuly_user is None:
-            tracking_handler.nebuly_user = kwargs.pop("nebuly_user", None)
+            tracking_handler.nebuly_user = kwargs.pop("platform_user", None)
         if tracking_handler.nebuly_user_group is None:
             tracking_handler.nebuly_user_group = kwargs.pop(
-                "nebuly_user_group_profile", None
+                "platform_user_group_profile", None
             )
         return original_call(
             self,
@@ -69,9 +69,9 @@ def set_tracking_handlers() -> None:
         **kwargs: Any,
     ) -> Any:
         callbacks = set_callbacks_arg(callbacks)
-        tracking_handler.nebuly_user = kwargs.pop("nebuly_user", None)
+        tracking_handler.nebuly_user = kwargs.pop("platform_user", None)
         tracking_handler.nebuly_user_group = kwargs.pop(
-            "nebuly_user_group_profile", None
+            "platform_user_group_profile", None
         )
         return original_acall(
             self,

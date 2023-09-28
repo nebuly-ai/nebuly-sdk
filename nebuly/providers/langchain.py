@@ -36,14 +36,14 @@ def _get_tracking_info_for_provider_call(**kwargs: Any) -> dict[str, Any]:
     # Get the parent_run_id from the CallbackManager
     callback_manager = callbacks
     parent_run_id = cast(UUID, callback_manager.parent_run_id)
-    additional_kwargs = {"nebuly_parent_run_id": parent_run_id}
+    additional_kwargs = {"platform_parent_run_id": parent_run_id}
 
     # Get the root_run_id from the LangChainTrackingHandler
     for handler in callback_manager.handlers:
         if isinstance(handler, LangChainTrackingHandler):
             interaction = get_nearest_open_interaction()
             root_run_id = interaction._events_storage.get_root_id(parent_run_id)
-            additional_kwargs["nebuly_root_run_id"] = root_run_id
+            additional_kwargs["platform_root_run_id"] = root_run_id
             break
 
     return additional_kwargs
@@ -154,8 +154,8 @@ async def wrap_langchain_async(
             with new_interaction() as interaction:
                 inputs = kwargs.get("inputs")
                 if isinstance(inputs, dict):
-                    user = inputs.pop("nebuly_user", None)
-                    user_group = inputs.pop("nebuly_user_group_profile", None)
+                    user = inputs.pop("platform_user", None)
+                    user_group = inputs.pop("platform_user_group_profile", None)
                     interaction._set_user(user)
                     interaction._set_user_group_profile(user_group)
                 interaction._set_observer(observer)

@@ -99,15 +99,15 @@ def test_watched_is_immutable() -> None:
 
 def test_split_nebuly_kwargs() -> None:
     original_dict = {
-        "nebuly_segment": "segment",
+        "platform_segment": "segment",
         "arg1": "arg1",
-        "nebuly_project": "project",
+        "platform_project": "project",
         "arg2": "arg2",
     }
     nebuly_kwargs, function_kwargs = _split_nebuly_kwargs(original_dict)
     assert nebuly_kwargs == {
-        "nebuly_segment": "segment",
-        "nebuly_project": "project",
+        "platform_segment": "segment",
+        "platform_project": "project",
     }
     assert function_kwargs == {"arg1": "arg1", "arg2": "arg2"}
 
@@ -119,7 +119,7 @@ def test_nebuly_args_are_intercepted() -> None:
     observer: list[InteractionWatch] = []
     patched = _patcher(observer.append, "module", "0.1.0", "function_name")(function)
 
-    patched(1, 2, nebuly_segment="segment", nebuly_project="project")
+    patched(1, 2, platform_segment="segment", platform_project="project")
 
     assert len(observer) == 1
     watched = observer[0]

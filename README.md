@@ -119,7 +119,9 @@ completion = openai.ChatCompletion.create(
     model="gpt-3.5-turbo",
     messages=[
         {"role": "user", "content": "Hello world"}
-    ]
+    ],
+    platform_user="test_user",
+    platform_user_group_profile="test_group",
 )
 ```
 
@@ -144,7 +146,11 @@ prompt = PromptTemplate(
 )
 
 chain = LLMChain(llm=llm, prompt=prompt)
-result = chain.run("colorful socks")
+result = chain.run(
+    "colorful socks",
+    platform_user="test_user",
+    platform_user_group_profile="test_group",
+)
 ```
 
 ### Advanced usage: Context managers
@@ -173,7 +179,7 @@ import cohere
 
 co = cohere.Client(os.getenv("COHERE_API_KEY"))
 
-with new_interaction(user="test_user", group_profile="test_group") as interaction:
+with new_interaction(platform_user="test_user", platform_user_group_profile="test_group") as interaction:
     # interaction.set_input("Some custom input")
     # interaction.set_history([("system", "You are an helpful assistant"),])
     completion_1 = openai.ChatCompletion.create(
@@ -211,7 +217,7 @@ prompt = PromptTemplate(
 )
 chain = LLMChain(llm=llm, prompt=prompt)
 
-with new_interaction(user="test_user", group_profile="test_group") as interaction:
+with new_interaction(platform_user="test_user", platform_user_group_profile="test_group") as interaction:
     interaction.set_input("What is a good name for a company that makes colorful socks?")
     # interaction.set_history(...)
     result = chain.run("colorful socks")
