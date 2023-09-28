@@ -1,3 +1,4 @@
+import json
 from typing import Any
 from unittest.mock import patch
 
@@ -7,6 +8,7 @@ import pytest
 from nebuly.contextmanager import new_interaction
 from nebuly.entities import InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver
+from nebuly.requests import CustomJSONEncoder
 from tests.common import nebuly_init
 
 
@@ -49,6 +51,10 @@ def test_openai_completion__no_context_manager(openai_completion):
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 def test_openai_completion__with_context_manager(openai_completion):
@@ -79,6 +85,10 @@ def test_openai_completion__with_context_manager(openai_completion):
             assert len(interaction_watch.spans) == 1
             span: SpanWatch = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 def test_openai_completion__multiple_spans_in_interaction(openai_completion):
@@ -119,6 +129,10 @@ def test_openai_completion__multiple_spans_in_interaction(openai_completion):
             span_1: SpanWatch = interaction_watch.spans[1]
             assert isinstance(span_1, SpanWatch)
             assert span_0.span_id != span_1.span_id
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 def test_openai_completion__multiple_interactions(openai_completion):
@@ -164,6 +178,10 @@ def test_openai_completion__multiple_interactions(openai_completion):
             assert len(interaction_watch_0.spans) == 1
             span_0: SpanWatch = interaction_watch_0.spans[0]
             assert isinstance(span_0, SpanWatch)
+            assert (
+                json.dumps(interaction_watch_0.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
             interaction_watch_1: InteractionWatch = mock_observer.call_args_list[1][0][
                 0
@@ -177,6 +195,10 @@ def test_openai_completion__multiple_interactions(openai_completion):
             span_1: SpanWatch = interaction_watch_1.spans[0]
             assert isinstance(span_1, SpanWatch)
             assert span_0.span_id != span_1.span_id
+            assert (
+                json.dumps(interaction_watch_1.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 @pytest.mark.asyncio
@@ -200,6 +222,10 @@ async def test_openai_completion__async(openai_completion):
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 @pytest.fixture()
@@ -247,6 +273,10 @@ def test_openai_chat__no_context_manager(openai_chat):
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 def test_openai_chat__with_context_manager(openai_chat):
@@ -282,6 +312,10 @@ def test_openai_chat__with_context_manager(openai_chat):
             assert len(interaction_watch.spans) == 1
             span: SpanWatch = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 def test_openai_chat__multiple_spans_in_interaction(openai_chat):
@@ -328,6 +362,10 @@ def test_openai_chat__multiple_spans_in_interaction(openai_chat):
             span_1: SpanWatch = interaction_watch.spans[1]
             assert isinstance(span_1, SpanWatch)
             assert span_0.span_id != span_1.span_id
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 def test_openai_chat__multiple_interactions(openai_chat):
@@ -378,6 +416,10 @@ def test_openai_chat__multiple_interactions(openai_chat):
             assert interaction_watch_0.end_user == "test_user"
             assert interaction_watch_0.end_user_group_profile == "test_group"
             assert len(interaction_watch_0.spans) == 1
+            assert (
+                json.dumps(interaction_watch_0.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
             span_0: SpanWatch = interaction_watch_0.spans[0]
             assert isinstance(span_0, SpanWatch)
 
@@ -396,6 +438,10 @@ def test_openai_chat__multiple_interactions(openai_chat):
             span_1: SpanWatch = interaction_watch_1.spans[0]
             assert isinstance(span_1, SpanWatch)
             assert span_0.span_id != span_1.span_id
+            assert (
+                json.dumps(interaction_watch_1.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 @pytest.mark.asyncio
@@ -423,6 +469,10 @@ async def test_openai_chat__async(openai_chat):
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 @pytest.fixture()
@@ -518,6 +568,10 @@ def test_openai_completion_gen(openai_completion_gen):
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 @pytest.fixture()
@@ -597,3 +651,7 @@ def test_openai_chat_gen(openai_chat_gen):
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )

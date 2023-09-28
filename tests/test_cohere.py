@@ -1,3 +1,4 @@
+import json
 from unittest.mock import Mock, patch
 
 import cohere
@@ -9,6 +10,7 @@ from cohere.responses.generation import StreamingText
 from nebuly.contextmanager import new_interaction
 from nebuly.entities import InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver
+from nebuly.requests import CustomJSONEncoder
 from tests.common import nebuly_init
 
 
@@ -54,6 +56,10 @@ def test_cohere_generate__no_context_manager(cohere_generate):
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 def test_cohere_generate__with_context_manager(cohere_generate):
@@ -82,6 +88,10 @@ def test_cohere_generate__with_context_manager(cohere_generate):
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 @pytest.mark.asyncio
@@ -108,6 +118,10 @@ async def test_cohere_generate__async(cohere_generate):
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 @pytest.fixture()
@@ -158,6 +172,10 @@ def test_cohere_chat__no_context_manager(cohere_chat):
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 def test_cohere_chat__with_context_manager(cohere_chat):
@@ -203,6 +221,10 @@ def test_cohere_chat__with_context_manager(cohere_chat):
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 @pytest.mark.asyncio
@@ -233,6 +255,10 @@ async def test_cohere_chat__async(cohere_chat):
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 @pytest.fixture()
@@ -277,6 +303,10 @@ def test_cohere_generate_gen(cohere_generate_gen):
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 @pytest.fixture()
@@ -342,3 +372,7 @@ def test_cohere_chat_gen(cohere_chat_gen):
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )

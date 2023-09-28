@@ -1,3 +1,4 @@
+import json
 from unittest.mock import patch
 
 import pytest
@@ -6,6 +7,7 @@ from huggingface_hub import InferenceClient
 from nebuly.contextmanager import new_interaction
 from nebuly.entities import InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver
+from nebuly.requests import CustomJSONEncoder
 from tests.common import nebuly_init
 
 
@@ -65,6 +67,10 @@ def test_hf_hub_conversational__no_context_manager__no_history(
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 def test_hf_hub_conversational__no_context_manager__with_history(
@@ -106,6 +112,10 @@ def test_hf_hub_conversational__no_context_manager__with_history(
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 def test_hf_hub_conversational__with_context_manager__no_history(
@@ -140,6 +150,10 @@ def test_hf_hub_conversational__with_context_manager__no_history(
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 def test_hf_hub_conversational__with_context_manager__with_history(
@@ -197,3 +211,7 @@ def test_hf_hub_conversational__with_context_manager__with_history(
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )

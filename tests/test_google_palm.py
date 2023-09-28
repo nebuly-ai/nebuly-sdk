@@ -1,3 +1,4 @@
+import json
 from unittest.mock import patch
 
 import google.generativeai as palm
@@ -10,6 +11,7 @@ from google.generativeai.types.safety_types import HarmCategory, HarmProbability
 from nebuly.contextmanager import new_interaction
 from nebuly.entities import InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver
+from nebuly.requests import CustomJSONEncoder
 from tests.common import nebuly_init
 
 
@@ -70,6 +72,10 @@ def test_google_palm_completion__no_context_manager(palm_completion):
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 def test_google_palm_completion__with_context_manager(palm_completion):
@@ -97,6 +103,10 @@ def test_google_palm_completion__with_context_manager(palm_completion):
             assert len(interaction_watch.spans) == 1
             span: SpanWatch = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 @pytest.fixture()
@@ -142,6 +152,10 @@ def test_google_palm_chat__first_interaction__no_context_manager(palm_chat_respo
             assert len(interaction_watch.spans) == 1
             span: SpanWatch = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 def test_google_palm_chat__first_interaction__with_context_manager(palm_chat_response):
@@ -169,6 +183,10 @@ def test_google_palm_chat__first_interaction__with_context_manager(palm_chat_res
             assert len(interaction_watch.spans) == 1
             span: SpanWatch = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 @pytest.fixture()
@@ -255,6 +273,10 @@ def test_google_palm_chat__with_history__no_context_manager(
             assert len(interaction_watch.spans) == 1
             span: SpanWatch = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 def test_google_palm_chat__with_history__with_context_manager(
@@ -290,6 +312,10 @@ def test_google_palm_chat__with_history__with_context_manager(
             assert len(interaction_watch.spans) == 1
             span: SpanWatch = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 def test_google_palm_chat__reply__no_context_manager(
@@ -319,6 +345,10 @@ def test_google_palm_chat__reply__no_context_manager(
             assert len(interaction_watch.spans) == 1
             span: SpanWatch = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 def test_google_palm_chat__reply__with_context_manager(
@@ -348,6 +378,10 @@ def test_google_palm_chat__reply__with_context_manager(
             assert len(interaction_watch.spans) == 1
             span: SpanWatch = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 @pytest.mark.asyncio
@@ -368,3 +402,7 @@ async def test_google_palm_chat__async(palm_chat_response):
             assert len(interaction_watch.spans) == 1
             span: SpanWatch = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )

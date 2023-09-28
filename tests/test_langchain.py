@@ -1,3 +1,4 @@
+import json
 from unittest.mock import patch
 
 import langchain
@@ -13,6 +14,7 @@ from langchain.schema import SystemMessage
 from nebuly.contextmanager import new_interaction
 from nebuly.entities import EventType, InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver
+from nebuly.requests import CustomJSONEncoder
 from tests import common
 
 # Cache original functions
@@ -75,6 +77,10 @@ def test_langchain_llm_chain__no_context_manager(openai_completion: dict) -> Non
                 assert isinstance(span, SpanWatch)
                 if span.module == "langchain":
                     assert span.provider_extras.get("event_type") is not None
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 def test_langchain_llm_chain__with_context_manager(openai_completion: dict) -> None:
@@ -108,6 +114,10 @@ def test_langchain_llm_chain__with_context_manager(openai_completion: dict) -> N
                 assert isinstance(span, SpanWatch)
                 if span.module == "langchain":
                     assert span.provider_extras.get("event_type") is not None
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 def test_langchain_llm_chain__multiple_chains_in_interaction(
@@ -145,6 +155,10 @@ def test_langchain_llm_chain__multiple_chains_in_interaction(
                 assert isinstance(span, SpanWatch)
                 if span.module == "langchain":
                     assert span.provider_extras.get("event_type") is not None
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 def test_langchain_llm_chain__multiple_interactions(openai_completion: dict) -> None:
@@ -181,6 +195,10 @@ def test_langchain_llm_chain__multiple_interactions(openai_completion: dict) -> 
             assert len(interaction_watch_0.hierarchy) == 3
             for span in interaction_watch_0.spans:
                 assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch_0.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
             interaction_watch_1 = mock_observer.call_args_list[1][0][0]
             assert isinstance(interaction_watch_1, InteractionWatch)
             assert interaction_watch_1.input == "colorful ties"
@@ -193,6 +211,10 @@ def test_langchain_llm_chain__multiple_interactions(openai_completion: dict) -> 
                 assert isinstance(span, SpanWatch)
                 if span.module == "langchain":
                     assert span.provider_extras.get("event_type") is not None
+            assert (
+                json.dumps(interaction_watch_1.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 @pytest.fixture()
@@ -253,6 +275,11 @@ def test_langchain_chat_chain__no_context_manager(openai_chat: dict) -> None:
                 assert isinstance(span, SpanWatch)
                 if span.module == "langchain":
                     assert span.provider_extras.get("event_type") is not None
+
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 @pytest.fixture()
@@ -327,3 +354,8 @@ def test_langchain__chain_with_function_tool(
                     assert event_type is not None
                     if event_type == EventType.TOOL.value:
                         assert span.rag_source == "get_word_length"
+
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )

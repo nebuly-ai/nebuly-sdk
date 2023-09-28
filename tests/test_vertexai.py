@@ -1,3 +1,4 @@
+import json
 from unittest.mock import patch
 
 import pytest
@@ -13,6 +14,7 @@ from vertexai.language_models import (
 from nebuly.contextmanager import new_interaction
 from nebuly.entities import InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver
+from nebuly.requests import CustomJSONEncoder
 from tests.common import nebuly_init
 
 
@@ -94,6 +96,10 @@ def test_vertexai_completion__no_context_manager(palm_completion):
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 def test_vertexai_completion__with_context_manager(palm_completion):
@@ -106,8 +112,8 @@ def test_vertexai_completion__with_context_manager(palm_completion):
 
             with new_interaction(
                 "Give me ten interview questions for the role of program manager."
-            ) as interaction_watch:
-                interaction_watch.set_input(
+            ) as interaction:
+                interaction.set_input(
                     "Give me ten interview questions for the role of program manager."
                 )
                 parameters = {
@@ -121,13 +127,18 @@ def test_vertexai_completion__with_context_manager(palm_completion):
                     "Give me ten interview questions for the role of program manager.",
                     **parameters,
                 )
-                interaction_watch.set_output(result.text)
+                interaction.set_output(result.text)
             assert result is not None
             assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
             assert interaction_watch.output == palm_completion.text
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 @pytest.mark.asyncio
@@ -163,6 +174,10 @@ async def test_vertexai_completion__async(palm_completion):
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 @pytest.fixture()
@@ -254,6 +269,10 @@ def test_vertexai_completion_stream(palm_completion_stream):
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 def test_vertexai_chat__no_context_manager(palm_completion):
@@ -297,6 +316,10 @@ def test_vertexai_chat__no_context_manager(palm_completion):
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 def test_vertexai_chat__no_context_manager__with_history(palm_completion):
@@ -355,6 +378,10 @@ def test_vertexai_chat__no_context_manager__with_history(palm_completion):
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 def test_vertexai_chat__with_context_manager(palm_completion):
@@ -367,10 +394,8 @@ def test_vertexai_chat__with_context_manager(palm_completion):
 
             with new_interaction(
                 "How many planets are there in the solar system?"
-            ) as interaction_watch:
-                interaction_watch.set_input(
-                    "How many planets are there in the solar system?"
-                )
+            ) as interaction:
+                interaction.set_input("How many planets are there in the solar system?")
                 parameters = {
                     "temperature": 0,
                     "max_output_tokens": 256,
@@ -393,13 +418,18 @@ def test_vertexai_chat__with_context_manager(palm_completion):
                 result = chat.send_message(
                     "How many planets are there in the solar system?", **parameters
                 )
-                interaction_watch.set_output(result.text)
+                interaction.set_output(result.text)
             assert result is not None
             assert mock_completion_create.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
             assert interaction_watch.output == palm_completion.text
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 @pytest.mark.asyncio
@@ -446,6 +476,10 @@ async def test_vertexai_chat__async(palm_completion):
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 def test_vertexai_chat__stream(palm_completion_stream):
@@ -495,3 +529,7 @@ def test_vertexai_chat__stream(palm_completion_stream):
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )

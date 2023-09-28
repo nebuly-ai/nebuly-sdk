@@ -1,3 +1,4 @@
+import json
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -7,6 +8,7 @@ from anthropic.types import Completion
 from nebuly.contextmanager import new_interaction
 from nebuly.entities import InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver
+from nebuly.requests import CustomJSONEncoder
 from tests.common import nebuly_init
 
 
@@ -49,6 +51,10 @@ def test_anthropic_completion__no_context_manager(anthropic_completion):
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 def test_anthropic_completion__with_context_manager(anthropic_completion):
@@ -84,6 +90,10 @@ def test_anthropic_completion__with_context_manager(anthropic_completion):
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 @pytest.mark.asyncio
@@ -119,6 +129,10 @@ async def test_anthropic_completion__async(anthropic_completion):
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
 
 
 @pytest.fixture()
@@ -170,3 +184,7 @@ def test_anthropic_completion_gen(anthropic_completion_gen):
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
