@@ -60,17 +60,26 @@ def test_langchain_llm_chain__no_context_manager(openai_completion: dict) -> Non
             )
 
             chain = LLMChain(llm=llm, prompt=prompt)
-            result = chain.run("colorful socks")
+            result = chain.run(
+                product="colorful socks",
+                nebuly_user="test_user",
+                nebuly_user_group_profile="test_group_profile",
+            )
 
             assert result is not None
             assert mock_observer.call_count == 1
             interaction_watch = mock_observer.call_args[0][0]
             assert isinstance(interaction_watch, InteractionWatch)
-            assert interaction_watch.input == "colorful socks"
+            assert (
+                interaction_watch.input
+                == "What is a good name for a company that makes colorful socks?"
+            )
             assert interaction_watch.output == {
                 "product": "colorful socks",
                 "text": "Sample langchain response",
             }
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_group_profile"
             assert len(interaction_watch.spans) == 3
             assert len(interaction_watch.hierarchy) == 3
             for span in interaction_watch.spans:

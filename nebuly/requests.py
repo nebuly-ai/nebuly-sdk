@@ -4,7 +4,6 @@ import json
 import logging
 import os
 import urllib.request
-from inspect import isclass
 from typing import Any
 from unittest.mock import Mock
 

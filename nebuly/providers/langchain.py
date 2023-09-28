@@ -3,6 +3,7 @@ from typing import Any, Callable, cast
 from uuid import UUID
 
 from langchain.callbacks.manager import CallbackManager
+from langchain.chains.base import Chain
 from langchain.prompts import ChatPromptTemplate, PromptTemplate
 from langchain.prompts.chat import (
     AIMessagePromptTemplate,
@@ -47,43 +48,45 @@ def _get_tracking_info_for_provider_call(**kwargs: Any) -> dict[str, Any]:
 
 
 def _get_input_and_history(
-    inputs: dict[str, Any] | Any
+    chain: Chain, inputs: dict[str, Any] | Any
 ) -> tuple[str | None, list[tuple[str, Any]] | None]:
     if isinstance(inputs, str):
         return inputs, None
-    if not isinstance(inputs, dict) or "prompt" not in inputs:
+
+    prompt = getattr(chain, "prompt", None)
+    if "prompt" in inputs:
+        prompt = inputs["prompt"]
+
+    if not isinstance(inputs, dict) or prompt is None:
         return None, None
 
-    prompt = inputs.get("prompt")
-    if prompt is not None:
-        if isinstance(prompt, str):
-            return prompt, None
+    if isinstance(prompt, str):
+        return prompt, None
 
-        if isinstance(prompt, PromptTemplate):
-            return (
-                prompt.format(
-                    **{key: inputs.get(key) for key in prompt.input_variables}
-                ),
-                None,
-            )
+    if isinstance(prompt, PromptTemplate):
+        return (
+            prompt.format(**{key: inputs.get(key) for key in prompt.input_variables}),
+            None,
+        )
 
-        if isinstance(prompt, ChatPromptTemplate):
-            messages = []
-            for message in prompt.messages:
-                input_vars = {key: inputs.get(key) for key in message.input_variables}
-                if isinstance(message, SystemMessagePromptTemplate):
-                    messages.append(("system", message.format(**input_vars).content))
-                elif isinstance(message, HumanMessagePromptTemplate):
-                    messages.append(("human", message.format(**input_vars).content))
-                elif isinstance(message, AIMessagePromptTemplate):
-                    messages.append(("ai", message.format(**input_vars).content))
-            if len(messages) > 0:
-                if len(messages) == 1:
-                    return messages[0][1], None
-                return messages[-1][1], messages[:-1]
+    if isinstance(prompt, ChatPromptTemplate):
+        messages = []
+        for message in prompt.messages:
+            input_vars = {key: inputs.get(key) for key in message.input_variables}
+            if isinstance(message, SystemMessagePromptTemplate):
+                messages.append(("system", message.format(**input_vars).content))
+            elif isinstance(message, HumanMessagePromptTemplate):
+                messages.append(("human", message.format(**input_vars).content))
+            elif isinstance(message, AIMessagePromptTemplate):
+                messages.append(("ai", message.format(**input_vars).content))
+        if len(messages) > 0:
+            if len(messages) == 1:
+                return messages[0][1], None
+            return messages[-1][1], messages[:-1]
 
 
 def wrap_langchain(
+    observer: Callable[[Any], None],
     function_name: str,
     f: Callable[[Any], Any],
     args: tuple[Any],
@@ -100,7 +103,14 @@ def wrap_langchain(
             return f(*args, **kwargs)
         except NotInInteractionContext:
             with new_interaction() as interaction:
-                chain_input, history = _get_input_and_history(kwargs.get("inputs"))
+                inputs = kwargs.get("inputs")
+                if isinstance(inputs, dict):
+                    user = inputs.pop("nebuly_user", None)
+                    user_group = inputs.pop("nebuly_user_group_profile", None)
+                    interaction._set_user(user)
+                    interaction._set_user_group_profile(user_group)
+                interaction._set_observer(observer)
+                chain_input, history = _get_input_and_history(args[0], inputs)
                 interaction.set_input(chain_input)
                 interaction.set_history(history)
                 original_res = f(*args, **kwargs)
@@ -109,6 +119,7 @@ def wrap_langchain(
 
 
 async def wrap_langchain_async(
+    observer: Callable[[Any], None],
     function_name: str,
     f: Callable[[Any], Any],
     args: tuple[Any],
@@ -129,7 +140,14 @@ async def wrap_langchain_async(
             return await f(*args, **kwargs)
         except NotInInteractionContext:
             with new_interaction() as interaction:
-                chain_input, history = _get_input_and_history(kwargs.get("inputs"))
+                inputs = kwargs.get("inputs")
+                if isinstance(inputs, dict):
+                    user = inputs.pop("nebuly_user", None)
+                    user_group = inputs.pop("nebuly_user_group_profile", None)
+                    interaction._set_user(user)
+                    interaction._set_user_group_profile(user_group)
+                interaction._set_observer(observer)
+                chain_input, history = _get_input_and_history(args[0], inputs)
                 interaction.set_input(chain_input)
                 interaction.set_history(history)
                 if isasyncgenfunction(f):

@@ -420,7 +420,11 @@ def coroutine_wrapper(
             from nebuly.providers.langchain import wrap_langchain_async
 
             return wrap_langchain_async(
-                function_name=function_name, f=f, args=args, kwargs=kwargs
+                observer=observer,
+                function_name=function_name,
+                f=f,
+                args=args,
+                kwargs=kwargs,
             )
 
         (
@@ -500,8 +504,13 @@ def function_wrapper(
             from nebuly.providers.langchain import wrap_langchain
 
             return wrap_langchain(
-                function_name=function_name, f=f, args=args, kwargs=kwargs
+                observer=observer,
+                function_name=function_name,
+                f=f,
+                args=args,
+                kwargs=kwargs,
             )
+
         (
             original_args,
             original_kwargs,
