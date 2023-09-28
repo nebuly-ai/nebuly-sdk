@@ -376,9 +376,7 @@ def test_langchain_sequential_chain(openai_completion):
             mock_completion_create.return_value = openai_completion
             nebuly_init(mock_observer)
             llm = OpenAI(temperature=0.7)
-            synopsis_template = """You are a playwright. Given the title of play and
-            the era it is set in, it is your job to write a synopsis for that title.
-
+            synopsis_template = """
             Title: {title}
             Era: {era}
             Playwright: This is a synopsis for the above play:"""
@@ -391,9 +389,7 @@ def test_langchain_sequential_chain(openai_completion):
 
             # This is an LLMChain to write a review of a play given a synopsis.
             llm = OpenAI(temperature=0.7)
-            template = """You are a play critic from the New York Times. Given the
-            synopsis of play, it is your job to write a review for that play.
-
+            template = """
             Play Synopsis:
             {synopsis}
             Review from a New York Times play critic of the above play:"""
@@ -421,6 +417,5 @@ def test_langchain_sequential_chain(openai_completion):
             assert mock_observer.call_count == 1
             interaction_watch = mock_observer.call_args[0][0]
             assert isinstance(interaction_watch, InteractionWatch)
-            assert "You are a playwright" in interaction_watch.input
             assert "Victorian England" in interaction_watch.input
             assert isinstance(interaction_watch.output.get("review"), str)
