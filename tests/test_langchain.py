@@ -378,7 +378,57 @@ def test_langchain__chain_with_function_tool(
             )
 
 
-def test_langchain_sequential_chain(openai_completion):
+def test_langchain_sequential_chain_single_input_var(openai_completion):
+    with patch("openai.Completion.create") as mock_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_create.return_value = openai_completion
+            nebuly_init(mock_observer)
+            llm = OpenAI(temperature=0.7)
+            synopsis_template = """
+            Title: {title}
+            Playwright: This is a synopsis for the above play:"""
+            synopsis_prompt_template = PromptTemplate(
+                input_variables=["title"], template=synopsis_template
+            )
+            synopsis_chain = LLMChain(
+                llm=llm, prompt=synopsis_prompt_template, output_key="synopsis"
+            )
+
+            # This is an LLMChain to write a review of a play given a synopsis.
+            llm = OpenAI(temperature=0.7)
+            template = """
+            Play Synopsis:
+            {synopsis}
+            Review from a New York Times play critic of the above play:"""
+            prompt_template = PromptTemplate(
+                input_variables=["synopsis"], template=template
+            )
+            review_chain = LLMChain(
+                llm=llm, prompt=prompt_template, output_key="review"
+            )
+
+            # This is the overall chain where we run these two chains in sequence.
+            from langchain.chains import SequentialChain
+
+            overall_chain = SequentialChain(
+                chains=[synopsis_chain, review_chain],
+                input_variables=["title"],
+                # Here we return multiple variables
+                output_variables=["synopsis", "review"],
+            )
+
+            overall_chain(
+                "Tragedy at sunset on the beach",
+            )
+
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert "Tragedy at sunset on the beach" in interaction_watch.input
+            assert isinstance(interaction_watch.output.get("review"), str)
+
+
+def test_langchain_sequential_chain_multiple_input_vars(openai_completion):
     with patch("openai.Completion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_completion

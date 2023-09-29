@@ -52,9 +52,6 @@ def _get_tracking_info_for_provider_call(**kwargs: Any) -> dict[str, Any]:
 def _get_input_and_history(
     chain: Chain, inputs: dict[str, Any] | Any
 ) -> tuple[str | None, list[tuple[str, Any]] | None]:
-    if isinstance(inputs, str):
-        return inputs, None
-
     chains = getattr(chain, "chains", None)
     if chains is not None:
         # If the chain is a SequentialChain, we need to get the
@@ -64,25 +61,30 @@ def _get_input_and_history(
         # If the chain is not a SequentialChain, we need to get
         # the prompt from the chain
         prompt = getattr(chain, "prompt", None)
-    if "prompt" in inputs:
-        prompt = inputs["prompt"]
-
-    if not isinstance(inputs, dict) or prompt is None:
-        return None, None
-
-    if isinstance(prompt, str):
-        return prompt, None
+        if not isinstance(inputs, dict) and prompt is None:
+            return inputs, None
 
     if isinstance(prompt, PromptTemplate):
-        return (
-            prompt.format(**{key: inputs.get(key) for key in prompt.input_variables}),
-            None,
-        )
+        if isinstance(inputs, dict):
+            return (
+                prompt.format(
+                    **{key: inputs.get(key) for key in prompt.input_variables}
+                ),
+                None,
+            )
+        else:
+            return (
+                prompt.format(**{prompt.input_variables[0]: inputs}),
+                None,
+            )
 
     if isinstance(prompt, ChatPromptTemplate):
         messages = []
         for message in prompt.messages:
-            input_vars = {key: inputs.get(key) for key in message.input_variables}
+            if isinstance(inputs, dict):
+                input_vars = {key: inputs.get(key) for key in message.input_variables}
+            else:
+                input_vars = {message.input_variables[0]: inputs}
             if isinstance(message, SystemMessagePromptTemplate):
                 messages.append(("system", message.format(**input_vars).content))
             elif isinstance(message, HumanMessagePromptTemplate):
