@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 import json
 from unittest.mock import patch
 
@@ -19,8 +20,8 @@ from nebuly.requests import CustomJSONEncoder
 from tests.common import nebuly_init
 
 
-@pytest.fixture()
-def hf_hub_text_generation_str() -> str:
+@pytest.fixture(name="hf_hub_text_generation_str")
+def fixture_hf_hub_text_generation_str() -> str:
     return "a beautiful library for interacting with the Hugging Face Hub."
 
 
@@ -55,8 +56,8 @@ def test_hf_hub_text_generation_str(hf_hub_text_generation_str):
             )
 
 
-@pytest.fixture()
-def hf_hub_text_generation_list() -> list[str]:
+@pytest.fixture(name="hf_hub_text_generation_list")
+def fixture_hf_hub_text_generation_list() -> list[str]:
     return ["a", " beautiful", " library", "."]
 
 
@@ -67,7 +68,7 @@ def test_hf_hub_text_generation_stream(hf_hub_text_generation_list):
             nebuly_init(observer=mock_observer)
 
             client = InferenceClient()
-            for _ in client.text_generation(
+            for _ in client.text_generation(  # pylint: disable=not-an-iterable
                 "The huggingface_hub library is ", stream=True
             ):
                 ...
@@ -87,10 +88,11 @@ def test_hf_hub_text_generation_stream(hf_hub_text_generation_list):
             )
 
 
-@pytest.fixture()
-def hf_hub_text_generation_details():
+@pytest.fixture(name="hf_hub_text_generation_details")
+def fixture_hf_hub_text_generation_details():
     return TextGenerationResponse(
-        generated_text="100% open source and built to be easy to use.\n\nTo install it, you can",
+        generated_text="100% open source and built to be easy to "
+        "use.\n\nTo install it, you can",
         details=Details(
             finish_reason=FinishReason.Length,
             generated_tokens=20,
@@ -135,8 +137,8 @@ def test_hf_hub_text_generation_details(hf_hub_text_generation_details):
             )
 
 
-@pytest.fixture()
-def hf_hub_text_generation_details_list() -> list[TextGenerationStreamResponse]:
+@pytest.fixture(name="hf_hub_text_generation_details_list")
+def fixture_hf_hub_text_generation_details_list() -> list[TextGenerationStreamResponse]:
     return [
         TextGenerationStreamResponse(
             token=Token(id=1425, text="100", logprob=-1.0175781, special=False),
@@ -167,7 +169,7 @@ def test_hf_hub_text_generation_details_stream(hf_hub_text_generation_details_li
             nebuly_init(observer=mock_observer)
 
             client = InferenceClient()
-            for _ in client.text_generation(
+            for _ in client.text_generation(  # pylint: disable=not-an-iterable
                 "The huggingface_hub library is ", stream=True, details=True
             ):
                 ...
@@ -193,8 +195,8 @@ def test_hf_hub_text_generation_details_stream(hf_hub_text_generation_details_li
             )
 
 
-@pytest.fixture()
-def hf_hub_sample_input() -> dict:
+@pytest.fixture(name="hf_hub_sample_input")
+def fixture_hf_hub_sample_input() -> dict:
     return {
         "generated_text": " My name is samantha, and I am a student "
         "at the University of Pittsburgh.",
@@ -208,8 +210,8 @@ def hf_hub_sample_input() -> dict:
     }
 
 
-@pytest.fixture()
-def hf_hub_conversational() -> dict:
+@pytest.fixture(name="hf_hub_conversational")
+def fixture_hf_hub_conversational() -> dict:
     return {
         "generated_text": " It is, but I am studying to be a nurse. What do you do?",
         "conversation": {
@@ -223,9 +225,7 @@ def hf_hub_conversational() -> dict:
     }
 
 
-def test_hf_hub_conversational__no_context_manager__no_history(
-    hf_hub_sample_input, hf_hub_conversational
-):
+def test_hf_hub_conversational__no_context_manager__no_history(hf_hub_conversational):
     with patch("huggingface_hub.InferenceClient.conversational") as mock_conversational:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_conversational.return_value = hf_hub_conversational
@@ -300,9 +300,7 @@ def test_hf_hub_conversational__no_context_manager__with_history(
             )
 
 
-def test_hf_hub_conversational__with_context_manager__no_history(
-    hf_hub_sample_input, hf_hub_conversational
-):
+def test_hf_hub_conversational__with_context_manager__no_history(hf_hub_conversational):
     with patch("huggingface_hub.InferenceClient.conversational") as mock_conversational:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_conversational.return_value = hf_hub_conversational

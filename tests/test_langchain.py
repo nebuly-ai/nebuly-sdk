@@ -1,10 +1,11 @@
+# pylint: disable=duplicate-code
 import json
 from unittest.mock import patch
 
 import langchain
 import pytest
 from langchain.agents import AgentExecutor, OpenAIFunctionsAgent, tool
-from langchain.chains import LLMChain
+from langchain.chains import LLMChain, SequentialChain
 from langchain.chat_models import ChatOpenAI
 from langchain.llms import OpenAI
 from langchain.prompts import PromptTemplate
@@ -29,8 +30,8 @@ def nebuly_init(observer):
     common.nebuly_init(observer)
 
 
-@pytest.fixture()
-def openai_completion() -> dict:
+@pytest.fixture(name="openai_completion")
+def fixture_openai_completion() -> dict:
     return {
         "id": "cmpl-81JyWoIj5m9qz0M9g7aLBGtwZzUIg",
         "object": "text_completion",
@@ -233,8 +234,8 @@ def test_langchain_llm_chain__multiple_interactions(openai_completion: dict) -> 
             )
 
 
-@pytest.fixture()
-def openai_chat() -> dict:
+@pytest.fixture(name="openai_chat")
+def fixture_openai_chat() -> dict:
     return {
         "id": "chatcmpl-81Kl80GyhDVsOiEBQLQ6vG8svCUPe",
         "object": "chat.completion",
@@ -296,8 +297,8 @@ def test_langchain_chat_chain__no_context_manager(openai_chat: dict) -> None:
             )
 
 
-@pytest.fixture()
-def openai_chat_with_function() -> dict:
+@pytest.fixture(name="openai_chat_with_function")
+def fixture_openai_chat_with_function() -> dict:
     return {
         "id": "chatcmpl-82LLsqQsyEqBvTMvGUr9jgc7w3NfZ",
         "object": "chat.completion",
@@ -389,8 +390,6 @@ def test_langchain_sequential_chain_single_input_var(openai_completion):
             synopsis_chain = LLMChain(
                 llm=llm, prompt=synopsis_prompt_template, output_key="synopsis"
             )
-
-            # This is an LLMChain to write a review of a play given a synopsis.
             llm = OpenAI(temperature=0.7)
             template = """
             Play Synopsis:
@@ -402,9 +401,6 @@ def test_langchain_sequential_chain_single_input_var(openai_completion):
             review_chain = LLMChain(
                 llm=llm, prompt=prompt_template, output_key="review"
             )
-
-            # This is the overall chain where we run these two chains in sequence.
-            from langchain.chains import SequentialChain
 
             overall_chain = SequentialChain(
                 chains=[synopsis_chain, review_chain],
@@ -440,8 +436,6 @@ def test_langchain_sequential_chain_multiple_input_vars(openai_completion):
             synopsis_chain = LLMChain(
                 llm=llm, prompt=synopsis_prompt_template, output_key="synopsis"
             )
-
-            # This is an LLMChain to write a review of a play given a synopsis.
             llm = OpenAI(temperature=0.7)
             template = """
             Play Synopsis:
@@ -453,9 +447,6 @@ def test_langchain_sequential_chain_multiple_input_vars(openai_completion):
             review_chain = LLMChain(
                 llm=llm, prompt=prompt_template, output_key="review"
             )
-
-            # This is the overall chain where we run these two chains in sequence.
-            from langchain.chains import SequentialChain
 
             overall_chain = SequentialChain(
                 chains=[synopsis_chain, review_chain],

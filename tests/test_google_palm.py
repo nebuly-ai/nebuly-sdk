@@ -1,10 +1,13 @@
+# pylint: disable=duplicate-code
 import json
 from unittest.mock import patch
 
 import google.generativeai as palm
 import pytest
-from google.generativeai.discuss import ChatResponse
-from google.generativeai.text import Completion
+from google.generativeai.discuss import (  # pylint: disable=no-name-in-module
+    ChatResponse,
+)
+from google.generativeai.text import Completion  # pylint: disable=no-name-in-module
 from google.generativeai.types.discuss_types import MessageDict
 from google.generativeai.types.safety_types import HarmCategory, HarmProbability
 
@@ -15,8 +18,8 @@ from nebuly.requests import CustomJSONEncoder
 from tests.common import nebuly_init
 
 
-@pytest.fixture()
-def palm_completion() -> Completion:
+@pytest.fixture(name="palm_completion")
+def fixture_palm_completion() -> Completion:
     return Completion(
         candidates=[
             {
@@ -62,7 +65,7 @@ def test_google_palm_completion__no_context_manager(palm_completion):
             nebuly_init(observer=mock_observer)
             palm.configure(api_key="AIzaSyDuQlj_CeVZUFOj8oRm_dwotC4ucAElF_w")
 
-            result = palm.generate_text(
+            result = palm.generate_text(  # pylint: disable=unexpected-keyword-arg
                 prompt="The opposite of hot is",
                 platform_user="test_user",
                 platform_user_group_profile="test_group",
@@ -115,8 +118,8 @@ def test_google_palm_completion__with_context_manager(palm_completion):
             )
 
 
-@pytest.fixture()
-def palm_chat_response() -> ChatResponse:
+@pytest.fixture(name="palm_chat_response")
+def fixture_palm_chat_response() -> ChatResponse:
     return ChatResponse(
         model="models/chat-bison-001",
         context="",
@@ -195,8 +198,8 @@ def test_google_palm_chat__first_interaction__with_context_manager(palm_chat_res
             )
 
 
-@pytest.fixture()
-def palm_chat_response_with_history() -> ChatResponse:
+@pytest.fixture(name="palm_chat_response_with_history")
+def fixture_palm_chat_response_with_history() -> ChatResponse:
     return ChatResponse(
         model="models/chat-bison-001",
         context="",
@@ -290,7 +293,7 @@ def test_google_palm_chat__with_history__with_context_manager(
 ):
     with patch("google.generativeai.chat") as mock_chat:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
-            mock_chat.return_value = palm_chat_response
+            mock_chat.return_value = palm_chat_response_with_history
             nebuly_init(observer=mock_observer)
             palm.configure(api_key="test")
 
@@ -298,6 +301,12 @@ def test_google_palm_chat__with_history__with_context_manager(
                 platform_user="test_user", platform_user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Another input")
+                interaction.set_history(
+                    [
+                        ("user", "Hello."),
+                        ("assistant", "Hello! How can I help you today?"),
+                    ]
+                )
                 result = palm.chat(
                     messages=[
                         "Hello.",
@@ -315,6 +324,10 @@ def test_google_palm_chat__with_history__with_context_manager(
             assert interaction_watch.output == "Another output"
             assert interaction.user == "test_user"
             assert interaction.user_group_profile == "test_group"
+            assert interaction_watch.history == [
+                ("user", "Hello."),
+                ("assistant", "Hello! How can I help you today?"),
+            ]
             assert len(interaction_watch.spans) == 1
             span: SpanWatch = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)

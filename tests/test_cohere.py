@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 import json
 from unittest.mock import Mock, patch
 
@@ -14,8 +15,8 @@ from nebuly.requests import CustomJSONEncoder
 from tests.common import nebuly_init
 
 
-@pytest.fixture()
-def cohere_generate() -> list[Generation]:
+@pytest.fixture(name="cohere_generate")
+def fixture_cohere_generate() -> list[Generation]:
     return Generations.from_dict(
         {
             "id": "5dd1e0ae-ee97-42ac-91df-6ffe5eb4b498",
@@ -40,7 +41,7 @@ def test_cohere_generate__no_context_manager(cohere_generate):
             nebuly_init(observer=mock_observer)
 
             co = cohere.Client("test")
-            result = co.generate(
+            result = co.generate(  # pylint: disable=unexpected-keyword-arg
                 "Please explain to me how LLMs work",
                 platform_user="test_user",
                 platform_user_group_profile="test_group",
@@ -128,8 +129,8 @@ async def test_cohere_generate__async(cohere_generate):
             )
 
 
-@pytest.fixture()
-def cohere_chat() -> Chat:
+@pytest.fixture(name="cohere_chat")
+def fixture_cohere_chat() -> Chat:
     return Chat.from_dict(
         {
             "response_id": "e7a48048-078e-4941-a54a-1e87efcb03b3",
@@ -265,8 +266,8 @@ async def test_cohere_chat__async(cohere_chat):
             )
 
 
-@pytest.fixture()
-def cohere_generate_gen() -> list[StreamingText]:
+@pytest.fixture(name="cohere_generate_gen")
+def fixture_cohere_generate_gen() -> list[StreamingText]:
     return [
         StreamingText(
             index=0,
@@ -313,8 +314,8 @@ def test_cohere_generate_gen(cohere_generate_gen):
             )
 
 
-@pytest.fixture()
-def cohere_chat_gen() -> list[StreamStart | StreamTextGeneration | StreamEnd]:
+@pytest.fixture(name="cohere_chat_gen")
+def fixture_cohere_chat_gen() -> list[StreamStart | StreamTextGeneration | StreamEnd]:
     return [
         StreamStart(
             id=None,

@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 import json
 from unittest.mock import AsyncMock, patch
 
@@ -12,8 +13,8 @@ from nebuly.requests import CustomJSONEncoder
 from tests.common import nebuly_init
 
 
-@pytest.fixture()
-def anthropic_completion() -> Completion:
+@pytest.fixture(name="anthropic_completion")
+def fixture_anthropic_completion() -> Completion:
     return Completion(
         completion=" Hello! My name is Claude.",
         stop_reason="stop_sequence",
@@ -139,8 +140,8 @@ async def test_anthropic_completion__async(anthropic_completion):
             )
 
 
-@pytest.fixture()
-def anthropic_completion_gen():
+@pytest.fixture(name="anthropic_completion_gen")
+def fixture_anthropic_completion_gen():
     return [
         Completion(
             completion=" Hello",
@@ -168,7 +169,7 @@ def test_anthropic_completion_gen(anthropic_completion_gen):
                 api_key="my api key",
             )
 
-            for _ in client.completions.create(
+            for _ in client.completions.create(  # pylint: disable=not-an-iterable
                 model="claude-2",
                 max_tokens_to_sample=300,
                 prompt=f"{HUMAN_PROMPT} how does a court case get to the "

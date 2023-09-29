@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines, duplicate-code
 import uuid
 from typing import Any
 from unittest.mock import PropertyMock, patch

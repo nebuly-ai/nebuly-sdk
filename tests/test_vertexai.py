@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 import json
 from unittest.mock import patch
 
@@ -18,8 +19,8 @@ from nebuly.requests import CustomJSONEncoder
 from tests.common import nebuly_init
 
 
-@pytest.fixture()
-def palm_completion() -> TextGenerationResponse:
+@pytest.fixture(name="palm_completion")
+def fixture_palm_completion() -> TextGenerationResponse:
     return TextGenerationResponse(
         is_blocked=False,
         _prediction_response=aiplatform.models.Prediction(
@@ -180,8 +181,8 @@ async def test_vertexai_completion__async(palm_completion):
             )
 
 
-@pytest.fixture()
-def palm_completion_stream() -> list[TextGenerationResponse]:
+@pytest.fixture(name="palm_completion_stream")
+def fixture_palm_completion_stream() -> list[TextGenerationResponse]:
     return [
         TextGenerationResponse(
             is_blocked=False,

@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 import json
 from typing import Any
 from unittest.mock import patch
@@ -12,8 +13,8 @@ from nebuly.requests import CustomJSONEncoder
 from tests.common import nebuly_init
 
 
-@pytest.fixture()
-def openai_completion() -> dict:
+@pytest.fixture(name="openai_completion")
+def fixture_openai_completion() -> dict:
     return {
         "id": "cmpl-81JyWoIj5m9qz0M9g7aLBGtwZzUIg",
         "object": "text_completion",
@@ -232,8 +233,8 @@ async def test_openai_completion__async(openai_completion):
             )
 
 
-@pytest.fixture()
-def openai_chat() -> dict:
+@pytest.fixture(name="openai_chat")
+def fixture_openai_chat() -> dict:
     return {
         "id": "chatcmpl-81Kl80GyhDVsOiEBQLQ6vG8svCUPe",
         "object": "chat.completion",
@@ -479,8 +480,8 @@ async def test_openai_chat__async(openai_chat):
             )
 
 
-@pytest.fixture()
-def openai_completion_gen() -> list[dict[str, Any]]:
+@pytest.fixture(name="openai_completion_gen")
+def fixture_openai_completion_gen() -> list[dict[str, Any]]:
     return [
         {
             "id": "cmpl-81Z9F6z257cbJK1ZB9LQTuG8ePppT",
@@ -578,8 +579,8 @@ def test_openai_completion_gen(openai_completion_gen):
             )
 
 
-@pytest.fixture()
-def openai_chat_gen() -> list[dict[str, Any]]:
+@pytest.fixture(name="openai_chat_gen")
+def fixture_openai_chat_gen() -> list[dict[str, Any]]:
     return [
         {
             "id": "chatcmpl-123",
