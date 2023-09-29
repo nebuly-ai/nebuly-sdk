@@ -3,9 +3,11 @@ from __future__ import annotations
 import copyreg
 from typing import Any
 
-from google.generativeai.discuss import ChatResponse
-from google.generativeai.text import Completion
-from google.generativeai.types import text_types
+from google.generativeai.discuss import (  # pylint: disable=no-name-in-module
+    ChatResponse,
+)
+from google.generativeai.text import Completion  # pylint: disable=no-name-in-module
+from google.generativeai.types import discuss_types, text_types
 
 from nebuly.providers.utils import get_argument
 
@@ -13,7 +15,7 @@ from nebuly.providers.utils import get_argument
 class EditedCompletion(Completion):
     """The Completion class must be overridden to be pickled."""
 
-    def __init__(self, **kwargs: Any):
+    def __init__(self, **kwargs: Any):  # pylint: disable=super-init-not-called
         for key, value in kwargs.items():
             setattr(self, key, value)
 
@@ -61,8 +63,12 @@ def extract_google_input_and_history(
         ]
         return prompt, history
 
+    raise ValueError(f"Unknown function name: {function_name}")
 
-def extract_google_output(function_name: str, output: text_types.Completion) -> str:
+
+def extract_google_output(
+    function_name: str, output: text_types.Completion | discuss_types.ChatResponse
+) -> str:
     if function_name == "generativeai.generate_text":
         return output.result
     if function_name in [
@@ -71,3 +77,5 @@ def extract_google_output(function_name: str, output: text_types.Completion) -> 
         "generativeai.discuss.ChatResponse.reply",
     ]:
         return output.messages[-1]["content"]
+
+    raise ValueError(f"Unknown function name: {function_name}")

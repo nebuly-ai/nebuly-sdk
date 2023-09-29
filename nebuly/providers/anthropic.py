@@ -58,6 +58,8 @@ def extract_anthropic_input_and_history(
     ]:
         return original_kwargs.get("prompt"), []
 
+    raise ValueError(f"Unknown function name: {function_name}")
+
 
 def extract_anthropic_output(function_name: str, output: Completion) -> str:
     if function_name in [
@@ -65,6 +67,8 @@ def extract_anthropic_output(function_name: str, output: Completion) -> str:
         "resources.AsyncCompletions.create",
     ]:
         return output.completion
+
+    raise ValueError(f"Unknown function name: {function_name}")
 
 
 def extract_anthropic_output_generator(
@@ -75,3 +79,5 @@ def extract_anthropic_output_generator(
         "resources.AsyncCompletions.create",
     ]:
         return "".join([output.completion for output in outputs])
+
+    raise ValueError(f"Unknown function name: {function_name}")

@@ -163,8 +163,8 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
         self,
         user: str | None = None,
         user_group_profile: str | None = None,
-        input: str | None = None,
-        output: str | None = None,
+        initial_input: str | None = None,
+        final_output: str | None = None,
         history: list[tuple[str, str]] | None = None,
         hierarchy: dict[UUID, UUID] | None = None,
         spans: list[SpanWatch] | None = None,
@@ -181,8 +181,8 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
 
         self.user = user
         self.user_group_profile = user_group_profile
-        self.input = input
-        self.output = output
+        self.input = initial_input
+        self.output = final_output
         self.spans = [] if spans is None else spans
         self.history = [] if history is None else history
         self.hierarchy = {} if hierarchy is None else hierarchy
@@ -246,7 +246,10 @@ def get_nearest_open_interaction() -> InteractionContext:
     frames = inspect.stack()
     for frame in frames[::-1]:
         for v in frame.frame.f_locals.values():
-            if isinstance(v, InteractionContext) and not v._finished:
+            if (
+                isinstance(v, InteractionContext)
+                and not v._finished  # pylint: disable=protected-access
+            ):
                 return v
     raise NotInInteractionContext()
 
@@ -271,4 +274,4 @@ def new_interaction(
         except NotInInteractionContext:
             raise InteractionMustBeLocalVariable()  # pylint: disable=raise-missing-from
         else:
-            interaction._finish()
+            interaction._finish()  # pylint: disable=protected-access

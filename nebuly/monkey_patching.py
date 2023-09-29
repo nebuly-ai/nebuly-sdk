@@ -88,29 +88,45 @@ def _split_nebuly_kwargs(
     return nebuly_kwargs, function_kwargs
 
 
-def _extract_output(output: Any, module: str, function_name: str) -> str:
+def _extract_output(  # pylint: disable=too-many-return-statements
+    output: Any,
+    module: str,
+    function_name: str,
+) -> str:
     if module == "openai":
-        from nebuly.providers.openai import extract_openai_output
+        from nebuly.providers.openai import (  # pylint: disable=import-outside-toplevel
+            extract_openai_output,
+        )
 
         return extract_openai_output(function_name, output)
     if module == "cohere":
-        from nebuly.providers.cohere import extract_cohere_output
+        from nebuly.providers.cohere import (  # pylint: disable=import-outside-toplevel
+            extract_cohere_output,
+        )
 
         return extract_cohere_output(function_name, output)
     if module == "anthropic":
-        from nebuly.providers.anthropic import extract_anthropic_output
+        from nebuly.providers.anthropic import (  # pylint: disable=import-outside-toplevel
+            extract_anthropic_output,
+        )
 
         return extract_anthropic_output(function_name, output)
     if module == "huggingface_hub":
-        from nebuly.providers.huggingface_hub import extract_hf_hub_output
+        from nebuly.providers.huggingface_hub import (  # pylint: disable=import-outside-toplevel
+            extract_hf_hub_output,
+        )
 
         return extract_hf_hub_output(function_name, output)
     if module == "google":
-        from nebuly.providers.google import extract_google_output
+        from nebuly.providers.google import (  # pylint: disable=import-outside-toplevel
+            extract_google_output,
+        )
 
         return extract_google_output(function_name, output)
     if module == "vertexai":
-        from nebuly.providers.vertexai import extract_vertexai_output
+        from nebuly.providers.vertexai import (  # pylint: disable=import-outside-toplevel
+            extract_vertexai_output,
+        )
 
         return extract_vertexai_output(function_name, output)
     return str(output)
@@ -118,25 +134,37 @@ def _extract_output(output: Any, module: str, function_name: str) -> str:
 
 def _extract_output_generator(outputs: Any, module: str, function_name: str) -> str:
     if module == "openai":
-        from nebuly.providers.openai import extract_openai_output_generator
+        from nebuly.providers.openai import (  # pylint: disable=import-outside-toplevel
+            extract_openai_output_generator,
+        )
 
         return extract_openai_output_generator(function_name, outputs)
     if module == "cohere":
-        from nebuly.providers.cohere import extract_cohere_output_generator
+        from nebuly.providers.cohere import (  # pylint: disable=import-outside-toplevel
+            extract_cohere_output_generator,
+        )
 
         return extract_cohere_output_generator(function_name, outputs)
     if module == "anthropic":
-        from nebuly.providers.anthropic import extract_anthropic_output_generator
+        from nebuly.providers.anthropic import (  # pylint: disable=import-outside-toplevel,line-too-long
+            extract_anthropic_output_generator,
+        )
 
         return extract_anthropic_output_generator(function_name, outputs)
     if module == "huggingface_hub":
-        from nebuly.providers.huggingface_hub import extract_hf_hub_output_generator
+        from nebuly.providers.huggingface_hub import (  # pylint: disable=import-outside-toplevel,line-too-long
+            extract_hf_hub_output_generator,
+        )
 
         return extract_hf_hub_output_generator(function_name, outputs)
     if module == "vertexai":
-        from nebuly.providers.vertexai import extract_vertexai_output_generator
+        from nebuly.providers.vertexai import (  # pylint: disable=import-outside-toplevel,line-too-long
+            extract_vertexai_output_generator,
+        )
 
         return extract_vertexai_output_generator(function_name, outputs)
+
+    raise ValueError(f"Module {module} not supported")
 
 
 def _add_interaction_span(  # pylint: disable=too-many-arguments
@@ -152,22 +180,24 @@ def _add_interaction_span(  # pylint: disable=too-many-arguments
 ) -> None:
     try:
         interaction = get_nearest_open_interaction()
-        interaction._set_observer(observer)
-        interaction._add_span(watched)
+        interaction._set_observer(observer)  # pylint: disable=protected-access
+        interaction._add_span(watched)  # pylint: disable=protected-access
     except NotInInteractionContext:
         try:
             user_input, history = _extract_input_and_history(
                 original_args, original_kwargs, module, function_name
             )
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             user_input, history = None, None
         with new_interaction() as interaction:
             interaction.set_input(user_input)
             interaction.set_history(history)
-            interaction._set_observer(observer)
-            interaction._add_span(watched)
-            interaction._set_user(nebuly_kwargs.get("platform_user"))
-            interaction._set_user_group_profile(
+            interaction._set_observer(observer)  # pylint: disable=protected-access
+            interaction._add_span(watched)  # pylint: disable=protected-access
+            interaction._set_user(  # pylint: disable=protected-access
+                nebuly_kwargs.get("platform_user")
+            )
+            interaction._set_user_group_profile(  # pylint: disable=protected-access
                 nebuly_kwargs.get("platform_user_group_profile")
             )
             interaction.set_output(
@@ -184,37 +214,51 @@ def _extract_input_and_history(
     function_name: str,
 ) -> tuple[str, list[tuple[str, Any]]]:
     if module == "openai":
-        from nebuly.providers.openai import extract_openai_input_and_history
+        from nebuly.providers.openai import (  # pylint: disable=import-outside-toplevel
+            extract_openai_input_and_history,
+        )
 
         return extract_openai_input_and_history(original_kwargs, function_name)
     if module == "cohere":
-        from nebuly.providers.cohere import extract_cohere_input_and_history
+        from nebuly.providers.cohere import (  # pylint: disable=import-outside-toplevel
+            extract_cohere_input_and_history,
+        )
 
         return extract_cohere_input_and_history(
             original_args, original_kwargs, function_name
         )
     if module == "anthropic":
-        from nebuly.providers.anthropic import extract_anthropic_input_and_history
+        from nebuly.providers.anthropic import (  # pylint: disable=import-outside-toplevel
+            extract_anthropic_input_and_history,
+        )
 
         return extract_anthropic_input_and_history(original_kwargs, function_name)
     if module == "huggingface_hub":
-        from nebuly.providers.huggingface_hub import extract_hf_hub_input_and_history
+        from nebuly.providers.huggingface_hub import (  # pylint: disable=import-outside-toplevel
+            extract_hf_hub_input_and_history,
+        )
 
         return extract_hf_hub_input_and_history(
             original_args, original_kwargs, function_name
         )
     if module == "google":
-        from nebuly.providers.google import extract_google_input_and_history
+        from nebuly.providers.google import (  # pylint: disable=import-outside-toplevel
+            extract_google_input_and_history,
+        )
 
         return extract_google_input_and_history(
             original_args, original_kwargs, function_name
         )
     if module == "vertexai":
-        from nebuly.providers.vertexai import extract_vertexai_input_and_history
+        from nebuly.providers.vertexai import (  # pylint: disable=import-outside-toplevel
+            extract_vertexai_input_and_history,
+        )
 
         return extract_vertexai_input_and_history(
             original_args, original_kwargs, function_name
         )
+
+    raise ValueError(f"Module {module} not supported")
 
 
 def watch_from_generator(  # pylint: disable=too-many-arguments
@@ -340,28 +384,36 @@ def _handle_unpickleable_objects() -> None:
     using the deepcopy function
     """
     try:
-        from nebuly.providers.cohere import handle_cohere_unpickable_objects
+        from nebuly.providers.cohere import (  # pylint: disable=import-outside-toplevel
+            handle_cohere_unpickable_objects,
+        )
 
         handle_cohere_unpickable_objects()
     except ImportError:
         pass
 
     try:
-        from nebuly.providers.anthropic import handle_anthropic_unpickable_objects
+        from nebuly.providers.anthropic import (  # pylint: disable=import-outside-toplevel
+            handle_anthropic_unpickable_objects,
+        )
 
         handle_anthropic_unpickable_objects()
     except ImportError:
         pass
 
     try:
-        from nebuly.providers.google import handle_google_unpickable_objects
+        from nebuly.providers.google import (  # pylint: disable=import-outside-toplevel
+            handle_google_unpickable_objects,
+        )
 
         handle_google_unpickable_objects()
     except ImportError:
         pass
 
     try:
-        from nebuly.providers.vertexai import handle_vertexai_unpickable_objects
+        from nebuly.providers.vertexai import (  # pylint: disable=import-outside-toplevel
+            handle_vertexai_unpickable_objects,
+        )
 
         handle_vertexai_unpickable_objects()
     except ImportError:
@@ -391,12 +443,14 @@ def _setup_args_kwargs(
     return original_args, original_kwargs, function_kwargs, nebuly_kwargs
 
 
-def _is_generator(obj: Any):
+def _is_generator(obj: Any) -> bool:
     if isinstance(obj, (Generator, AsyncGenerator)):
         return True
 
     try:
-        from nebuly.providers.cohere import is_cohere_generator
+        from nebuly.providers.cohere import (  # pylint: disable=import-outside-toplevel
+            is_cohere_generator,
+        )
 
         if is_cohere_generator(obj):
             return True
@@ -404,12 +458,16 @@ def _is_generator(obj: Any):
         pass
 
     try:
-        from nebuly.providers.anthropic import is_anthropic_generator
+        from nebuly.providers.anthropic import (  # pylint: disable=import-outside-toplevel
+            is_anthropic_generator,
+        )
 
         if is_anthropic_generator(obj):
             return True
     except ImportError:
         pass
+
+    return False
 
 
 def coroutine_wrapper(
@@ -424,7 +482,9 @@ def coroutine_wrapper(
         logger.debug("Calling %s.%s", module, function_name)
 
         if module == "langchain":
-            from nebuly.providers.langchain import wrap_langchain_async
+            from nebuly.providers.langchain import (  # pylint: disable=import-outside-toplevel
+                wrap_langchain_async,
+            )
 
             return wrap_langchain_async(
                 observer=observer,
@@ -508,7 +568,9 @@ def function_wrapper(
         logger.debug("Calling %s.%s", module, function_name)
 
         if module == "langchain":
-            from nebuly.providers.langchain import wrap_langchain
+            from nebuly.providers.langchain import (  # pylint: disable=import-outside-toplevel
+                wrap_langchain,
+            )
 
             return wrap_langchain(
                 observer=observer,

@@ -74,7 +74,7 @@ class SpanWatch:  # pylint: disable=too-many-instance-attributes
 
 
 @dataclass
-class InteractionWatch:
+class InteractionWatch:  # pylint: disable=too-many-instance-attributes
     input: str
     output: str
     time_end: datetime

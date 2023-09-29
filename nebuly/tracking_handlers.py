@@ -92,9 +92,11 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
 
     @property
     def current_interaction_storage(self) -> EventsStorage:
-        return get_nearest_open_interaction()._events_storage
+        return (
+            get_nearest_open_interaction()._events_storage  # pylint: disable=protected-access
+        )
 
-    def on_tool_start(
+    def on_tool_start(  # pylint: disable=arguments-differ
         self,
         serialized: dict[str, Any],
         input_str: str,
@@ -114,7 +116,7 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
             run_id, parent_run_id, data, module="langchain"
         )
 
-    def on_tool_end(
+    def on_tool_end(  # pylint: disable=arguments-differ
         self,
         output: str,
         run_id: UUID,
@@ -125,7 +127,7 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
         )
         self.current_interaction_storage.events[run_id].set_end_time()
 
-    def on_retriever_start(
+    def on_retriever_start(  # pylint: disable=arguments-differ
         self,
         serialized: dict[str, Any],
         query: str,
@@ -145,7 +147,7 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
             run_id, parent_run_id, data, module="langchain"
         )
 
-    def on_retriever_end(
+    def on_retriever_end(  # pylint: disable=arguments-differ
         self,
         documents: list[Document],
         run_id: UUID,
@@ -156,7 +158,7 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
         )
         self.current_interaction_storage.events[run_id].set_end_time()
 
-    def on_llm_start(
+    def on_llm_start(  # pylint: disable=arguments-differ
         self,
         serialized: dict[str, Any],
         prompts: list[str],
@@ -176,7 +178,7 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
             run_id, parent_run_id, data, module="langchain"
         )
 
-    def on_llm_end(
+    def on_llm_end(  # pylint: disable=arguments-differ
         self,
         response: LLMResult,
         run_id: UUID,
@@ -187,7 +189,7 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
         )
         self.current_interaction_storage.events[run_id].set_end_time()
 
-    def on_chat_model_start(
+    def on_chat_model_start(  # pylint: disable=arguments-differ
         self,
         serialized: dict[str, Any],
         messages: list[list[BaseMessage]],
@@ -207,7 +209,7 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
             run_id, parent_run_id, data, module="langchain"
         )
 
-    def on_chain_start(
+    def on_chain_start(  # pylint: disable=arguments-differ
         self,
         serialized: dict[str, Any],
         inputs: dict[str, Any],
@@ -227,7 +229,7 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
             run_id, parent_run_id, data, module="langchain"
         )
 
-    def on_chain_end(
+    def on_chain_end(  # pylint: disable=arguments-differ
         self,
         outputs: dict[str, Any],
         run_id: UUID,

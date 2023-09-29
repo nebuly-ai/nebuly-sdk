@@ -16,7 +16,10 @@ def handle_vertexai_unpickable_objects() -> None:
     def _pickle_text_generation_model(
         c: TextGenerationModel,
     ) -> tuple[type[TextGenerationModel], tuple[Any, ...]]:
-        return TextGenerationModel, (c._model_id, c._endpoint_name)
+        return TextGenerationModel, (
+            c._model_id,  # pylint: disable=protected-access
+            c._endpoint_name,  # pylint: disable=protected-access
+        )
 
     copyreg.pickle(TextGenerationModel, _pickle_text_generation_model)
     copyreg.pickle(ChatModel, _pickle_text_generation_model)
@@ -28,12 +31,12 @@ def extract_vertexai_input_and_history(
     function_name: str,
 ) -> tuple[str, list[tuple[str, Any]]]:
     if function_name in [
-        "language_models.TextGenerationModel.predict",
-        "language_models.TextGenerationModel.predict_async",
-        "language_models.TextGenerationModel.predict_streaming",
         "language_models.ChatSession.send_message",
         "language_models.ChatSession.send_message_async",
         "language_models.ChatSession.send_message_streaming",
+        "language_models.TextGenerationModel.predict",
+        "language_models.TextGenerationModel.predict_async",
+        "language_models.TextGenerationModel.predict_streaming",
     ]:
         prompt = get_argument(
             args=original_args,
@@ -47,6 +50,8 @@ def extract_vertexai_input_and_history(
         ]
         return prompt, history
 
+    raise ValueError(f"Unknown function name: {function_name}")
+
 
 def extract_vertexai_output(function_name: str, output: TextGenerationResponse) -> str:
     if function_name in [
@@ -57,6 +62,8 @@ def extract_vertexai_output(function_name: str, output: TextGenerationResponse) 
     ]:
         return output.text
 
+    raise ValueError(f"Unknown function name: {function_name}")
+
 
 def extract_vertexai_output_generator(
     function_name: str, outputs: Iterator[TextGenerationResponse]
@@ -66,3 +73,5 @@ def extract_vertexai_output_generator(
         "language_models.ChatSession.send_message_streaming",
     ]:
         return "".join([output.text for output in outputs])
+
+    raise ValueError(f"Unknown function name: {function_name}")

@@ -36,6 +36,8 @@ def extract_hf_hub_input_and_history(
         prompt = get_argument(original_args, original_kwargs, "prompt", 1)
         return prompt, []
 
+    raise ValueError(f"Unknown function name: {function_name}")
+
 
 def extract_hf_hub_output(
     function_name: str, output: str | ConversationalOutput | TextGenerationResponse
@@ -46,6 +48,8 @@ def extract_hf_hub_output(
         if isinstance(output, TextGenerationResponse):
             return output.generated_text
         return output
+
+    raise ValueError(f"Unknown function name: {function_name}")
 
 
 def extract_hf_hub_output_generator(
@@ -62,3 +66,5 @@ def extract_hf_hub_output_generator(
                 for output in outputs
             ]
         )
+
+    raise ValueError(f"Unknown function name: {function_name}")

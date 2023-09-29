@@ -44,12 +44,16 @@ def extract_cohere_input_and_history(
         history = [(el["user_name"], el["message"]) for el in chat_history]
         return prompt, history
 
+    raise ValueError(f"Unknown function name: {function_name}")
+
 
 def extract_cohere_output(function_name: str, output: Generations | Chat) -> str:
     if function_name in ["Client.generate", "AsyncClient.generate"]:
         return output.generations[0].text
     if function_name in ["Client.chat", "AsyncClient.chat"]:
         return output.text
+
+    raise ValueError(f"Unknown function name: {function_name}")
 
 
 def extract_cohere_output_generator(
@@ -65,3 +69,5 @@ def extract_cohere_output_generator(
                 if output.event_type == "text-generation"
             ]
         )
+
+    raise ValueError(f"Unknown function name: {function_name}")

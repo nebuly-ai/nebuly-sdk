@@ -19,12 +19,16 @@ def extract_openai_input_and_history(
         ]
         return original_kwargs.get("messages")[-1]["content"], history
 
+    raise ValueError(f"Unknown function name: {function_name}")
+
 
 def extract_openai_output(function_name: str, output: OpenAIObject) -> str:
     if function_name in ["Completion.create", "Completion.acreate"]:
         return output["choices"][0]["text"]
     if function_name in ["ChatCompletion.create", "ChatCompletion.acreate"]:
         return output["choices"][0]["message"]["content"]
+
+    raise ValueError(f"Unknown function name: {function_name}")
 
 
 def extract_openai_output_generator(
@@ -36,3 +40,5 @@ def extract_openai_output_generator(
         return "".join(
             [output["choices"][0]["delta"].get("content", "") for output in outputs]
         )
+
+    raise ValueError(f"Unknown function name: {function_name}")
