@@ -31,7 +31,7 @@ def init(
     import_and_patch_packages(PACKAGES, observer)
 
     try:
-        from nebuly.tracking_handlers import (  # pylint: disable=import-outside-toplevel
+        from nebuly.tracking_handlers import (  # pylint: disable=import-outside-toplevel  # noqa: E501
             set_tracking_handlers,
         )
 

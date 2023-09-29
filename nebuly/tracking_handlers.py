@@ -93,7 +93,7 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
     @property
     def current_interaction_storage(self) -> EventsStorage:
         return (
-            get_nearest_open_interaction()._events_storage  # pylint: disable=protected-access
+            get_nearest_open_interaction()._events_storage  # pylint: disable=protected-access  # noqa: E501
         )
 
     def on_tool_start(  # pylint: disable=arguments-differ

@@ -106,13 +106,13 @@ def _extract_output(  # pylint: disable=too-many-return-statements
 
         return extract_cohere_output(function_name, output)
     if module == "anthropic":
-        from nebuly.providers.anthropic import (  # pylint: disable=import-outside-toplevel
+        from nebuly.providers.anthropic import (  # pylint: disable=import-outside-toplevel  # noqa: E501
             extract_anthropic_output,
         )
 
         return extract_anthropic_output(function_name, output)
     if module == "huggingface_hub":
-        from nebuly.providers.huggingface_hub import (  # pylint: disable=import-outside-toplevel
+        from nebuly.providers.huggingface_hub import (  # pylint: disable=import-outside-toplevel  # noqa: E501
             extract_hf_hub_output,
         )
 
@@ -124,7 +124,7 @@ def _extract_output(  # pylint: disable=too-many-return-statements
 
         return extract_google_output(function_name, output)
     if module == "vertexai":
-        from nebuly.providers.vertexai import (  # pylint: disable=import-outside-toplevel
+        from nebuly.providers.vertexai import (  # pylint: disable=import-outside-toplevel  # noqa: E501
             extract_vertexai_output,
         )
 
@@ -146,19 +146,19 @@ def _extract_output_generator(outputs: Any, module: str, function_name: str) -> 
 
         return extract_cohere_output_generator(function_name, outputs)
     if module == "anthropic":
-        from nebuly.providers.anthropic import (  # pylint: disable=import-outside-toplevel,line-too-long
+        from nebuly.providers.anthropic import (  # pylint: disable=import-outside-toplevel,line-too-long  # noqa: E501
             extract_anthropic_output_generator,
         )
 
         return extract_anthropic_output_generator(function_name, outputs)
     if module == "huggingface_hub":
-        from nebuly.providers.huggingface_hub import (  # pylint: disable=import-outside-toplevel,line-too-long
+        from nebuly.providers.huggingface_hub import (  # pylint: disable=import-outside-toplevel,line-too-long  # noqa: E501
             extract_hf_hub_output_generator,
         )
 
         return extract_hf_hub_output_generator(function_name, outputs)
     if module == "vertexai":
-        from nebuly.providers.vertexai import (  # pylint: disable=import-outside-toplevel,line-too-long
+        from nebuly.providers.vertexai import (  # pylint: disable=import-outside-toplevel,line-too-long  # noqa: E501
             extract_vertexai_output_generator,
         )
 
@@ -228,13 +228,13 @@ def _extract_input_and_history(
             original_args, original_kwargs, function_name
         )
     if module == "anthropic":
-        from nebuly.providers.anthropic import (  # pylint: disable=import-outside-toplevel
+        from nebuly.providers.anthropic import (  # pylint: disable=import-outside-toplevel  # noqa: E501
             extract_anthropic_input_and_history,
         )
 
         return extract_anthropic_input_and_history(original_kwargs, function_name)
     if module == "huggingface_hub":
-        from nebuly.providers.huggingface_hub import (  # pylint: disable=import-outside-toplevel
+        from nebuly.providers.huggingface_hub import (  # pylint: disable=import-outside-toplevel  # noqa: E501
             extract_hf_hub_input_and_history,
         )
 
@@ -250,7 +250,7 @@ def _extract_input_and_history(
             original_args, original_kwargs, function_name
         )
     if module == "vertexai":
-        from nebuly.providers.vertexai import (  # pylint: disable=import-outside-toplevel
+        from nebuly.providers.vertexai import (  # pylint: disable=import-outside-toplevel  # noqa: E501
             extract_vertexai_input_and_history,
         )
 
@@ -393,7 +393,7 @@ def _handle_unpickleable_objects() -> None:
         pass
 
     try:
-        from nebuly.providers.anthropic import (  # pylint: disable=import-outside-toplevel
+        from nebuly.providers.anthropic import (  # pylint: disable=import-outside-toplevel  # noqa: E501
             handle_anthropic_unpickable_objects,
         )
 
@@ -411,7 +411,7 @@ def _handle_unpickleable_objects() -> None:
         pass
 
     try:
-        from nebuly.providers.vertexai import (  # pylint: disable=import-outside-toplevel
+        from nebuly.providers.vertexai import (  # pylint: disable=import-outside-toplevel  # noqa: E501
             handle_vertexai_unpickable_objects,
         )
 
@@ -458,7 +458,7 @@ def _is_generator(obj: Any) -> bool:
         pass
 
     try:
-        from nebuly.providers.anthropic import (  # pylint: disable=import-outside-toplevel
+        from nebuly.providers.anthropic import (  # pylint: disable=import-outside-toplevel  # noqa: E501
             is_anthropic_generator,
         )
 
@@ -482,7 +482,7 @@ def coroutine_wrapper(
         logger.debug("Calling %s.%s", module, function_name)
 
         if module == "langchain":
-            from nebuly.providers.langchain import (  # pylint: disable=import-outside-toplevel
+            from nebuly.providers.langchain import (  # pylint: disable=import-outside-toplevel  # noqa: E501
                 wrap_langchain_async,
             )
 
@@ -568,7 +568,7 @@ def function_wrapper(
         logger.debug("Calling %s.%s", module, function_name)
 
         if module == "langchain":
-            from nebuly.providers.langchain import (  # pylint: disable=import-outside-toplevel
+            from nebuly.providers.langchain import (  # pylint: disable=import-outside-toplevel  # noqa: E501
                 wrap_langchain,
             )
 
