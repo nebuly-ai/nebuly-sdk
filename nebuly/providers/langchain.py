@@ -97,6 +97,13 @@ def _get_input_and_history(
             return messages[-1][1], messages[:-1]
 
 
+def _get_output(chain: Chain, result: dict[str, Any]) -> dict[str, Any]:
+    output = {}
+    for key in chain.output_keys:
+        output[key] = result[key]
+    return output
+
+
 def wrap_langchain(
     observer: Callable[[Any], None],
     function_name: str,
@@ -128,7 +135,7 @@ def wrap_langchain(
                 interaction.set_input(chain_input)
                 interaction.set_history(history)
                 original_res = f(*args, **kwargs)
-                interaction.set_output(original_res)
+                interaction.set_output(_get_output(args[0], original_res))
                 return original_res
 
 
@@ -170,6 +177,3 @@ async def wrap_langchain_async(
                     original_res = await f(*args, **kwargs)
                 interaction.set_output(original_res)
                 return original_res
-
-
-# TODO: Add test for sequential chains
