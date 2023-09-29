@@ -1,9 +1,11 @@
+import uuid
 from datetime import datetime, timezone
 
 from nebuly.entities import SpanWatch
 
 
 def test_watched_to_dict() -> None:
+    span_id = uuid.uuid4()
     watched = SpanWatch(
         module="module",
         version="version",
@@ -16,6 +18,8 @@ def test_watched_to_dict() -> None:
         generator=False,
         generator_first_element_timestamp=None,
         provider_extras={"provider_extra": "provider_extra"},
+        rag_source="rag_source",
+        span_id=span_id,
     )
     assert watched.to_dict() == {
         "module": "module",
@@ -29,4 +33,6 @@ def test_watched_to_dict() -> None:
         "generator": False,
         "generator_first_element_timestamp": None,
         "provider_extras": {"provider_extra": "provider_extra"},
+        "rag_source": "rag_source",
+        "span_id": str(span_id),
     }

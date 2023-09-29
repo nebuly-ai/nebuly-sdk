@@ -70,6 +70,8 @@ class SpanWatch:  # pylint: disable=too-many-instance-attributes
                 else None
             ),
             "provider_extras": self.provider_extras,
+            "rag_source": self.rag_source,
+            "span_id": str(self.span_id),
         }
 
 
