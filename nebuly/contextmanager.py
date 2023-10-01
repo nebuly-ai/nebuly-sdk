@@ -217,7 +217,7 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
         for span in self.spans:
             if span.provider_extras is None:
                 continue
-            parent_id = span.provider_extras.get("platform_parent_run_id")
+            parent_id = span.provider_extras.get("parent_run_id")
             if parent_id is not None:
                 self.hierarchy[span.span_id] = parent_id
         self._observer(self._as_interaction_watch())
@@ -256,7 +256,7 @@ def get_nearest_open_interaction() -> InteractionContext:
 
 @contextmanager
 def new_interaction(
-    platform_user: str | None = None, platform_user_group_profile: str | None = None
+    user_id: str | None = None, user_group_profile: str | None = None
 ) -> Generator[InteractionContext, None, None]:
     try:
         get_nearest_open_interaction()
@@ -265,9 +265,7 @@ def new_interaction(
         pass
 
     try:
-        yield InteractionContext(
-            platform_user, platform_user_group_profile, do_not_call_directly=True
-        )
+        yield InteractionContext(user_id, user_group_profile, do_not_call_directly=True)
     finally:
         try:
             interaction = get_nearest_open_interaction()
