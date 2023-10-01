@@ -63,8 +63,8 @@ def test_langchain_llm_chain__no_context_manager(openai_completion: dict) -> Non
             chain = LLMChain(llm=llm, prompt=prompt)
             result = chain.run(
                 product="colorful socks",
-                platform_user="test_user",
-                platform_user_group_profile="test_group_profile",
+                user_id="test_user",
+                user_group_profile="test_group_profile",
             )
 
             assert result is not None
@@ -105,7 +105,7 @@ def test_langchain_llm_chain__with_context_manager(openai_completion: dict) -> N
 
             chain = LLMChain(llm=llm, prompt=prompt)
             with new_interaction(
-                platform_user="test", platform_user_group_profile="tier 1"
+                user_id="test", user_group_profile="tier 1"
             ) as interaction:
                 interaction.set_input("colorful socks new")
                 result = chain.run("colorful socks")
@@ -146,7 +146,7 @@ def test_langchain_llm_chain__multiple_chains_in_interaction(
 
             chain = LLMChain(llm=llm, prompt=prompt)
             with new_interaction(
-                platform_user="test", platform_user_group_profile="tier 1"
+                user_id="test", user_group_profile="tier 1"
             ) as interaction:
                 interaction.set_input("colorful socks new")
                 result_0 = chain.run("colorful socks")
@@ -187,13 +187,13 @@ def test_langchain_llm_chain__multiple_interactions(openai_completion: dict) -> 
 
             chain = LLMChain(llm=llm, prompt=prompt)
             with new_interaction(
-                platform_user="test", platform_user_group_profile="tier 1"
+                user_id="test", user_group_profile="tier 1"
             ) as interaction:
                 interaction.set_input("colorful socks")
                 result_0 = chain.run("colorful socks")
                 interaction.set_output("Sample langchain response 1")
             with new_interaction(
-                platform_user="test", platform_user_group_profile="tier 1"
+                user_id="test", user_group_profile="tier 1"
             ) as interaction:
                 interaction.set_input("colorful ties")
                 result_1 = chain.run("colorful ties")
