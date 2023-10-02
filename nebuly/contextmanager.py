@@ -28,7 +28,7 @@ class EventData:
         if self.args is None:
             self.args = tuple()
         if self.kwargs is None:
-            self.kwargs = dict()
+            self.kwargs = {}
         self.args += args if args is not None else tuple()
         self.kwargs = dict(self.kwargs, **kwargs) if kwargs is not None else self.kwargs
         self.output = output

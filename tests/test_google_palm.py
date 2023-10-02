@@ -4,10 +4,10 @@ from unittest.mock import patch
 
 import google.generativeai as palm  # type: ignore
 import pytest
-from google.generativeai.discuss import (  # pylint: disable=no-name-in-module  # type: ignore  # noqa: E501
+from google.generativeai.discuss import (  # type: ignore # pylint: disable=no-name-in-module  # noqa: E501
     ChatResponse,
 )
-from google.generativeai.text import (  # pylint: disable=no-name-in-module  # type: ignore  # noqa: E501
+from google.generativeai.text import (  # type: ignore  # pylint: disable=no-name-in-module  # noqa: E501
     Completion,
 )
 from google.generativeai.types.discuss_types import MessageDict  # type: ignore

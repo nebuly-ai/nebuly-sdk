@@ -36,7 +36,7 @@ def test_anthropic_completion__no_context_manager(
                 api_key="my api key",
             )
 
-            result = client.completions.create(
+            result = client.completions.create(  # type: ignore
                 model="claude-2",
                 max_tokens_to_sample=300,
                 prompt=f"{HUMAN_PROMPT} how does a court case get to the "

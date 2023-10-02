@@ -69,7 +69,7 @@ def test_cannot_directly_create_interaction() -> None:
 def test_cannot_create_interaction_inside_interaction() -> None:
     with new_interaction(
         "test_user", "test_group_profile"
-    ) as interaction:  # noqa: F841
+    ) as interaction:  # noqa: F841  pylint: disable=unused-variable
         with pytest.raises(AlreadyInInteractionContext):
             with new_interaction(
                 "test_user"

@@ -21,7 +21,7 @@ from tests.common import nebuly_init
 
 @pytest.fixture(name="cohere_generate")
 def fixture_cohere_generate() -> list[Generation]:
-    return Generations.from_dict(
+    return Generations.from_dict(  # type: ignore
         {
             "id": "5dd1e0ae-ee97-42ac-91df-6ffe5eb4b498",
             "generations": [

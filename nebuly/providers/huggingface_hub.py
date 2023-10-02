@@ -12,7 +12,7 @@ from nebuly.providers.utils import get_argument
 
 
 def extract_hf_hub_input_and_history(
-    original_args: tuple[Any],
+    original_args: tuple[Any, ...],
     original_kwargs: dict[str, Any],
     function_name: str,
 ) -> tuple[str, list[tuple[str, Any]]]:

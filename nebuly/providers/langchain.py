@@ -73,9 +73,9 @@ def _process_chat_prompt_template(
     messages = []
     for message in prompt.messages:
         if isinstance(inputs, dict):
-            input_vars = {key: inputs.get(key) for key in message.input_variables}
+            input_vars = {key: inputs.get(key) for key in message.input_variables}  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
         else:
-            input_vars = {message.input_variables[0]: inputs}
+            input_vars = {message.input_variables[0]: inputs}  # type: ignore
         if isinstance(message, SystemMessagePromptTemplate):
             messages.append(("system", message.format(**input_vars).content))
         elif isinstance(message, HumanMessagePromptTemplate):
@@ -116,7 +116,7 @@ def _get_input_and_history(
 
 def _get_output(chain: Chain, result: dict[str, Any]) -> str:
     if len(chain.output_keys) == 1:
-        return result[chain.output_keys[0]]
+        return str(result[chain.output_keys[0]])
     output = {}
     for key in chain.output_keys:
         output[key] = result[key]
@@ -127,7 +127,7 @@ def wrap_langchain(
     observer: Observer,
     function_name: str,
     f: Callable[[Any], Any],
-    args: tuple[Any],
+    args: tuple[Any, ...],
     kwargs: dict[str, Any],
 ) -> Any:
     if function_name.startswith(
@@ -144,19 +144,19 @@ def wrap_langchain(
                 inputs = kwargs.get("inputs")
                 handler = [
                     handler
-                    for handler in kwargs.get("callbacks")
+                    for handler in kwargs.get("callbacks", [])
                     if isinstance(handler, LangChainTrackingHandler)
                 ][0]
                 interaction._set_user(  # pylint: disable=protected-access
-                    handler.nebuly_user
+                    handler.nebuly_user  # type: ignore
                 )
                 interaction._set_user_group_profile(  # pylint: disable=protected-access
-                    handler.nebuly_user_group
+                    handler.nebuly_user_group  # type: ignore
                 )
                 interaction._set_observer(observer)  # pylint: disable=protected-access
                 chain_input, history = _get_input_and_history(args[0], inputs)
-                interaction.set_input(chain_input)
-                interaction.set_history(history)
+                interaction.set_input(chain_input)  # type: ignore
+                interaction.set_history(history)  # type: ignore
                 original_res = f(*args, **kwargs)
                 interaction.set_output(_get_output(args[0], original_res))
                 return original_res
@@ -168,7 +168,7 @@ async def wrap_langchain_async(
     observer: Observer,
     function_name: str,
     f: Callable[[Any], Any],
-    args: tuple[Any],
+    args: tuple[Any, ...],
     kwargs: dict[str, Any],
 ) -> Any:
     if function_name.startswith(
@@ -196,8 +196,8 @@ async def wrap_langchain_async(
                     )
                 interaction._set_observer(observer)  # pylint: disable=protected-access
                 chain_input, history = _get_input_and_history(args[0], inputs)
-                interaction.set_input(chain_input)
-                interaction.set_history(history)
+                interaction.set_input(chain_input)  # type: ignore
+                interaction.set_history(history)  # type: ignore
                 if isasyncgenfunction(f):
                     original_res = f(*args, **kwargs)
                 else:

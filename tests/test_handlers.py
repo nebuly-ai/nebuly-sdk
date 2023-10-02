@@ -149,11 +149,11 @@ def test_event_handler_on_chain_start__existing_root_chain(
         event_handler.current_interaction_storage.events[run_id].hierarchy is not None
     )
     assert (
-        event_handler.current_interaction_storage.events[run_id].hierarchy.parent_run_id
+        event_handler.current_interaction_storage.events[run_id].hierarchy.parent_run_id  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
         == root_id
     )
     assert (
-        event_handler.current_interaction_storage.events[run_id].hierarchy.root_run_id
+        event_handler.current_interaction_storage.events[run_id].hierarchy.root_run_id  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
         == root_id
     )
     assert (
@@ -355,9 +355,9 @@ def test_event_handler_on_tool_start(
     assert (
         event_handler.current_interaction_storage.events[
             parent_tool_id
-        ].hierarchy.parent_run_id
+        ].hierarchy.parent_run_id  # type: ignore
         == chain_id
-    )  # noqa: E501
+    )
     assert event_handler.current_interaction_storage.events[
         parent_tool_id
     ].data.kwargs == {
@@ -370,7 +370,7 @@ def test_event_handler_on_tool_start(
         event_handler.current_interaction_storage.events[run_id].hierarchy is not None
     )
     assert (
-        event_handler.current_interaction_storage.events[run_id].hierarchy.parent_run_id
+        event_handler.current_interaction_storage.events[run_id].hierarchy.parent_run_id  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
         == parent_tool_id
     )
     assert event_handler.current_interaction_storage.events[run_id].data.kwargs == {
@@ -556,7 +556,7 @@ def test_event_handler_on_retriever_start(
     assert (
         event_handler.current_interaction_storage.events[
             retriever_id
-        ].hierarchy.parent_run_id  # noqa: E501
+        ].hierarchy.parent_run_id  # type: ignore
         == chain_id
     )
     assert (
@@ -750,7 +750,7 @@ def test_event_handler_on_llm_start(  # pylint: disable=too-many-arguments
     assert (
         event_handler.current_interaction_storage.events[
             llm_model_id
-        ].hierarchy.parent_run_id  # noqa: E501
+        ].hierarchy.parent_run_id  # type: ignore
         == llm_chain_id
     )
     assert (
@@ -861,7 +861,7 @@ def test_event_handler_on_chat_model_start(  # pylint: disable=too-many-argument
     assert (
         event_handler.current_interaction_storage.events[
             llm_model_id
-        ].hierarchy.parent_run_id
+        ].hierarchy.parent_run_id  # type: ignore
         == llm_chain_id
     )
     assert (

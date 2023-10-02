@@ -34,7 +34,7 @@ def handle_cohere_unpickable_objects() -> None:
 
 
 def extract_cohere_input_and_history(
-    original_args: tuple[Any],
+    original_args: tuple[Any, ...],
     original_kwargs: dict[str, Any],
     function_name: str,
 ) -> tuple[str, list[tuple[str, Any]]]:

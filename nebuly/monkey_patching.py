@@ -208,10 +208,10 @@ def _add_interaction_span(  # pylint: disable=too-many-arguments
             interaction._set_observer(observer)  # pylint: disable=protected-access
             interaction._add_span(watched)  # pylint: disable=protected-access
             interaction._set_user(  # pylint: disable=protected-access
-                nebuly_kwargs.get("user_id")
+                nebuly_kwargs.get("user_id")  # type: ignore
             )
             interaction._set_user_group_profile(  # pylint: disable=protected-access
-                nebuly_kwargs.get("user_group_profile")
+                nebuly_kwargs.get("user_group_profile")  # type: ignore
             )
             interaction.set_output(output)
 

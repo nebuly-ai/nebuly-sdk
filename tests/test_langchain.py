@@ -27,7 +27,7 @@ orig_func_chat_gen = langchain.chat_models.base.BaseChatModel.generate
 def nebuly_init(observer: Observer) -> None:
     # Reset original functions
     langchain.llms.base.BaseLLM.generate = orig_func_llm_gen  # type: ignore
-    langchain.chat_models.base.BaseChatModel.generate = orig_func_chat_gen  # type: ignore  # noqa: E501
+    langchain.chat_models.base.BaseChatModel.generate = orig_func_chat_gen  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
     common.nebuly_init(observer)
 
 
@@ -355,8 +355,8 @@ def test_langchain__chain_with_function_tool(
                 "calculating lengths of words."
             )
             prompt = OpenAIFunctionsAgent.create_prompt(system_message=system_message)
-            agent = OpenAIFunctionsAgent(llm=llm, tools=tools, prompt=prompt)
-            agent_executor = AgentExecutor(agent=agent, tools=tools)
+            agent = OpenAIFunctionsAgent(llm=llm, tools=tools, prompt=prompt)  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
+            agent_executor = AgentExecutor(agent=agent, tools=tools)  # type: ignore
             agent_executor.run("how many letters in the word educa?")
 
             assert mock_observer.call_count == 1
@@ -376,6 +376,7 @@ def test_langchain__chain_with_function_tool(
             for span in interaction_watch.spans:
                 assert isinstance(span, SpanWatch)
                 if span.module == "langchain":
+                    assert span.provider_extras is not None
                     event_type = span.provider_extras.get("event_type")
                     assert event_type is not None
                     if event_type == EventType.TOOL.value:
