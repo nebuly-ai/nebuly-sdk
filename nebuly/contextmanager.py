@@ -223,6 +223,8 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
                 else None
                 for event in self._events_storage.events.values()
             }
+        else:
+            self.hierarchy = {}
         for span in self.spans:
             if span.provider_extras is None:
                 continue
@@ -238,7 +240,7 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
     def _set_user_group_profile(self, value: str) -> None:
         self.user_group_profile = value
 
-    def _as_interaction_watch(self) -> InteractionWatch:
+    def _validate_interaction(self) -> None:
         if self.input is None:
             raise ValueError("Interaction has no input.")
         if self.output is None:
@@ -247,14 +249,17 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
             raise ValueError("Interaction has no history.")
         if self.hierarchy is None:
             raise ValueError("Interaction has no hierarchy.")
+
+    def _as_interaction_watch(self) -> InteractionWatch:
+        self._validate_interaction()
         return InteractionWatch(
-            input=self.input,
-            output=self.output,
+            input=self.input,  # type: ignore
+            output=self.output,  # type: ignore
             time_start=self.time_start,
             time_end=datetime.now(timezone.utc),
             spans=self.spans,
-            history=self.history,
-            hierarchy=self.hierarchy,
+            history=self.history,  # type: ignore
+            hierarchy=self.hierarchy,  # type: ignore
             end_user=self.user,
             end_user_group_profile=self.user_group_profile,
         )

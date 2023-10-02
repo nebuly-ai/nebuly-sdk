@@ -180,16 +180,28 @@ def _add_interaction_span(  # pylint: disable=too-many-arguments
     stream: bool = False,
 ) -> None:
     try:
+        user_input, history = _extract_input_and_history(
+            original_args, original_kwargs, module, function_name
+        )
+    except Exception:  # pylint: disable=broad-except
+        user_input, history = "", []
+    output = (
+        _extract_output(output, module, function_name)
+        if not stream
+        else _extract_output_generator(output, module, function_name)
+    )
+
+    try:
         interaction = get_nearest_open_interaction()
         interaction._set_observer(observer)  # pylint: disable=protected-access
         interaction._add_span(watched)  # pylint: disable=protected-access
+        if interaction.input is None:
+            interaction.set_input(user_input)
+        if interaction.history is None:
+            interaction.set_history(history)
+        if interaction.output is None:
+            interaction.set_output(output)
     except NotInInteractionContext:
-        try:
-            user_input, history = _extract_input_and_history(
-                original_args, original_kwargs, module, function_name
-            )
-        except Exception:  # pylint: disable=broad-except
-            user_input, history = None, None
         with new_interaction() as interaction:
             interaction.set_input(user_input)
             interaction.set_history(history)
@@ -201,11 +213,7 @@ def _add_interaction_span(  # pylint: disable=too-many-arguments
             interaction._set_user_group_profile(  # pylint: disable=protected-access
                 nebuly_kwargs.get("user_group_profile")
             )
-            interaction.set_output(
-                _extract_output(output, module, function_name)
-                if not stream
-                else _extract_output_generator(output, module, function_name)
-            )
+            interaction.set_output(output)
 
 
 def _extract_input_and_history(

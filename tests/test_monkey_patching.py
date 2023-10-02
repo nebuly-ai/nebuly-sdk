@@ -202,33 +202,37 @@ def test_patcher_calls_observer_after_generator_has_finished(
     observer: list[InteractionWatch] = []
 
     with patch("nebuly.monkey_patching._extract_output_generator", return_value=None):
-        patched = _patcher(observer.append, "module", "0.1.0", "function_name")(
-            to_patched_generator
-        )
+        with patch(
+            "nebuly.contextmanager.InteractionContext._validate_interaction",
+            return_value=True,
+        ):
+            patched = _patcher(observer.append, "module", "0.1.0", "function_name")(
+                to_patched_generator
+            )
 
-        before = datetime.now(timezone.utc)
-        generator = patched(*args, **kwargs)
-        datetime.now(timezone.utc)
+            before = datetime.now(timezone.utc)
+            generator = patched(*args, **kwargs)
+            datetime.now(timezone.utc)
 
-        consumed_generator = list(generator)
-        after = datetime.now(timezone.utc)
+            consumed_generator = list(generator)
+            after = datetime.now(timezone.utc)
 
-        assert consumed_generator == [0, 1, 2]
-        assert len(observer) == 1
-        watched = observer[0]
-        assert isinstance(watched, InteractionWatch)
-        assert len(watched.spans) == 1
-        span = watched.spans[0]
-        assert span.returned == [0, 1, 2]
-        assert span.generator is True
-        assert span.generator_first_element_timestamp is not None
-        assert (
-            before
-            <= span.called_start
-            <= span.generator_first_element_timestamp
-            <= span.called_end
-            <= after
-        )
+            assert consumed_generator == [0, 1, 2]
+            assert len(observer) == 1
+            watched = observer[0]
+            assert isinstance(watched, InteractionWatch)
+            assert len(watched.spans) == 1
+            span = watched.spans[0]
+            assert span.returned == [0, 1, 2]
+            assert span.generator is True
+            assert span.generator_first_element_timestamp is not None
+            assert (
+                before
+                <= span.called_start
+                <= span.generator_first_element_timestamp
+                <= span.called_end
+                <= after
+            )
 
 
 @pytest.mark.asyncio
@@ -253,14 +257,18 @@ async def test_patcher_async_generator() -> None:
         yield 2
 
     with patch("nebuly.monkey_patching._extract_output_generator", return_value=None):
-        patched = _patcher(lambda _: None, "module", "0.1.0", "function_name")(
-            to_patched_async_generator
-        )
+        with patch(
+            "nebuly.contextmanager.InteractionContext._validate_interaction",
+            return_value=True,
+        ):
+            patched = _patcher(lambda _: None, "module", "0.1.0", "function_name")(
+                to_patched_async_generator
+            )
 
-        generator = await patched()
+            generator = await patched()
 
-        result = [i async for i in generator]
-        assert result == [1, 2]
+            result = [i async for i in generator]
+            assert result == [1, 2]
 
 
 @pytest.mark.asyncio
@@ -274,11 +282,15 @@ async def test_patcher_async_return_generator() -> None:
         return (i async for i in async_range(3))
 
     with patch("nebuly.monkey_patching._extract_output_generator", return_value=None):
-        patched = _patcher(lambda _: None, "module", "0.1.0", "function_name")(
-            to_patched_async_generator
-        )
+        with patch(
+            "nebuly.contextmanager.InteractionContext._validate_interaction",
+            return_value=True,
+        ):
+            patched = _patcher(lambda _: None, "module", "0.1.0", "function_name")(
+                to_patched_async_generator
+            )
 
-        generator = await patched()
+            generator = await patched()
 
-        result = [i async for i in generator]
-        assert result == [0, 1, 2]
+            result = [i async for i in generator]
+            assert result == [0, 1, 2]
