@@ -1,4 +1,6 @@
 # pylint: disable=duplicate-code
+from __future__ import annotations
+
 import json
 from typing import AsyncGenerator
 from unittest.mock import AsyncMock, patch
