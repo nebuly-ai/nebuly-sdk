@@ -34,8 +34,8 @@ def test_hf_hub_text_generation_str(hf_hub_text_generation_str):
             client = InferenceClient()
             result = client.text_generation(
                 "The huggingface_hub library is ",
-                platform_user="test_user",
-                platform_user_group_profile="test_group",
+                user_id="test_user",
+                user_group_profile="test_group",
             )
 
             assert result is not None
@@ -307,7 +307,7 @@ def test_hf_hub_conversational__with_context_manager__no_history(hf_hub_conversa
             nebuly_init(observer=mock_observer)
             client = InferenceClient()
             with new_interaction(
-                platform_user="test_user", platform_user_group_profile="test_group"
+                user_id="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Wow, that's scary!")
                 result = client.conversational(
@@ -345,7 +345,7 @@ def test_hf_hub_conversational__with_context_manager__with_history(
             nebuly_init(observer=mock_observer)
             client = InferenceClient()
             with new_interaction(
-                platform_user="test_user", platform_user_group_profile="test_group"
+                user_id="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Wow, that's scary!")
                 interaction.set_history(

@@ -42,8 +42,8 @@ def test_openai_completion__no_context_manager(openai_completion):
                 prompt="Say this is a test",
                 max_tokens=7,
                 temperature=0,
-                platform_user="test_user",
-                platform_user_group_profile="test_group",
+                user_id="test_user",
+                user_group_profile="test_group",
             )
             assert result is not None
             assert mock_observer.call_count == 1
@@ -68,7 +68,7 @@ def test_openai_completion__with_context_manager(openai_completion):
             mock_completion_create.return_value = openai_completion
             nebuly_init(observer=mock_observer)
             with new_interaction(
-                platform_user="test_user", platform_user_group_profile="test_group"
+                user_id="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Another input")
                 result = openai.Completion.create(
@@ -102,7 +102,7 @@ def test_openai_completion__multiple_spans_in_interaction(openai_completion):
             mock_completion_create.return_value = openai_completion
             nebuly_init(observer=mock_observer)
             with new_interaction(
-                platform_user="test_user", platform_user_group_profile="test_group"
+                user_id="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Initial input")
                 result = openai.Completion.create(
@@ -146,7 +146,7 @@ def test_openai_completion__multiple_interactions(openai_completion):
             mock_completion_create.return_value = openai_completion
             nebuly_init(observer=mock_observer)
             with new_interaction(
-                platform_user="test_user", platform_user_group_profile="test_group"
+                user_id="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Initial input 1")
                 result = openai.Completion.create(
@@ -159,7 +159,7 @@ def test_openai_completion__multiple_interactions(openai_completion):
                 interaction.set_output("Final output 1")
 
             with new_interaction(
-                platform_user="test_user", platform_user_group_profile="test_group"
+                user_id="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Initial input 2")
                 result = openai.Completion.create(
@@ -290,7 +290,7 @@ def test_openai_chat__with_context_manager(openai_chat):
             mock_completion_create.return_value = openai_chat
             nebuly_init(observer=mock_observer)
             with new_interaction(
-                platform_user="test_user", platform_user_group_profile="test_group"
+                user_id="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Hello!")
                 interaction.set_history([("system", "You are a helpful assistant.")])
@@ -329,7 +329,7 @@ def test_openai_chat__multiple_spans_in_interaction(openai_chat):
             mock_completion_create.return_value = openai_chat
             nebuly_init(observer=mock_observer)
             with new_interaction(
-                platform_user="test_user", platform_user_group_profile="test_group"
+                user_id="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Hello!")
                 interaction.set_history([("system", "You are a helpful assistant.")])
@@ -379,7 +379,7 @@ def test_openai_chat__multiple_interactions(openai_chat):
             mock_completion_create.return_value = openai_chat
             nebuly_init(observer=mock_observer)
             with new_interaction(
-                platform_user="test_user", platform_user_group_profile="test_group"
+                user_id="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Hello!")
                 interaction.set_history([("system", "You are a helpful assistant.")])
@@ -394,7 +394,7 @@ def test_openai_chat__multiple_interactions(openai_chat):
                 interaction.set_output("Another output")
 
             with new_interaction(
-                platform_user="test_user", platform_user_group_profile="test_group"
+                user_id="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Hello!")
                 interaction.set_history([("system", "You are a helpful assistant.")])

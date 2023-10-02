@@ -36,7 +36,7 @@ def _get_tracking_info_for_provider_call(**kwargs: Any) -> dict[str, Any]:
     # Get the parent_run_id from the CallbackManager
     callback_manager = callbacks
     parent_run_id = cast(UUID, callback_manager.parent_run_id)
-    additional_kwargs = {"platform_parent_run_id": parent_run_id}
+    additional_kwargs = {"parent_run_id": parent_run_id}
 
     # Get the root_run_id from the LangChainTrackingHandler
     for handler in callback_manager.handlers:
@@ -45,7 +45,7 @@ def _get_tracking_info_for_provider_call(**kwargs: Any) -> dict[str, Any]:
             root_run_id = interaction._events_storage.get_root_id(  # pylint: disable=protected-access  # noqa: E501
                 parent_run_id
             )
-            additional_kwargs["platform_root_run_id"] = root_run_id
+            additional_kwargs["root_run_id"] = root_run_id
             break
 
     return additional_kwargs
@@ -184,8 +184,8 @@ async def wrap_langchain_async(
             with new_interaction() as interaction:
                 inputs = kwargs.get("inputs")
                 if isinstance(inputs, dict):
-                    user = inputs.pop("platform_user", None)
-                    user_group = inputs.pop("platform_user_group_profile", None)
+                    user = inputs.pop("user_id", None)
+                    user_group = inputs.pop("user_group_profile", None)
                     interaction._set_user(user)  # pylint: disable=protected-access
                     interaction._set_user_group_profile(  # pylint: disable=protected-access  # noqa: E501
                         user_group

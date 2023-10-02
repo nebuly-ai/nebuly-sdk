@@ -67,8 +67,8 @@ def test_google_palm_completion__no_context_manager(palm_completion):
 
             result = palm.generate_text(  # pylint: disable=unexpected-keyword-arg
                 prompt="The opposite of hot is",
-                platform_user="test_user",
-                platform_user_group_profile="test_group",
+                user_id="test_user",
+                user_group_profile="test_group",
             )
             assert result is not None
             assert mock_observer.call_count == 1
@@ -95,7 +95,7 @@ def test_google_palm_completion__with_context_manager(palm_completion):
             palm.configure(api_key="AIzaSyDuQlj_CeVZUFOj8oRm_dwotC4ucAElF_w")
 
             with new_interaction(
-                platform_user="test_user", platform_user_group_profile="test_group"
+                user_id="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Another input")
                 result = palm.generate_text(prompt="The opposite of hot is")
@@ -175,7 +175,7 @@ def test_google_palm_chat__first_interaction__with_context_manager(palm_chat_res
             palm.configure(api_key="test")
 
             with new_interaction(
-                platform_user="test_user", platform_user_group_profile="test_group"
+                user_id="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Another input")
                 result = palm.chat(messages=["Hello."])
@@ -298,7 +298,7 @@ def test_google_palm_chat__with_history__with_context_manager(
             palm.configure(api_key="test")
 
             with new_interaction(
-                platform_user="test_user", platform_user_group_profile="test_group"
+                user_id="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Another input")
                 interaction.set_history(
@@ -380,7 +380,7 @@ def test_google_palm_chat__reply__with_context_manager(
             palm.configure(api_key="test")
 
             with new_interaction(
-                platform_user="test_user", platform_user_group_profile="test_group"
+                user_id="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Another input")
                 result = palm_chat_response.reply("What can you do?")

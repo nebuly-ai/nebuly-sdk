@@ -38,8 +38,8 @@ def test_anthropic_completion__no_context_manager(anthropic_completion):
                 max_tokens_to_sample=300,
                 prompt=f"{HUMAN_PROMPT} how does a court case get to the "
                 f"Supreme Court?{AI_PROMPT}",
-                platform_user="test_user",
-                platform_user_group_profile="test_group",
+                user_id="test_user",
+                user_group_profile="test_group",
             )
             assert result is not None
             assert mock_observer.call_count == 1
@@ -74,7 +74,7 @@ def test_anthropic_completion__with_context_manager(anthropic_completion):
             )
 
             with new_interaction(
-                platform_user="test_user", platform_user_group_profile="test_group"
+                user_id="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Sample input 1")
                 result = client.completions.create(

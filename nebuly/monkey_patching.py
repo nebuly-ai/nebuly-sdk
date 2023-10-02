@@ -10,6 +10,7 @@ from inspect import isasyncgenfunction, iscoroutinefunction
 from types import ModuleType
 from typing import Any, AsyncGenerator, Callable, Generator, Iterable
 
+from nebuly.config import NEBULY_KWARGS
 from nebuly.contextmanager import (
     NotInInteractionContext,
     get_nearest_open_interaction,
@@ -81,7 +82,7 @@ def _split_nebuly_kwargs(
     nebuly_kwargs = {}
     function_kwargs = {}
     for key in kwargs:
-        if key.startswith("platform_"):
+        if key in NEBULY_KWARGS:
             nebuly_kwargs[key] = kwargs[key]
         else:
             function_kwargs[key] = kwargs[key]
@@ -195,10 +196,10 @@ def _add_interaction_span(  # pylint: disable=too-many-arguments
             interaction._set_observer(observer)  # pylint: disable=protected-access
             interaction._add_span(watched)  # pylint: disable=protected-access
             interaction._set_user(  # pylint: disable=protected-access
-                nebuly_kwargs.get("platform_user")
+                nebuly_kwargs.get("user_id")
             )
             interaction._set_user_group_profile(  # pylint: disable=protected-access
-                nebuly_kwargs.get("platform_user_group_profile")
+                nebuly_kwargs.get("user_group_profile")
             )
             interaction.set_output(
                 _extract_output(output, module, function_name)
