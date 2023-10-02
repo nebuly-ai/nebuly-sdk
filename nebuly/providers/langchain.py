@@ -19,6 +19,7 @@ from nebuly.contextmanager import (
     get_nearest_open_interaction,
     new_interaction,
 )
+from nebuly.entities import Observer
 from nebuly.tracking_handlers import LangChainTrackingHandler
 
 
@@ -123,7 +124,7 @@ def _get_output(chain: Chain, result: dict[str, Any]) -> str:
 
 
 def wrap_langchain(
-    observer: Callable[[Any], None],
+    observer: Observer,
     function_name: str,
     f: Callable[[Any], Any],
     args: tuple[Any],
@@ -164,7 +165,7 @@ def wrap_langchain(
 
 
 async def wrap_langchain_async(
-    observer: Callable[[Any], None],
+    observer: Observer,
     function_name: str,
     f: Callable[[Any], Any],
     args: tuple[Any],

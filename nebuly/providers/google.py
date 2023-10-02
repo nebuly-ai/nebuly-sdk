@@ -3,10 +3,10 @@ from __future__ import annotations
 import copyreg
 from typing import Any
 
-from google.generativeai.discuss import (  # pylint: disable=no-name-in-module  # type: ignore  # noqa: E501
+from google.generativeai.discuss import (  # type: ignore  # pylint: disable=no-name-in-module  # noqa: E501
     ChatResponse,
 )
-from google.generativeai.text import (  # pylint: disable=no-name-in-module  # type: ignore  # noqa: E501
+from google.generativeai.text import (  # type: ignore  # pylint: disable=no-name-in-module  # noqa: E501
     Completion,
 )
 from google.generativeai.types import discuss_types, text_types  # type: ignore

@@ -10,7 +10,7 @@ def extract_openai_input_and_history(
     function_name: str,
 ) -> tuple[str, list[tuple[str, Any]]]:
     if function_name in ["Completion.create", "Completion.acreate"]:
-        return original_kwargs.get("prompt"), []
+        return original_kwargs.get("prompt", ""), []
     if function_name in ["ChatCompletion.create", "ChatCompletion.acreate"]:
         history = [
             (el["role"], el["content"])

@@ -18,20 +18,14 @@ from nebuly.contextmanager import (
 
 def test_interaction_context() -> None:
     with new_interaction("test_user", "test_group_profile") as interaction:
-        observer: list = []
-        interaction._set_observer(observer.append)  # pylint: disable=protected-access
         assert get_nearest_open_interaction() is interaction
 
 
 def test_interaction_context_finish() -> None:
     with new_interaction("test_user", "test_group_profile") as interaction:
-        observer: list = []
-        interaction._set_observer(observer.append)  # pylint: disable=protected-access
         assert get_nearest_open_interaction() is interaction
 
     with new_interaction("test_other_user", "test_other_group_profile") as interaction:
-        observer: list = []
-        interaction._set_observer(observer.append)  # pylint: disable=protected-access
         assert get_nearest_open_interaction() is interaction
 
 
@@ -65,10 +59,6 @@ def test_multithreading_context() -> None:
 async def test_asyncio_context() -> None:
     async def async_func() -> None:
         with new_interaction("test_user", "test_group_profile") as interaction:
-            observer: list = []
-            interaction._set_observer(  # pylint: disable=protected-access
-                observer.append
-            )
             await asyncio.sleep(random.random())
             assert get_nearest_open_interaction() is interaction
 
@@ -81,9 +71,9 @@ def test_cannot_directly_create_interaction() -> None:
 
 
 def test_cannot_create_interaction_inside_interaction() -> None:
-    with new_interaction("test_user", "test_group_profile") as interaction:
-        observer: list = []
-        interaction._set_observer(observer.append)  # pylint: disable=protected-access
+    with new_interaction(
+        "test_user", "test_group_profile"
+    ) as interaction:  # noqa: F841
         with pytest.raises(AlreadyInInteractionContext):
             with new_interaction(
                 "test_user"
