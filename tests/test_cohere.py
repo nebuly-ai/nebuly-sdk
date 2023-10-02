@@ -2,11 +2,15 @@
 import json
 from unittest.mock import Mock, patch
 
-import cohere
+import cohere  # type: ignore
 import pytest
-from cohere.responses import Chat, Generation, Generations
-from cohere.responses.chat import StreamEnd, StreamStart, StreamTextGeneration
-from cohere.responses.generation import StreamingText
+from cohere.responses import Chat, Generation, Generations  # type: ignore
+from cohere.responses.chat import (  # type: ignore
+    StreamEnd,
+    StreamStart,
+    StreamTextGeneration,
+)
+from cohere.responses.generation import StreamingText  # type: ignore
 
 from nebuly.contextmanager import new_interaction
 from nebuly.entities import InteractionWatch, SpanWatch
@@ -34,7 +38,7 @@ def fixture_cohere_generate() -> list[Generation]:
     )
 
 
-def test_cohere_generate__no_context_manager(cohere_generate):
+def test_cohere_generate__no_context_manager(cohere_generate: list[Generation]) -> None:
     with patch("cohere.Client.generate") as mock_generate:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_generate.return_value = cohere_generate
@@ -67,7 +71,9 @@ def test_cohere_generate__no_context_manager(cohere_generate):
             )
 
 
-def test_cohere_generate__with_context_manager(cohere_generate):
+def test_cohere_generate__with_context_manager(
+    cohere_generate: list[Generation],
+) -> None:
     with patch("cohere.Client.generate") as mock_generate:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_generate.return_value = cohere_generate
@@ -100,7 +106,7 @@ def test_cohere_generate__with_context_manager(cohere_generate):
 
 
 @pytest.mark.asyncio
-async def test_cohere_generate__async(cohere_generate):
+async def test_cohere_generate__async(cohere_generate: list[Generation]) -> None:
     with patch("cohere.AsyncClient.generate") as mock_generate:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_generate.return_value = cohere_generate
@@ -150,7 +156,7 @@ def fixture_cohere_chat() -> Chat:
     )
 
 
-def test_cohere_chat__no_context_manager(cohere_chat):
+def test_cohere_chat__no_context_manager(cohere_chat: Chat) -> None:
     with patch("cohere.Client.chat") as mock_chat:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_chat.return_value = cohere_chat
@@ -183,7 +189,7 @@ def test_cohere_chat__no_context_manager(cohere_chat):
             )
 
 
-def test_cohere_chat__with_context_manager(cohere_chat):
+def test_cohere_chat__with_context_manager(cohere_chat: Chat) -> None:
     with patch("cohere.Client.chat") as mock_chat:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_chat.return_value = cohere_chat
@@ -233,7 +239,7 @@ def test_cohere_chat__with_context_manager(cohere_chat):
 
 
 @pytest.mark.asyncio
-async def test_cohere_chat__async(cohere_chat):
+async def test_cohere_chat__async(cohere_chat: Chat) -> None:
     with patch("cohere.AsyncClient.chat") as mock_chat:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_chat.return_value = cohere_chat
@@ -287,7 +293,7 @@ def fixture_cohere_generate_gen() -> list[StreamingText]:
     ]
 
 
-def test_cohere_generate_gen(cohere_generate_gen):
+def test_cohere_generate_gen(cohere_generate_gen: list[StreamingText]) -> None:
     with patch("cohere.Client.generate") as mock_generate:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_generate.return_value = (text for text in cohere_generate_gen)
@@ -349,7 +355,9 @@ def fixture_cohere_chat_gen() -> list[StreamStart | StreamTextGeneration | Strea
     ]
 
 
-def test_cohere_chat_gen(cohere_chat_gen):
+def test_cohere_chat_gen(
+    cohere_chat_gen: list[StreamStart | StreamTextGeneration | StreamEnd],
+) -> None:
     with patch("cohere.Client.chat") as mock_chat:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_chat.return_value = (text for text in cohere_chat_gen)

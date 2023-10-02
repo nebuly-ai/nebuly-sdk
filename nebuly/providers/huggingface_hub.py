@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import Any, Iterator
 
-from huggingface_hub.inference._text_generation import (
+from huggingface_hub.inference._text_generation import (  # type: ignore
     TextGenerationResponse,
     TextGenerationStreamResponse,
 )
-from huggingface_hub.inference._types import ConversationalOutput
+from huggingface_hub.inference._types import ConversationalOutput  # type: ignore
 
 from nebuly.providers.utils import get_argument
 
@@ -43,10 +43,10 @@ def extract_hf_hub_output(
     function_name: str, output: str | ConversationalOutput | TextGenerationResponse
 ) -> str:
     if function_name == "InferenceClient.conversational":
-        return output["generated_text"]
+        return output["generated_text"]  # type: ignore
     if function_name == "InferenceClient.text_generation":
         if isinstance(output, TextGenerationResponse):
-            return output.generated_text
+            return output.generated_text  # type: ignore
         return output
 
     raise ValueError(f"Unknown function name: {function_name}")

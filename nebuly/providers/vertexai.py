@@ -3,7 +3,7 @@ from __future__ import annotations
 import copyreg
 from typing import Any, Iterator
 
-from vertexai.language_models import (
+from vertexai.language_models import (  # type: ignore
     ChatModel,
     TextGenerationModel,
     TextGenerationResponse,
@@ -60,7 +60,7 @@ def extract_vertexai_output(function_name: str, output: TextGenerationResponse) 
         "language_models.ChatSession.send_message",
         "language_models.ChatSession.send_message_async",
     ]:
-        return output.text
+        return output.text  # type: ignore
 
     raise ValueError(f"Unknown function name: {function_name}")
 

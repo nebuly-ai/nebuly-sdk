@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, Sequence
 from uuid import UUID
 
 from langchain.callbacks.base import BaseCallbackHandler, BaseCallbackManager, Callbacks
@@ -143,7 +143,7 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
 
     def on_retriever_end(  # pylint: disable=arguments-differ
         self,
-        documents: list[Document],
+        documents: Sequence[Document],
         run_id: UUID,
         **kwargs: Any,
     ) -> None:

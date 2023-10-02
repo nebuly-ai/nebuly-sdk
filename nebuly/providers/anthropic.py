@@ -7,7 +7,7 @@ from anthropic import Anthropic, AsyncAnthropic, AsyncStream, Stream
 from anthropic.types import Completion
 
 
-def is_anthropic_generator(function: Callable) -> bool:
+def is_anthropic_generator(function: Callable[[Any], Any]) -> bool:
     return isinstance(function, (Stream, AsyncStream))
 
 

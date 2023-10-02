@@ -4,7 +4,7 @@ import inspect
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Generator
+from typing import Any, Generator, cast
 from uuid import UUID
 
 from nebuly.entities import EventType, InteractionWatch, Observer, SpanWatch
@@ -46,15 +46,17 @@ class Event:
     end_time: datetime | None = None
 
     def as_span_watch(self) -> SpanWatch:
+        if self.end_time is None:
+            raise ValueError("Event has not been finished yet.")
         return SpanWatch(
             span_id=self.event_id,
             module=self.module,
             version="unknown",
             function=self._get_function(),
             called_start=self.start_time,
-            called_end=self.end_time,
-            called_with_args=self.data.args,
-            called_with_kwargs=self.data.kwargs,
+            called_end=cast(datetime, self.end_time),
+            called_with_args=cast(tuple, self.data.args),
+            called_with_kwargs=cast(dict, self.data.kwargs),
             returned=self.data.output,
             generator=False,
             generator_first_element_timestamp=None,
@@ -66,7 +68,7 @@ class Event:
 
     def _get_function(self) -> str:
         if self.data.type is EventType.TOOL:
-            return self.data.kwargs["serialized"]["name"]
+            return self.data.kwargs["serialized"]["name"]  # type: ignore
         return ".".join(self.data.kwargs["serialized"]["id"])
 
     def _get_rag_source(self) -> str | None:
@@ -220,7 +222,8 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
             parent_id = span.provider_extras.get("parent_run_id")
             if parent_id is not None:
                 self.hierarchy[span.span_id] = parent_id
-        self._observer(self._as_interaction_watch())
+        if self._observer is not None:
+            self._observer(self._as_interaction_watch())
 
     def _set_user(self, value: str) -> None:
         self.user = value

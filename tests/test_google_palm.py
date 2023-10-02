@@ -2,14 +2,19 @@
 import json
 from unittest.mock import patch
 
-import google.generativeai as palm
+import google.generativeai as palm  # type: ignore
 import pytest
-from google.generativeai.discuss import (  # pylint: disable=no-name-in-module
+from google.generativeai.discuss import (  # pylint: disable=no-name-in-module  # type: ignore  # noqa: E501
     ChatResponse,
 )
-from google.generativeai.text import Completion  # pylint: disable=no-name-in-module
-from google.generativeai.types.discuss_types import MessageDict
-from google.generativeai.types.safety_types import HarmCategory, HarmProbability
+from google.generativeai.text import (  # pylint: disable=no-name-in-module  # type: ignore  # noqa: E501
+    Completion,
+)
+from google.generativeai.types.discuss_types import MessageDict  # type: ignore
+from google.generativeai.types.safety_types import (  # type: ignore
+    HarmCategory,
+    HarmProbability,
+)
 
 from nebuly.contextmanager import new_interaction
 from nebuly.entities import InteractionWatch, SpanWatch
@@ -58,7 +63,9 @@ def fixture_palm_completion() -> Completion:
     )
 
 
-def test_google_palm_completion__no_context_manager(palm_completion):
+def test_google_palm_completion__no_context_manager(
+    palm_completion: Completion,
+) -> None:
     with patch("google.generativeai.generate_text") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = palm_completion
@@ -87,7 +94,9 @@ def test_google_palm_completion__no_context_manager(palm_completion):
             )
 
 
-def test_google_palm_completion__with_context_manager(palm_completion):
+def test_google_palm_completion__with_context_manager(
+    palm_completion: Completion,
+) -> None:
     with patch("google.generativeai.generate_text") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = palm_completion
@@ -144,7 +153,9 @@ def fixture_palm_chat_response() -> ChatResponse:
     )
 
 
-def test_google_palm_chat__first_interaction__no_context_manager(palm_chat_response):
+def test_google_palm_chat__first_interaction__no_context_manager(
+    palm_chat_response: ChatResponse,
+) -> None:
     with patch("google.generativeai.chat") as mock_chat:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_chat.return_value = palm_chat_response
@@ -167,7 +178,9 @@ def test_google_palm_chat__first_interaction__no_context_manager(palm_chat_respo
             )
 
 
-def test_google_palm_chat__first_interaction__with_context_manager(palm_chat_response):
+def test_google_palm_chat__first_interaction__with_context_manager(
+    palm_chat_response: ChatResponse,
+) -> None:
     with patch("google.generativeai.chat") as mock_chat:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_chat.return_value = palm_chat_response
@@ -251,8 +264,8 @@ def fixture_palm_chat_response_with_history() -> ChatResponse:
 
 
 def test_google_palm_chat__with_history__no_context_manager(
-    palm_chat_response_with_history,
-):
+    palm_chat_response_with_history: ChatResponse,
+) -> None:
     with patch("google.generativeai.chat") as mock_chat:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_chat.return_value = palm_chat_response_with_history
@@ -289,8 +302,8 @@ def test_google_palm_chat__with_history__no_context_manager(
 
 
 def test_google_palm_chat__with_history__with_context_manager(
-    palm_chat_response_with_history,
-):
+    palm_chat_response_with_history: ChatResponse,
+) -> None:
     with patch("google.generativeai.chat") as mock_chat:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_chat.return_value = palm_chat_response_with_history
@@ -338,8 +351,8 @@ def test_google_palm_chat__with_history__with_context_manager(
 
 
 def test_google_palm_chat__reply__no_context_manager(
-    palm_chat_response, palm_chat_response_with_history
-):
+    palm_chat_response: ChatResponse, palm_chat_response_with_history: ChatResponse
+) -> None:
     with patch.object(ChatResponse, "reply") as mock_reply:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_reply.return_value = palm_chat_response_with_history
@@ -371,8 +384,8 @@ def test_google_palm_chat__reply__no_context_manager(
 
 
 def test_google_palm_chat__reply__with_context_manager(
-    palm_chat_response, palm_chat_response_with_history
-):
+    palm_chat_response: ChatResponse, palm_chat_response_with_history: ChatResponse
+) -> None:
     with patch.object(ChatResponse, "reply") as mock_reply:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_reply.return_value = palm_chat_response_with_history
@@ -404,7 +417,7 @@ def test_google_palm_chat__reply__with_context_manager(
 
 
 @pytest.mark.asyncio
-async def test_google_palm_chat__async(palm_chat_response):
+async def test_google_palm_chat__async(palm_chat_response: ChatResponse) -> None:
     with patch("google.generativeai.chat_async") as mock_chat:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_chat.return_value = palm_chat_response

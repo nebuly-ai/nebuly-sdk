@@ -1,5 +1,6 @@
 # pylint: disable=duplicate-code
 import json
+from typing import Any
 from unittest.mock import patch
 
 import langchain
@@ -13,7 +14,7 @@ from langchain.prompts.chat import ChatPromptTemplate
 from langchain.schema import SystemMessage
 
 from nebuly.contextmanager import new_interaction
-from nebuly.entities import EventType, InteractionWatch, SpanWatch
+from nebuly.entities import EventType, InteractionWatch, Observer, SpanWatch
 from nebuly.observers import NebulyObserver
 from nebuly.requests import CustomJSONEncoder
 from tests import common
@@ -23,15 +24,15 @@ orig_func_llm_gen = langchain.llms.base.BaseLLM.generate
 orig_func_chat_gen = langchain.chat_models.base.BaseChatModel.generate
 
 
-def nebuly_init(observer):
+def nebuly_init(observer: Observer) -> None:
     # Reset original functions
-    langchain.llms.base.BaseLLM.generate = orig_func_llm_gen
-    langchain.chat_models.base.BaseChatModel.generate = orig_func_chat_gen
+    langchain.llms.base.BaseLLM.generate = orig_func_llm_gen  # type: ignore
+    langchain.chat_models.base.BaseChatModel.generate = orig_func_chat_gen  # type: ignore  # noqa: E501
     common.nebuly_init(observer)
 
 
 @pytest.fixture(name="openai_completion")
-def fixture_openai_completion() -> dict:
+def fixture_openai_completion() -> dict[str, Any]:
     return {
         "id": "cmpl-81JyWoIj5m9qz0M9g7aLBGtwZzUIg",
         "object": "text_completion",
@@ -49,7 +50,9 @@ def fixture_openai_completion() -> dict:
     }
 
 
-def test_langchain_llm_chain__no_context_manager(openai_completion: dict) -> None:
+def test_langchain_llm_chain__no_context_manager(
+    openai_completion: dict[str, Any]
+) -> None:
     with patch("openai.Completion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_completion
@@ -75,15 +78,14 @@ def test_langchain_llm_chain__no_context_manager(openai_completion: dict) -> Non
                 interaction_watch.input
                 == "What is a good name for a company that makes colorful socks?"
             )
-            assert interaction_watch.output == {
-                "text": "Sample langchain response",
-            }
+            assert interaction_watch.output == "Sample langchain response"
             assert interaction_watch.end_user == "test_user"
             assert interaction_watch.end_user_group_profile == "test_group_profile"
             assert len(interaction_watch.spans) == 3
             assert len(interaction_watch.hierarchy) == 3
             for span in interaction_watch.spans:
                 assert isinstance(span, SpanWatch)
+                assert span.provider_extras is not None
                 if span.module == "langchain":
                     assert span.provider_extras.get("event_type") is not None
             assert (
@@ -92,7 +94,9 @@ def test_langchain_llm_chain__no_context_manager(openai_completion: dict) -> Non
             )
 
 
-def test_langchain_llm_chain__with_context_manager(openai_completion: dict) -> None:
+def test_langchain_llm_chain__with_context_manager(
+    openai_completion: dict[str, Any]
+) -> None:
     with patch("openai.Completion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_completion
@@ -123,6 +127,7 @@ def test_langchain_llm_chain__with_context_manager(openai_completion: dict) -> N
             assert len(interaction_watch.hierarchy) == 3
             for span in interaction_watch.spans:
                 assert isinstance(span, SpanWatch)
+                assert span.provider_extras is not None
                 if span.module == "langchain":
                     assert span.provider_extras.get("event_type") is not None
             assert (
@@ -132,7 +137,7 @@ def test_langchain_llm_chain__with_context_manager(openai_completion: dict) -> N
 
 
 def test_langchain_llm_chain__multiple_chains_in_interaction(
-    openai_completion: dict,
+    openai_completion: dict[str, Any],
 ) -> None:
     with patch("openai.Completion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
@@ -166,6 +171,7 @@ def test_langchain_llm_chain__multiple_chains_in_interaction(
             assert len(interaction_watch.hierarchy) == 6
             for span in interaction_watch.spans:
                 assert isinstance(span, SpanWatch)
+                assert span.provider_extras is not None
                 if span.module == "langchain":
                     assert span.provider_extras.get("event_type") is not None
             assert (
@@ -174,7 +180,9 @@ def test_langchain_llm_chain__multiple_chains_in_interaction(
             )
 
 
-def test_langchain_llm_chain__multiple_interactions(openai_completion: dict) -> None:
+def test_langchain_llm_chain__multiple_interactions(
+    openai_completion: dict[str, Any]
+) -> None:
     with patch("openai.Completion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_completion
@@ -226,6 +234,7 @@ def test_langchain_llm_chain__multiple_interactions(openai_completion: dict) -> 
             assert len(interaction_watch_1.hierarchy) == 3
             for span in interaction_watch_1.spans:
                 assert isinstance(span, SpanWatch)
+                assert span.provider_extras is not None
                 if span.module == "langchain":
                     assert span.provider_extras.get("event_type") is not None
             assert (
@@ -235,7 +244,7 @@ def test_langchain_llm_chain__multiple_interactions(openai_completion: dict) -> 
 
 
 @pytest.fixture(name="openai_chat")
-def fixture_openai_chat() -> dict:
+def fixture_openai_chat() -> dict[str, Any]:
     return {
         "id": "chatcmpl-81Kl80GyhDVsOiEBQLQ6vG8svCUPe",
         "object": "chat.completion",
@@ -255,7 +264,7 @@ def fixture_openai_chat() -> dict:
     }
 
 
-def test_langchain_chat_chain__no_context_manager(openai_chat: dict) -> None:
+def test_langchain_chat_chain__no_context_manager(openai_chat: dict[str, Any]) -> None:
     with patch("openai.ChatCompletion.create") as mock_chat_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_chat_completion_create.return_value = openai_chat
@@ -281,13 +290,12 @@ def test_langchain_chat_chain__no_context_manager(openai_chat: dict) -> None:
                 ("human", "Hello! I am Valerio"),
                 ("ai", "Hi there! How can I assist you today?"),
             ]
-            assert interaction_watch.output == {
-                "text": "Hi there! How can I assist you today?",
-            }
+            assert interaction_watch.output == "Hi there! How can I assist you today?"
             assert len(interaction_watch.spans) == 3
             assert len(interaction_watch.hierarchy) == 3
             for span in interaction_watch.spans:
                 assert isinstance(span, SpanWatch)
+                assert span.provider_extras is not None
                 if span.module == "langchain":
                     assert span.provider_extras.get("event_type") is not None
 
@@ -298,7 +306,7 @@ def test_langchain_chat_chain__no_context_manager(openai_chat: dict) -> None:
 
 
 @pytest.fixture(name="openai_chat_with_function")
-def fixture_openai_chat_with_function() -> dict:
+def fixture_openai_chat_with_function() -> dict[str, Any]:
     return {
         "id": "chatcmpl-82LLsqQsyEqBvTMvGUr9jgc7w3NfZ",
         "object": "chat.completion",
@@ -323,7 +331,7 @@ def fixture_openai_chat_with_function() -> dict:
 
 
 def test_langchain__chain_with_function_tool(
-    openai_chat_with_function: dict, openai_chat: dict
+    openai_chat_with_function: dict[str, Any], openai_chat: dict[str, Any]
 ) -> None:
     with patch("openai.ChatCompletion.create") as mock_chat_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
@@ -356,9 +364,7 @@ def test_langchain__chain_with_function_tool(
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == "how many letters in the word educa?"
             assert interaction_watch.history is None
-            assert interaction_watch.output == {
-                "output": "Hi there! How can I assist you today?",
-            }
+            assert interaction_watch.output == "Hi there! How can I assist you today?"
             assert len(interaction_watch.spans) == 6
             assert len(interaction_watch.hierarchy) == 6
             for span in interaction_watch.spans:
@@ -375,7 +381,9 @@ def test_langchain__chain_with_function_tool(
             )
 
 
-def test_langchain_sequential_chain_single_input_var(openai_completion):
+def test_langchain_sequential_chain_single_input_var(
+    openai_completion: dict[str, Any]
+) -> None:
     with patch("openai.Completion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_completion
@@ -417,10 +425,13 @@ def test_langchain_sequential_chain_single_input_var(openai_completion):
             interaction_watch = mock_observer.call_args[0][0]
             assert isinstance(interaction_watch, InteractionWatch)
             assert "Tragedy at sunset on the beach" in interaction_watch.input
-            assert isinstance(interaction_watch.output.get("review"), str)
+            assert isinstance(interaction_watch.output, str)
+            assert "review" in interaction_watch.output
 
 
-def test_langchain_sequential_chain_multiple_input_vars(openai_completion):
+def test_langchain_sequential_chain_multiple_input_vars(
+    openai_completion: dict[str, Any]
+) -> None:
     with patch("openai.Completion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_completion
@@ -463,4 +474,5 @@ def test_langchain_sequential_chain_multiple_input_vars(openai_completion):
             interaction_watch = mock_observer.call_args[0][0]
             assert isinstance(interaction_watch, InteractionWatch)
             assert "Victorian England" in interaction_watch.input
-            assert isinstance(interaction_watch.output.get("review"), str)
+            assert isinstance(interaction_watch.output, str)
+            assert "review" in interaction_watch.output

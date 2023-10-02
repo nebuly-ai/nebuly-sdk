@@ -861,7 +861,7 @@ def test_event_handler_on_chat_model_start(  # pylint: disable=too-many-argument
     assert (
         event_handler.current_interaction_storage.events[
             llm_model_id
-        ].hierarchy.parent_run_id  # noqa: E501
+        ].hierarchy.parent_run_id
         == llm_chain_id
     )
     assert (

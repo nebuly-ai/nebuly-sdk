@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from inspect import isasyncgenfunction
 from typing import Any, Callable, cast
 from uuid import UUID
@@ -112,11 +113,13 @@ def _get_input_and_history(
     raise ValueError(f"Unknown prompt type: {prompt}")
 
 
-def _get_output(chain: Chain, result: dict[str, Any]) -> dict[str, Any]:
+def _get_output(chain: Chain, result: dict[str, Any]) -> str:
+    if len(chain.output_keys) == 1:
+        return result[chain.output_keys[0]]
     output = {}
     for key in chain.output_keys:
         output[key] = result[key]
-    return output
+    return json.dumps(output)
 
 
 def wrap_langchain(
@@ -125,7 +128,7 @@ def wrap_langchain(
     f: Callable[[Any], Any],
     args: tuple[Any],
     kwargs: dict[str, Any],
-):
+) -> Any:
     if function_name.startswith(
         ("llms.base.BaseLLM", "chat_models.base.BaseChatModel")
     ):
@@ -166,7 +169,7 @@ async def wrap_langchain_async(
     f: Callable[[Any], Any],
     args: tuple[Any],
     kwargs: dict[str, Any],
-):
+) -> Any:
     if function_name.startswith(
         ("llms.base.BaseLLM", "chat_models.base.BaseChatModel")
     ):

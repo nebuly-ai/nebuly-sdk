@@ -22,7 +22,9 @@ def fixture_anthropic_completion() -> Completion:
     )
 
 
-def test_anthropic_completion__no_context_manager(anthropic_completion):
+def test_anthropic_completion__no_context_manager(
+    anthropic_completion: Completion,
+) -> None:
     with patch("anthropic.resources.Completions.create") as mock_completion:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion.return_value = anthropic_completion
@@ -62,7 +64,9 @@ def test_anthropic_completion__no_context_manager(anthropic_completion):
             )
 
 
-def test_anthropic_completion__with_context_manager(anthropic_completion):
+def test_anthropic_completion__with_context_manager(
+    anthropic_completion: Completion,
+) -> None:
     with patch("anthropic.resources.Completions.create") as mock_completion:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion.return_value = anthropic_completion
@@ -102,7 +106,7 @@ def test_anthropic_completion__with_context_manager(anthropic_completion):
 
 
 @pytest.mark.asyncio
-async def test_anthropic_completion__async(anthropic_completion):
+async def test_anthropic_completion__async(anthropic_completion: Completion) -> None:
     with patch(
         "anthropic.resources.AsyncCompletions.create", new=AsyncMock()
     ) as mock_completion:
@@ -141,7 +145,7 @@ async def test_anthropic_completion__async(anthropic_completion):
 
 
 @pytest.fixture(name="anthropic_completion_gen")
-def fixture_anthropic_completion_gen():
+def fixture_anthropic_completion_gen() -> list[Completion]:
     return [
         Completion(
             completion=" Hello",
@@ -156,7 +160,7 @@ def fixture_anthropic_completion_gen():
     ]
 
 
-def test_anthropic_completion_gen(anthropic_completion_gen):
+def test_anthropic_completion_gen(anthropic_completion_gen: list[Completion]) -> None:
     with patch("anthropic.resources.Completions.create") as mock_completion:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion.return_value = (

@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 from google.cloud import aiplatform
-from vertexai.language_models import (
+from vertexai.language_models import (  # type: ignore
     ChatMessage,
     ChatModel,
     InputOutputTextPair,
@@ -65,7 +65,9 @@ def fixture_palm_completion() -> TextGenerationResponse:
     )
 
 
-def test_vertexai_completion__no_context_manager(palm_completion):
+def test_vertexai_completion__no_context_manager(
+    palm_completion: TextGenerationResponse,
+) -> None:
     with patch(
         "vertexai.language_models.TextGenerationModel.predict"
     ) as mock_completion_create:
@@ -103,7 +105,9 @@ def test_vertexai_completion__no_context_manager(palm_completion):
             )
 
 
-def test_vertexai_completion__with_context_manager(palm_completion):
+def test_vertexai_completion__with_context_manager(
+    palm_completion: TextGenerationResponse,
+) -> None:
     with patch(
         "vertexai.language_models.TextGenerationModel.predict"
     ) as mock_completion_create:
@@ -143,7 +147,9 @@ def test_vertexai_completion__with_context_manager(palm_completion):
 
 
 @pytest.mark.asyncio
-async def test_vertexai_completion__async(palm_completion):
+async def test_vertexai_completion__async(
+    palm_completion: TextGenerationResponse,
+) -> None:
     with patch(
         "vertexai.language_models.TextGenerationModel.predict_async"
     ) as mock_completion_create:
@@ -233,7 +239,9 @@ def fixture_palm_completion_stream() -> list[TextGenerationResponse]:
     ]
 
 
-def test_vertexai_completion_stream(palm_completion_stream):
+def test_vertexai_completion_stream(
+    palm_completion_stream: list[TextGenerationResponse],
+) -> None:
     with patch(
         "vertexai.language_models.TextGenerationModel.predict_streaming"
     ) as mock_completion_stream:
@@ -276,7 +284,9 @@ def test_vertexai_completion_stream(palm_completion_stream):
             )
 
 
-def test_vertexai_chat__no_context_manager(palm_completion):
+def test_vertexai_chat__no_context_manager(
+    palm_completion: TextGenerationResponse,
+) -> None:
     with patch(
         "vertexai.language_models.ChatSession.send_message"
     ) as mock_completion_create:
@@ -323,7 +333,9 @@ def test_vertexai_chat__no_context_manager(palm_completion):
             )
 
 
-def test_vertexai_chat__no_context_manager__with_history(palm_completion):
+def test_vertexai_chat__no_context_manager__with_history(
+    palm_completion: TextGenerationResponse,
+) -> None:
     with patch(
         "vertexai.language_models.ChatSession.send_message"
     ) as mock_completion_create:
@@ -385,7 +397,9 @@ def test_vertexai_chat__no_context_manager__with_history(palm_completion):
             )
 
 
-def test_vertexai_chat__with_context_manager(palm_completion):
+def test_vertexai_chat__with_context_manager(
+    palm_completion: TextGenerationResponse,
+) -> None:
     with patch(
         "vertexai.language_models.ChatSession.send_message"
     ) as mock_completion_create:
@@ -434,7 +448,7 @@ def test_vertexai_chat__with_context_manager(palm_completion):
 
 
 @pytest.mark.asyncio
-async def test_vertexai_chat__async(palm_completion):
+async def test_vertexai_chat__async(palm_completion: TextGenerationResponse) -> None:
     with patch(
         "vertexai.language_models.ChatSession.send_message_async"
     ) as mock_completion_create:
@@ -483,7 +497,9 @@ async def test_vertexai_chat__async(palm_completion):
             )
 
 
-def test_vertexai_chat__stream(palm_completion_stream):
+def test_vertexai_chat__stream(
+    palm_completion_stream: list[TextGenerationResponse],
+) -> None:
     with patch(
         "vertexai.language_models.ChatSession.send_message_streaming"
     ) as mock_completion_stream:

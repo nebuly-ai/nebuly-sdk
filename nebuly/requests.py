@@ -14,15 +14,24 @@ logger = logging.getLogger(__name__)
 
 class CustomJSONEncoder(json.JSONEncoder):
     @staticmethod
-    def _check_key(key: str):
+    def _check_key(key: str) -> bool:
         """
         Reject all private keys except for ones that contain info about the model
         """
         return not key.startswith("_") or "model" in key
 
     @staticmethod
-    def _check_value(value: Any):
-        correct_types = str | int | float | bool | list | tuple | dict | None
+    def _check_value(value: Any) -> bool:
+        correct_types: tuple[type[Any], ...] = (
+            str,
+            int,
+            float,
+            bool,
+            list,
+            tuple,
+            dict,
+            type(None),
+        )
         has_correct_type = isinstance(value, correct_types)
         is_valid_class = not isinstance(value, Mock) and hasattr(
             value, "_model_id"
