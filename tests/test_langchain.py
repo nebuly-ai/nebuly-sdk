@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from typing import Any
 from unittest.mock import patch
 
@@ -20,6 +21,11 @@ from nebuly.entities import EventType, InteractionWatch, Observer, SpanWatch
 from nebuly.observers import NebulyObserver
 from nebuly.requests import CustomJSONEncoder
 from tests import common
+
+pytestmark = pytest.mark.skipif(
+    sys.version_info < (3, 8, 1), reason="requires 3.8.1 or higher"
+)
+
 
 # Cache original functions
 orig_func_llm_gen = langchain.llms.base.BaseLLM.generate
