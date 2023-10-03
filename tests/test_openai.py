@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import Any, AsyncGenerator
 from unittest.mock import patch
 
 import openai
@@ -591,6 +591,44 @@ def test_openai_completion_gen(openai_completion_gen: list[dict[str, Any]]) -> N
             )
 
 
+@pytest.fixture(name="openai_completion_gen_async")
+async def fixture_openai_completion_gen_async(
+    openai_completion_gen: list[dict[str, Any]]
+) -> AsyncGenerator[dict[str, Any], None]:
+    for el in openai_completion_gen:
+        yield el
+
+
+@pytest.mark.asyncio
+async def test_openai_completion_gen_async(
+    openai_completion_gen_async: AsyncGenerator[dict[str, Any], None]
+) -> None:
+    with patch("openai.Completion.acreate") as mock_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_create.return_value = openai_completion_gen_async
+            nebuly_init(observer=mock_observer)
+            async for _ in await openai.Completion.acreate(  # type: ignore
+                model="gpt-3.5-turbo-instruct",
+                prompt="Say this is a test",
+                max_tokens=7,
+                temperature=0,
+                stream=True,
+            ):
+                ...
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "Say this is a test"
+            assert interaction_watch.output == "\n\nThis is a test."
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
 @pytest.fixture(name="openai_chat_gen")
 def fixture_openai_chat_gen() -> list[dict[str, Any]]:
     return [
@@ -647,6 +685,51 @@ def test_openai_chat_gen(openai_chat_gen: list[dict[str, Any]]) -> None:
             nebuly_init(observer=mock_observer)
             result = ""
             for chunk in openai.ChatCompletion.create(  # type: ignore
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": "Hello!"},
+                ],
+                stream=True,
+            ):
+                result += chunk["choices"][0]["delta"].get("content", "")
+
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "Hello!"
+            assert interaction_watch.history == [
+                ("system", "You are a helpful assistant."),
+            ]
+            assert interaction_watch.output == "Hello there"
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+@pytest.fixture(name="openai_chat_gen_async")
+async def fixture_openai_chat_gen_async(
+    openai_chat_gen: list[dict[str, Any]]
+) -> AsyncGenerator[dict[str, Any], None]:
+    for el in openai_chat_gen:
+        yield el
+
+
+@pytest.mark.asyncio
+async def test_openai_chat_gen_async(
+    openai_chat_gen_async: AsyncGenerator[dict[str, Any], None]
+) -> None:
+    with patch("openai.ChatCompletion.acreate") as mock_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_create.return_value = openai_chat_gen_async
+            nebuly_init(observer=mock_observer)
+            result = ""
+            async for chunk in await openai.ChatCompletion.acreate(  # type: ignore
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant."},
