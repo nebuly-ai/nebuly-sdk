@@ -223,7 +223,7 @@ async def fixture_anthropic_completion_gen_async() -> AsyncGenerator[Completion,
 
 @pytest.mark.asyncio
 async def test_anthropic_completion_async_gen(
-    anthropic_completion_gen_async: list[Completion],
+    anthropic_completion_gen_async: AsyncGenerator[Completion, None]
 ) -> None:
     with patch(
         "anthropic.resources.AsyncCompletions.create", new=AsyncMock()

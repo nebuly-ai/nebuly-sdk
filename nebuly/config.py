@@ -53,7 +53,12 @@ PACKAGES = (
     Package(
         "huggingface_hub",
         ("0.12.0",),
-        ("InferenceClient.conversational", "InferenceClient.text_generation"),
+        (
+            "InferenceClient.conversational",
+            "InferenceClient.text_generation",
+            "AsyncInferenceClient.conversational",
+            "AsyncInferenceClient.text_generation",
+        ),
     ),
     Package(
         "google",

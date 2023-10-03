@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 import json
+from collections.abc import AsyncIterable
 from typing import Any
 from unittest.mock import patch
 
 import pytest
-from huggingface_hub import InferenceClient  # type: ignore
+from huggingface_hub import AsyncInferenceClient, InferenceClient  # type: ignore
 from huggingface_hub.inference._text_generation import (  # type: ignore
     Details,
     FinishReason,
@@ -83,6 +84,45 @@ def test_hf_hub_text_generation_stream(hf_hub_text_generation_list: list[str]) -
             assert interaction_watch.input == "The huggingface_hub library is "
             assert interaction_watch.history == []
             assert interaction_watch.output == "".join(hf_hub_text_generation_list)
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+@pytest.fixture(name="hf_hub_text_generator_async")
+async def fixture_hf_hub_text_generator_async() -> AsyncIterable[str]:
+    texts = ["a", " beautiful", " library", "."]
+    for text in texts:
+        yield text
+
+
+@pytest.mark.asyncio
+async def test_hf_hub_text_generation_stream_async(
+    hf_hub_text_generator_async: AsyncIterable[str],
+) -> None:
+    with patch(
+        "huggingface_hub.AsyncInferenceClient.text_generation"
+    ) as mock_generation:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_generation.return_value = hf_hub_text_generator_async
+            nebuly_init(observer=mock_observer)
+
+            client = AsyncInferenceClient()
+            async for _ in await client.text_generation(  # pylint: disable=not-an-iterable  # noqa: E501
+                "The huggingface_hub library is ", stream=True
+            ):
+                ...
+
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "The huggingface_hub library is "
+            assert interaction_watch.history == []
+            assert interaction_watch.output == "a beautiful library."
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
@@ -194,6 +234,40 @@ def test_hf_hub_text_generation_details_stream(
                     if el.generated_text is not None
                 ]
             )
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+@pytest.mark.asyncio
+async def test_hf_hub_text_generation_async(hf_hub_text_generation_str: str) -> None:
+    with patch(
+        "huggingface_hub.AsyncInferenceClient.text_generation"
+    ) as mock_generation:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_generation.return_value = hf_hub_text_generation_str
+            nebuly_init(observer=mock_observer)
+
+            client = AsyncInferenceClient()
+            result = await client.text_generation(
+                "The huggingface_hub library is ",
+                user_id="test_user",
+                user_group_profile="test_group",
+            )
+
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "The huggingface_hub library is "
+            assert interaction_watch.history == []
+            assert interaction_watch.output == hf_hub_text_generation_str
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_group"
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
@@ -399,6 +473,41 @@ def test_hf_hub_conversational__with_context_manager__with_history(
                     "the University of Pittsburgh.",
                 ),
             ]
+            assert (
+                interaction_watch.output
+                == " It is, but I am studying to be a nurse. What do you do?"
+            )
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+@pytest.mark.asyncio
+async def test_hf_hub_conversational__async(
+    hf_hub_conversational: ConversationalOutput,
+) -> None:
+    with patch(
+        "huggingface_hub.AsyncInferenceClient.conversational"
+    ) as mock_conversational:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_conversational.return_value = hf_hub_conversational
+            nebuly_init(observer=mock_observer)
+
+            client = AsyncInferenceClient()
+            result = await client.conversational(
+                text="Wow, that's scary!",
+            )
+
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "Wow, that's scary!"
+            assert interaction_watch.history == []
             assert (
                 interaction_watch.output
                 == " It is, but I am studying to be a nurse. What do you do?"
