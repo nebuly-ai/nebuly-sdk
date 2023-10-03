@@ -5,6 +5,7 @@ from typing import Any, Iterator
 
 from vertexai.language_models import (  # type: ignore
     ChatModel,
+    ChatSession,
     TextGenerationModel,
     TextGenerationResponse,
 )
@@ -21,8 +22,24 @@ def handle_vertexai_unpickable_objects() -> None:
             c._endpoint_name,  # pylint: disable=protected-access
         )
 
+    def _pickle_chat_session(
+        c: ChatSession,
+    ) -> tuple[type[ChatSession], tuple[Any, ...]]:
+        return ChatSession, (
+            c._model._model_id,  # pylint: disable=protected-access
+            c._context,  # pylint: disable=protected-access
+            c._examples,  # pylint: disable=protected-access
+            c._max_output_tokens,  # pylint: disable=protected-access
+            c._temperature,  # pylint: disable=protected-access
+            c._top_k,  # pylint: disable=protected-access
+            c._top_p,  # pylint: disable=protected-access
+            c._message_history,  # pylint: disable=protected-access
+            c._stop_sequences,  # pylint: disable=protected-access
+        )
+
     copyreg.pickle(TextGenerationModel, _pickle_text_generation_model)
     copyreg.pickle(ChatModel, _pickle_text_generation_model)
+    copyreg.pickle(ChatSession, _pickle_chat_session)
 
 
 def extract_vertexai_input_and_history(

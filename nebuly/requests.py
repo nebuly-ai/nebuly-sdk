@@ -13,12 +13,14 @@ logger = logging.getLogger(__name__)
 
 
 class CustomJSONEncoder(json.JSONEncoder):
+    ACCEPTED_KEYS = ["_model_id", "_model", "_context", "_examples", "_message_history"]
+
     @staticmethod
     def _check_key(key: str) -> bool:
         """
         Reject all private keys except for ones that contain info about the model
         """
-        return not key.startswith("_") or "model" in key
+        return not key.startswith("_") or key in CustomJSONEncoder.ACCEPTED_KEYS
 
     @staticmethod
     def _check_value(value: Any) -> bool:
@@ -33,9 +35,9 @@ class CustomJSONEncoder(json.JSONEncoder):
             type(None),
         )
         has_correct_type = isinstance(value, correct_types)
-        is_valid_class = not isinstance(value, Mock) and hasattr(
-            value, "_model_id"
-        )  # Needed for vertexai chat models  # noqa: E501
+        is_valid_class = not isinstance(value, Mock) and any(
+            (hasattr(value, key) for key in CustomJSONEncoder.ACCEPTED_KEYS)
+        )
         return has_correct_type or is_valid_class
 
     def default(self, o: Any) -> Any:
