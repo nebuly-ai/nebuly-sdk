@@ -83,8 +83,11 @@ def test_vertexai_completion__no_context_manager(
                 "top_p": 0.8,
                 "top_k": 40,
             }
-
-            model = TextGenerationModel(model_id="text-bison@001")
+            with patch(
+                "google.cloud.aiplatform.Endpoint._construct_sdk_resource_from_gapic",
+                return_value="endpoint",
+            ):
+                model = TextGenerationModel(model_id="text-bison@001")
             result = model.predict(
                 "Give me ten interview questions for the role of program manager.",
                 **parameters,
@@ -129,7 +132,12 @@ def test_vertexai_completion__with_context_manager(
                     "top_p": 0.8,
                     "top_k": 40,
                 }
-                model = TextGenerationModel(model_id="text-bison@001")
+                with patch(
+                    "google.cloud.aiplatform.Endpoint._construct_sdk_resource_"
+                    "from_gapic",
+                    return_value="endpoint",
+                ):
+                    model = TextGenerationModel(model_id="text-bison@001")
                 result = model.predict(
                     "Give me ten interview questions for the role of program manager.",
                     **parameters,
@@ -166,7 +174,11 @@ async def test_vertexai_completion__async(
                 "top_k": 40,
             }
 
-            model = TextGenerationModel(model_id="text-bison@001")
+            with patch(
+                "google.cloud.aiplatform.Endpoint._construct_sdk_resource_from_gapic",
+                return_value="endpoint",
+            ):
+                model = TextGenerationModel(model_id="text-bison@001")
             result = await model.predict_async(
                 "Give me ten interview questions for the role of program manager.",
                 **parameters,
@@ -257,7 +269,11 @@ def test_vertexai_completion_stream(
                 "top_k": 40,
             }
 
-            model = TextGenerationModel(model_id="text-bison@001")
+            with patch(
+                "google.cloud.aiplatform.Endpoint._construct_sdk_resource_from_gapic",
+                return_value="endpoint",
+            ):
+                model = TextGenerationModel(model_id="text-bison@001")
             result = ""
             for chunk in model.predict_streaming(
                 prompt="Give me two interview questions for the role of program "
@@ -302,7 +318,11 @@ def test_vertexai_chat__no_context_manager(
                 "top_p": 0.95,
                 "top_k": 40,
             }
-            chat_model = ChatModel("chat-bison@001")
+            with patch(
+                "google.cloud.aiplatform.Endpoint._construct_sdk_resource_from_gapic",
+                return_value="endpoint",
+            ):
+                chat_model = ChatModel("chat-bison@001")
             chat = chat_model.start_chat(
                 context="My name is Miles. You are an astronomer, knowledgeable about "
                 "the solar system.",
@@ -351,7 +371,11 @@ def test_vertexai_chat__no_context_manager__with_history(
                 "top_p": 0.95,
                 "top_k": 40,
             }
-            chat_model = ChatModel("chat-bison@001")
+            with patch(
+                "google.cloud.aiplatform.Endpoint._construct_sdk_resource_from_gapic",
+                return_value="endpoint",
+            ):
+                chat_model = ChatModel("chat-bison@001")
             chat = chat_model.start_chat(
                 context="My name is Miles. You are an astronomer, knowledgeable about "
                 "the solar system.",
@@ -419,7 +443,12 @@ def test_vertexai_chat__with_context_manager(
                     "top_p": 0.95,
                     "top_k": 40,
                 }
-                chat_model = ChatModel("chat-bison@001")
+                with patch(
+                    "google.cloud.aiplatform.Endpoint._construct_sdk_resource_"
+                    "from_gapic",
+                    return_value="endpoint",
+                ):
+                    chat_model = ChatModel("chat-bison@001")
                 chat = chat_model.start_chat(
                     context="My name is Miles. You are an astronomer, knowledgeable "
                     "about the solar system.",
@@ -465,7 +494,11 @@ async def test_vertexai_chat__async(palm_completion: TextGenerationResponse) -> 
                 "top_k": 40,
             }
 
-            chat_model = ChatModel("chat-bison@001")
+            with patch(
+                "google.cloud.aiplatform.Endpoint._construct_sdk_resource_from_gapic",
+                return_value="endpoint",
+            ):
+                chat_model = ChatModel("chat-bison@001")
             chat = chat_model.start_chat(
                 context="My name is Miles. You are an astronomer, knowledgeable about "
                 "the solar system.",
@@ -516,7 +549,11 @@ def test_vertexai_chat__stream(
                 "top_k": 40,
             }
 
-            chat_model = ChatModel("chat-bison@001")
+            with patch(
+                "google.cloud.aiplatform.Endpoint._construct_sdk_resource_from_gapic",
+                return_value="endpoint",
+            ):
+                chat_model = ChatModel("chat-bison@001")
             chat = chat_model.start_chat(
                 context="My name is Miles. You are an astronomer, knowledgeable about "
                 "the solar system.",

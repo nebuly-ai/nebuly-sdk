@@ -65,7 +65,7 @@ def test_langchain_llm_chain__no_context_manager(
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_completion
             nebuly_init(mock_observer)
-            llm = OpenAI(temperature=0.9)
+            llm = OpenAI(temperature=0.9, openai_api_key="test")
             prompt = PromptTemplate(
                 input_variables=["product"],
                 template="What is a good name for a company that makes {product}?",
@@ -109,7 +109,7 @@ def test_langchain_llm_chain__with_context_manager(
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_completion
             nebuly_init(mock_observer)
-            llm = OpenAI(temperature=0.9)
+            llm = OpenAI(temperature=0.9, openai_api_key="test")
             prompt = PromptTemplate(
                 input_variables=["product"],
                 template="What is a good name for a company that makes {product}?",
@@ -151,7 +151,7 @@ def test_langchain_llm_chain__multiple_chains_in_interaction(
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_completion
             nebuly_init(mock_observer)
-            llm = OpenAI(temperature=0.9)
+            llm = OpenAI(temperature=0.9, openai_api_key="test")
             prompt = PromptTemplate(
                 input_variables=["product"],
                 template="What is a good name for a company that makes {product}?",
@@ -195,7 +195,7 @@ def test_langchain_llm_chain__multiple_interactions(
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_completion
             nebuly_init(mock_observer)
-            llm = OpenAI(temperature=0.9)
+            llm = OpenAI(temperature=0.9, openai_api_key="test")
             prompt = PromptTemplate(
                 input_variables=["product"],
                 template="What is a good name for a company that makes {product}?",
@@ -277,7 +277,7 @@ def test_langchain_chat_chain__no_context_manager(openai_chat: dict[str, Any]) -
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_chat_completion_create.return_value = openai_chat
             nebuly_init(mock_observer)
-            llm = ChatOpenAI()
+            llm = ChatOpenAI(openai_api_key="test")
 
             chat_prompt = ChatPromptTemplate.from_messages(
                 messages=[
@@ -349,7 +349,7 @@ def test_langchain__chain_with_function_tool(
             ]
             nebuly_init(mock_observer)
 
-            llm = ChatOpenAI(temperature=0)
+            llm = ChatOpenAI(temperature=0, openai_api_key="test")
 
             @tool
             def get_word_length(word: str) -> int:
@@ -403,7 +403,7 @@ def test_langchain_sequential_chain_single_input_var(
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_completion
             nebuly_init(mock_observer)
-            llm = OpenAI(temperature=0.7)
+            llm = OpenAI(temperature=0.7, openai_api_key="test")
             synopsis_template = """
             Title: {title}
             Playwright: This is a synopsis for the above play:"""
@@ -413,7 +413,7 @@ def test_langchain_sequential_chain_single_input_var(
             synopsis_chain = LLMChain(
                 llm=llm, prompt=synopsis_prompt_template, output_key="synopsis"
             )
-            llm = OpenAI(temperature=0.7)
+            llm = OpenAI(temperature=0.7, openai_api_key="test")
             template = """
             Play Synopsis:
             {synopsis}
@@ -451,7 +451,7 @@ def test_langchain_sequential_chain_multiple_input_vars(
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_completion
             nebuly_init(mock_observer)
-            llm = OpenAI(temperature=0.7)
+            llm = OpenAI(temperature=0.7, openai_api_key="test")
             synopsis_template = """
             Title: {title}
             Era: {era}
@@ -462,7 +462,7 @@ def test_langchain_sequential_chain_multiple_input_vars(
             synopsis_chain = LLMChain(
                 llm=llm, prompt=synopsis_prompt_template, output_key="synopsis"
             )
-            llm = OpenAI(temperature=0.7)
+            llm = OpenAI(temperature=0.7, openai_api_key="test")
             template = """
             Play Synopsis:
             {synopsis}
