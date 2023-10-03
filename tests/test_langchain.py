@@ -1,4 +1,4 @@
-# pylint: disable=duplicate-code
+# pylint: disable=duplicate-code, wrong-import-position
 from __future__ import annotations
 
 import json
@@ -6,8 +6,13 @@ import sys
 from typing import Any
 from unittest.mock import patch
 
-import langchain
 import pytest
+
+if sys.version_info < (3, 8, 1):
+    # pylint: disable=import-error, no-name-in-module
+    pytest.skip("Cannot use langchain in python<3.8.1", allow_module_level=True)
+
+import langchain
 from langchain.agents import AgentExecutor, OpenAIFunctionsAgent, tool
 from langchain.chains import LLMChain, SequentialChain
 from langchain.chat_models import ChatOpenAI
@@ -21,11 +26,6 @@ from nebuly.entities import EventType, InteractionWatch, Observer, SpanWatch
 from nebuly.observers import NebulyObserver
 from nebuly.requests import CustomJSONEncoder
 from tests import common
-
-pytestmark = pytest.mark.skipif(
-    sys.version_info < (3, 8, 1), reason="requires 3.8.1 or higher"
-)
-
 
 # Cache original functions
 orig_func_llm_gen = langchain.llms.base.BaseLLM.generate

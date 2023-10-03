@@ -7,7 +7,7 @@ readme = "README.md"
 packages = [{include = "nebuly"}]
 
 [tool.poetry.dependencies]
-python = ">=3.8,<4.0"
+python = ">=3.8"
 pytest = "^7.4.2"
 
 [tool.poetry.group.dev.dependencies]

@@ -1,12 +1,16 @@
-# pylint: disable=duplicate-code
+# pylint: disable=duplicate-code, wrong-import-position, import-error, no-name-in-module
 from __future__ import annotations
 
 import json
 import sys
 from unittest.mock import patch
 
-import google.generativeai as palm  # type: ignore
 import pytest
+
+if sys.version_info < (3, 9, 0):
+    pytest.skip("Cannot use google.generativeai in python<3.9", allow_module_level=True)
+
+import google.generativeai as palm  # type: ignore
 from google.generativeai.discuss import (  # type: ignore # pylint: disable=no-name-in-module  # noqa: E501
     ChatResponse,
 )
@@ -24,10 +28,6 @@ from nebuly.entities import InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver
 from nebuly.requests import CustomJSONEncoder
 from tests.common import nebuly_init
-
-pytestmark = pytest.mark.skipif(
-    sys.version_info < (3, 9, 0), reason="requires 3.9 or higher"
-)
 
 
 @pytest.fixture(name="palm_completion")

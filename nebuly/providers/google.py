@@ -1,14 +1,11 @@
+# pylint: disable=duplicate-code, wrong-import-position, import-error, no-name-in-module
 from __future__ import annotations
 
 import copyreg
 from typing import Any
 
-from google.generativeai.discuss import (  # type: ignore  # pylint: disable=no-name-in-module  # noqa: E501
-    ChatResponse,
-)
-from google.generativeai.text import (  # type: ignore  # pylint: disable=no-name-in-module  # noqa: E501
-    Completion,
-)
+from google.generativeai.discuss import ChatResponse  # type: ignore
+from google.generativeai.text import Completion  # type: ignore
 from google.generativeai.types import discuss_types, text_types  # type: ignore
 
 from nebuly.providers.utils import get_argument
