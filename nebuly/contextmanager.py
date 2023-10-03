@@ -4,7 +4,7 @@ import inspect
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Generator, cast
+from typing import Any, Dict, Generator, Tuple, cast
 from uuid import UUID
 
 from nebuly.entities import EventType, InteractionWatch, Observer, SpanWatch
@@ -59,8 +59,8 @@ class Event:
             function=self._get_function(),
             called_start=self.start_time,
             called_end=self.end_time,
-            called_with_args=cast(tuple[Any], self.data.args),
-            called_with_kwargs=cast(dict[str, Any], self.data.kwargs),
+            called_with_args=cast(Tuple[Any], self.data.args),
+            called_with_kwargs=cast(Dict[str, Any], self.data.kwargs),
             returned=self.data.output,
             generator=False,
             generator_first_element_timestamp=None,

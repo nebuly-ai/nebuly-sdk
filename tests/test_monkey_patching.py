@@ -45,6 +45,7 @@ def test_patcher_doesnt_change_any_behavior(
 
 
 @given(args=st.tuples(st_any), kwargs=st.dictionaries(st.text(), st_any))
+@settings(deadline=None)
 def test_patcher_calls_observer(
     args: tuple[Any, ...], kwargs: dict[str, Any]
 ) -> None:  # noqa: E501

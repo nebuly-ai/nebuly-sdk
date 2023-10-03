@@ -88,10 +88,10 @@ def test_vertexai_completion__no_context_manager(
                 return_value="endpoint",
             ):
                 model = TextGenerationModel(model_id="text-bison@001")
-            result = model.predict(
-                "Give me ten interview questions for the role of program manager.",
-                **parameters,
-            )
+                result = model.predict(
+                    "Give me ten interview questions for the role of program manager.",
+                    **parameters,
+                )
             assert result is not None
             assert mock_observer.call_count == 1
             interaction_watch = mock_observer.call_args[0][0]
@@ -138,11 +138,12 @@ def test_vertexai_completion__with_context_manager(
                     return_value="endpoint",
                 ):
                     model = TextGenerationModel(model_id="text-bison@001")
-                result = model.predict(
-                    "Give me ten interview questions for the role of program manager.",
-                    **parameters,
-                )
-                interaction.set_output(result.text)
+                    result = model.predict(
+                        "Give me ten interview questions for the role of "
+                        "program manager.",
+                        **parameters,
+                    )
+                    interaction.set_output(result.text)
             assert result is not None
             assert mock_observer.call_count == 1
             interaction_watch = mock_observer.call_args[0][0]
@@ -179,10 +180,10 @@ async def test_vertexai_completion__async(
                 return_value="endpoint",
             ):
                 model = TextGenerationModel(model_id="text-bison@001")
-            result = await model.predict_async(
-                "Give me ten interview questions for the role of program manager.",
-                **parameters,
-            )
+                result = await model.predict_async(
+                    "Give me ten interview questions for the role of program manager.",
+                    **parameters,
+                )
             assert result is not None
             assert mock_observer.call_count == 1
             interaction_watch = mock_observer.call_args[0][0]
@@ -274,13 +275,13 @@ def test_vertexai_completion_stream(
                 return_value="endpoint",
             ):
                 model = TextGenerationModel(model_id="text-bison@001")
-            result = ""
-            for chunk in model.predict_streaming(
-                prompt="Give me two interview questions for the role of program "
-                "manager.",
-                **parameters,
-            ):
-                result += chunk.text
+                result = ""
+                for chunk in model.predict_streaming(
+                    prompt="Give me two interview questions for the role of program "
+                    "manager.",
+                    **parameters,
+                ):
+                    result += chunk.text
 
             assert result is not None
             assert mock_observer.call_count == 1
@@ -323,20 +324,21 @@ def test_vertexai_chat__no_context_manager(
                 return_value="endpoint",
             ):
                 chat_model = ChatModel("chat-bison@001")
-            chat = chat_model.start_chat(
-                context="My name is Miles. You are an astronomer, knowledgeable about "
-                "the solar system.",
-                examples=[
-                    InputOutputTextPair(
-                        input_text="How many moons does Mars have?",
-                        output_text="The planet Mars has two moons, Phobos and Deimos.",
-                    ),
-                ],
-            )
+                chat = chat_model.start_chat(
+                    context="My name is Miles. You are an astronomer, knowledgeable "
+                    "about the solar system.",
+                    examples=[
+                        InputOutputTextPair(
+                            input_text="How many moons does Mars have?",
+                            output_text="The planet Mars has two moons, Phobos and "
+                            "Deimos.",
+                        ),
+                    ],
+                )
 
-            result = chat.send_message(
-                "How many planets are there in the solar system?", **parameters
-            )
+                result = chat.send_message(
+                    "How many planets are there in the solar system?", **parameters
+                )
             assert result is not None
             assert mock_observer.call_count == 1
             interaction_watch = mock_observer.call_args[0][0]
@@ -376,30 +378,31 @@ def test_vertexai_chat__no_context_manager__with_history(
                 return_value="endpoint",
             ):
                 chat_model = ChatModel("chat-bison@001")
-            chat = chat_model.start_chat(
-                context="My name is Miles. You are an astronomer, knowledgeable about "
-                "the solar system.",
-                examples=[
-                    InputOutputTextPair(
-                        input_text="How many moons does Mars have?",
-                        output_text="The planet Mars has two moons, Phobos and Deimos.",
-                    ),
-                ],
-                message_history=[
-                    ChatMessage(
-                        content="How many moons does Mars have?",
-                        author="user",
-                    ),
-                    ChatMessage(
-                        content="The planet Mars has two moons, Phobos and Deimos.",
-                        author="bot",
-                    ),
-                ],
-            )
+                chat = chat_model.start_chat(
+                    context="My name is Miles. You are an astronomer, knowledgeable "
+                    "about the solar system.",
+                    examples=[
+                        InputOutputTextPair(
+                            input_text="How many moons does Mars have?",
+                            output_text="The planet Mars has two moons, Phobos and "
+                            "Deimos.",
+                        ),
+                    ],
+                    message_history=[
+                        ChatMessage(
+                            content="How many moons does Mars have?",
+                            author="user",
+                        ),
+                        ChatMessage(
+                            content="The planet Mars has two moons, Phobos and Deimos.",
+                            author="bot",
+                        ),
+                    ],
+                )
 
-            result = chat.send_message(
-                "How many planets are there in the solar system?", **parameters
-            )
+                result = chat.send_message(
+                    "How many planets are there in the solar system?", **parameters
+                )
 
             assert result is not None
             assert mock_observer.call_count == 1
@@ -449,22 +452,22 @@ def test_vertexai_chat__with_context_manager(
                     return_value="endpoint",
                 ):
                     chat_model = ChatModel("chat-bison@001")
-                chat = chat_model.start_chat(
-                    context="My name is Miles. You are an astronomer, knowledgeable "
-                    "about the solar system.",
-                    examples=[
-                        InputOutputTextPair(
-                            input_text="How many moons does Mars have?",
-                            output_text="The planet Mars has two moons, Phobos and "
-                            "Deimos.",
-                        ),
-                    ],
-                )
+                    chat = chat_model.start_chat(
+                        context="My name is Miles. You are an astronomer, "
+                        "knowledgeable about the solar system.",
+                        examples=[
+                            InputOutputTextPair(
+                                input_text="How many moons does Mars have?",
+                                output_text="The planet Mars has two moons, Phobos and "
+                                "Deimos.",
+                            ),
+                        ],
+                    )
 
-                result = chat.send_message(
-                    "How many planets are there in the solar system?", **parameters
-                )
-                interaction.set_output(result.text)
+                    result = chat.send_message(
+                        "How many planets are there in the solar system?", **parameters
+                    )
+                    interaction.set_output(result.text)
             assert result is not None
             assert mock_completion_create.call_count == 1
             interaction_watch = mock_observer.call_args[0][0]
@@ -499,20 +502,21 @@ async def test_vertexai_chat__async(palm_completion: TextGenerationResponse) -> 
                 return_value="endpoint",
             ):
                 chat_model = ChatModel("chat-bison@001")
-            chat = chat_model.start_chat(
-                context="My name is Miles. You are an astronomer, knowledgeable about "
-                "the solar system.",
-                examples=[
-                    InputOutputTextPair(
-                        input_text="How many moons does Mars have?",
-                        output_text="The planet Mars has two moons, Phobos and Deimos.",
-                    ),
-                ],
-            )
+                chat = chat_model.start_chat(
+                    context="My name is Miles. You are an astronomer, knowledgeable "
+                    "about the solar system.",
+                    examples=[
+                        InputOutputTextPair(
+                            input_text="How many moons does Mars have?",
+                            output_text="The planet Mars has two moons, Phobos and "
+                            "Deimos.",
+                        ),
+                    ],
+                )
 
-            result = await chat.send_message_async(
-                "How many planets are there in the solar system?", **parameters
-            )
+                result = await chat.send_message_async(
+                    "How many planets are there in the solar system?", **parameters
+                )
 
             assert result is not None
             assert mock_observer.call_count == 1
@@ -554,22 +558,24 @@ def test_vertexai_chat__stream(
                 return_value="endpoint",
             ):
                 chat_model = ChatModel("chat-bison@001")
-            chat = chat_model.start_chat(
-                context="My name is Miles. You are an astronomer, knowledgeable about "
-                "the solar system.",
-                examples=[
-                    InputOutputTextPair(
-                        input_text="How many moons does Mars have?",
-                        output_text="The planet Mars has two moons, Phobos and Deimos.",
-                    ),
-                ],
-            )
+                chat = chat_model.start_chat(
+                    context="My name is Miles. You are an astronomer, knowledgeable "
+                    "about the solar system.",
+                    examples=[
+                        InputOutputTextPair(
+                            input_text="How many moons does Mars have?",
+                            output_text="The planet Mars has two moons, Phobos and "
+                            "Deimos.",
+                        ),
+                    ],
+                )
 
-            result = ""
-            for chunk in chat.send_message_streaming(
-                message="How many planets are there in the solar system?", **parameters
-            ):
-                result += chunk.text
+                result = ""
+                for chunk in chat.send_message_streaming(
+                    message="How many planets are there in the solar system?",
+                    **parameters,
+                ):
+                    result += chunk.text
 
             assert result is not None
             assert mock_observer.call_count == 1
