@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import importlib
 import logging
 import sys
@@ -659,7 +660,11 @@ def _patcher(
     """
 
     def inner(f: Callable[[Any], Any]) -> Callable[[Any], Any]:
-        if iscoroutinefunction(f) or isasyncgenfunction(f):
+        if (
+            iscoroutinefunction(f)
+            or asyncio.iscoroutinefunction(f)  # Needed for python 3.9
+            or isasyncgenfunction(f)
+        ):
             return coroutine_wrapper(f, observer, module, version, function_name)
 
         return function_wrapper(f, observer, module, version, function_name)
