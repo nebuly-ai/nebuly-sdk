@@ -454,9 +454,6 @@ def _setup_args_kwargs(
     nebuly_kwargs, function_kwargs = _split_nebuly_kwargs(kwargs)
 
     _handle_unpickleable_objects()
-    print(args)
-    print("##############")
-    print(kwargs)
     original_args = deepcopy(args)
     nebuly_kwargs = deepcopy(nebuly_kwargs)
     original_kwargs = deepcopy(function_kwargs)
@@ -623,7 +620,6 @@ def function_wrapper(
         called_start = datetime.now(timezone.utc)
         result = f(*args, **function_kwargs)
 
-        print(type(result))
         if _is_generator(result):
             logger.debug("Result is a generator")
             return watch_from_generator(
