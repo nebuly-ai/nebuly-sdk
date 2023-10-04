@@ -3,14 +3,17 @@ from __future__ import annotations
 import copyreg
 from typing import Any, Callable
 
-from cohere.client import Client
-from cohere.responses.chat import Chat, StreamingChat
-from cohere.responses.generation import Generations, StreamingGenerations
+from cohere.client import Client  # type: ignore
+from cohere.responses.chat import Chat, StreamingChat  # type: ignore
+from cohere.responses.generation import (  # type: ignore
+    Generations,
+    StreamingGenerations,
+)
 
 from nebuly.providers.utils import get_argument
 
 
-def is_cohere_generator(function: Callable) -> bool:
+def is_cohere_generator(function: Callable[[Any], Any]) -> bool:
     return isinstance(function, (StreamingGenerations, StreamingChat))
 
 
@@ -31,7 +34,7 @@ def handle_cohere_unpickable_objects() -> None:
 
 
 def extract_cohere_input_and_history(
-    original_args: tuple[Any],
+    original_args: tuple[Any, ...],
     original_kwargs: dict[str, Any],
     function_name: str,
 ) -> tuple[str, list[tuple[str, Any]]]:
@@ -49,9 +52,9 @@ def extract_cohere_input_and_history(
 
 def extract_cohere_output(function_name: str, output: Generations | Chat) -> str:
     if function_name in ["Client.generate", "AsyncClient.generate"]:
-        return output.generations[0].text
+        return output.generations[0].text  # type: ignore
     if function_name in ["Client.chat", "AsyncClient.chat"]:
-        return output.text
+        return output.text  # type: ignore
 
     raise ValueError(f"Unknown function name: {function_name}")
 

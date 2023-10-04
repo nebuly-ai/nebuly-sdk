@@ -3,8 +3,9 @@ from __future__ import annotations
 import copyreg
 from typing import Any, Iterator
 
-from vertexai.language_models import (
+from vertexai.language_models import (  # type: ignore
     ChatModel,
+    ChatSession,
     TextGenerationModel,
     TextGenerationResponse,
 )
@@ -21,12 +22,28 @@ def handle_vertexai_unpickable_objects() -> None:
             c._endpoint_name,  # pylint: disable=protected-access
         )
 
+    def _pickle_chat_session(
+        c: ChatSession,
+    ) -> tuple[type[ChatSession], tuple[Any, ...]]:
+        return ChatSession, (
+            c._model._model_id,  # pylint: disable=protected-access
+            c._context,  # pylint: disable=protected-access
+            c._examples,  # pylint: disable=protected-access
+            c._max_output_tokens,  # pylint: disable=protected-access
+            c._temperature,  # pylint: disable=protected-access
+            c._top_k,  # pylint: disable=protected-access
+            c._top_p,  # pylint: disable=protected-access
+            c._message_history,  # pylint: disable=protected-access
+            c._stop_sequences,  # pylint: disable=protected-access
+        )
+
     copyreg.pickle(TextGenerationModel, _pickle_text_generation_model)
     copyreg.pickle(ChatModel, _pickle_text_generation_model)
+    copyreg.pickle(ChatSession, _pickle_chat_session)
 
 
 def extract_vertexai_input_and_history(
-    original_args: tuple[Any],
+    original_args: tuple[Any, ...],
     original_kwargs: dict[str, Any],
     function_name: str,
 ) -> tuple[str, list[tuple[str, Any]]]:
@@ -60,7 +77,7 @@ def extract_vertexai_output(function_name: str, output: TextGenerationResponse) 
         "language_models.ChatSession.send_message",
         "language_models.ChatSession.send_message_async",
     ]:
-        return output.text
+        return output.text  # type: ignore
 
     raise ValueError(f"Unknown function name: {function_name}")
 

@@ -1,5 +1,8 @@
 # pylint: disable=duplicate-code
+from __future__ import annotations
+
 import json
+from typing import AsyncGenerator
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -22,7 +25,9 @@ def fixture_anthropic_completion() -> Completion:
     )
 
 
-def test_anthropic_completion__no_context_manager(anthropic_completion):
+def test_anthropic_completion__no_context_manager(
+    anthropic_completion: Completion,
+) -> None:
     with patch("anthropic.resources.Completions.create") as mock_completion:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion.return_value = anthropic_completion
@@ -33,13 +38,13 @@ def test_anthropic_completion__no_context_manager(anthropic_completion):
                 api_key="my api key",
             )
 
-            result = client.completions.create(
+            result = client.completions.create(  # type: ignore
                 model="claude-2",
                 max_tokens_to_sample=300,
                 prompt=f"{HUMAN_PROMPT} how does a court case get to the "
                 f"Supreme Court?{AI_PROMPT}",
-                platform_user="test_user",
-                platform_user_group_profile="test_group",
+                user_id="test_user",
+                user_group_profile="test_group",
             )
             assert result is not None
             assert mock_observer.call_count == 1
@@ -62,7 +67,9 @@ def test_anthropic_completion__no_context_manager(anthropic_completion):
             )
 
 
-def test_anthropic_completion__with_context_manager(anthropic_completion):
+def test_anthropic_completion__with_context_manager(
+    anthropic_completion: Completion,
+) -> None:
     with patch("anthropic.resources.Completions.create") as mock_completion:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion.return_value = anthropic_completion
@@ -74,7 +81,7 @@ def test_anthropic_completion__with_context_manager(anthropic_completion):
             )
 
             with new_interaction(
-                platform_user="test_user", platform_user_group_profile="test_group"
+                user_id="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Sample input 1")
                 result = client.completions.create(
@@ -102,7 +109,7 @@ def test_anthropic_completion__with_context_manager(anthropic_completion):
 
 
 @pytest.mark.asyncio
-async def test_anthropic_completion__async(anthropic_completion):
+async def test_anthropic_completion__async(anthropic_completion: Completion) -> None:
     with patch(
         "anthropic.resources.AsyncCompletions.create", new=AsyncMock()
     ) as mock_completion:
@@ -141,7 +148,7 @@ async def test_anthropic_completion__async(anthropic_completion):
 
 
 @pytest.fixture(name="anthropic_completion_gen")
-def fixture_anthropic_completion_gen():
+def fixture_anthropic_completion_gen() -> list[Completion]:
     return [
         Completion(
             completion=" Hello",
@@ -156,7 +163,7 @@ def fixture_anthropic_completion_gen():
     ]
 
 
-def test_anthropic_completion_gen(anthropic_completion_gen):
+def test_anthropic_completion_gen(anthropic_completion_gen: list[Completion]) -> None:
     with patch("anthropic.resources.Completions.create") as mock_completion:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion.return_value = (
@@ -170,6 +177,67 @@ def test_anthropic_completion_gen(anthropic_completion_gen):
             )
 
             for _ in client.completions.create(  # pylint: disable=not-an-iterable
+                model="claude-2",
+                max_tokens_to_sample=300,
+                prompt=f"{HUMAN_PROMPT} how does a court case get to the "
+                f"Supreme Court?{AI_PROMPT}",
+                stream=True,
+            ):
+                ...
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert (
+                interaction_watch.input
+                == f"{HUMAN_PROMPT} how does a court case get to the "
+                f"Supreme Court?{AI_PROMPT}"
+            )
+            assert interaction_watch.output == " Hello!"
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+@pytest.fixture(name="anthropic_completion_gen_async")
+async def fixture_anthropic_completion_gen_async() -> AsyncGenerator[Completion, None]:
+    chunks = [
+        Completion(
+            completion=" Hello",
+            stop_reason="stop_sequence",
+            model="claude-2",
+        ),
+        Completion(
+            completion="!",
+            stop_reason="stop_sequence",
+            model="claude-2",
+        ),
+    ]
+
+    for chunk in chunks:
+        yield chunk
+
+
+@pytest.mark.asyncio
+async def test_anthropic_completion_async_gen(
+    anthropic_completion_gen_async: AsyncGenerator[Completion, None]
+) -> None:
+    with patch(
+        "anthropic.resources.AsyncCompletions.create", new=AsyncMock()
+    ) as mock_completion:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion.return_value = anthropic_completion_gen_async
+            nebuly_init(observer=mock_observer)
+
+            client = AsyncAnthropic(
+                # defaults to os.environ.get("ANTHROPIC_API_KEY")
+                api_key="my api key",
+            )
+
+            async for _ in await client.completions.create(  # pylint: disable=not-an-iterable  # noqa: E501
                 model="claude-2",
                 max_tokens_to_sample=300,
                 prompt=f"{HUMAN_PROMPT} how does a court case get to the "

@@ -1,10 +1,12 @@
 # pylint: disable=duplicate-code
+from __future__ import annotations
+
 import json
 from unittest.mock import patch
 
 import pytest
 from google.cloud import aiplatform
-from vertexai.language_models import (
+from vertexai.language_models import (  # type: ignore
     ChatMessage,
     ChatModel,
     InputOutputTextPair,
@@ -65,7 +67,9 @@ def fixture_palm_completion() -> TextGenerationResponse:
     )
 
 
-def test_vertexai_completion__no_context_manager(palm_completion):
+def test_vertexai_completion__no_context_manager(
+    palm_completion: TextGenerationResponse,
+) -> None:
     with patch(
         "vertexai.language_models.TextGenerationModel.predict"
     ) as mock_completion_create:
@@ -79,12 +83,15 @@ def test_vertexai_completion__no_context_manager(palm_completion):
                 "top_p": 0.8,
                 "top_k": 40,
             }
-
-            model = TextGenerationModel(model_id="text-bison@001")
-            result = model.predict(
-                "Give me ten interview questions for the role of program manager.",
-                **parameters,
-            )
+            with patch(
+                "google.cloud.aiplatform.Endpoint._construct_sdk_resource_from_gapic",
+                return_value="endpoint",
+            ):
+                model = TextGenerationModel(model_id="text-bison@001")
+                result = model.predict(
+                    "Give me ten interview questions for the role of program manager.",
+                    **parameters,
+                )
             assert result is not None
             assert mock_observer.call_count == 1
             interaction_watch = mock_observer.call_args[0][0]
@@ -103,7 +110,9 @@ def test_vertexai_completion__no_context_manager(palm_completion):
             )
 
 
-def test_vertexai_completion__with_context_manager(palm_completion):
+def test_vertexai_completion__with_context_manager(
+    palm_completion: TextGenerationResponse,
+) -> None:
     with patch(
         "vertexai.language_models.TextGenerationModel.predict"
     ) as mock_completion_create:
@@ -123,12 +132,18 @@ def test_vertexai_completion__with_context_manager(palm_completion):
                     "top_p": 0.8,
                     "top_k": 40,
                 }
-                model = TextGenerationModel(model_id="text-bison@001")
-                result = model.predict(
-                    "Give me ten interview questions for the role of program manager.",
-                    **parameters,
-                )
-                interaction.set_output(result.text)
+                with patch(
+                    "google.cloud.aiplatform.Endpoint._construct_sdk_resource_"
+                    "from_gapic",
+                    return_value="endpoint",
+                ):
+                    model = TextGenerationModel(model_id="text-bison@001")
+                    result = model.predict(
+                        "Give me ten interview questions for the role of "
+                        "program manager.",
+                        **parameters,
+                    )
+                    interaction.set_output(result.text)
             assert result is not None
             assert mock_observer.call_count == 1
             interaction_watch = mock_observer.call_args[0][0]
@@ -143,7 +158,9 @@ def test_vertexai_completion__with_context_manager(palm_completion):
 
 
 @pytest.mark.asyncio
-async def test_vertexai_completion__async(palm_completion):
+async def test_vertexai_completion__async(
+    palm_completion: TextGenerationResponse,
+) -> None:
     with patch(
         "vertexai.language_models.TextGenerationModel.predict_async"
     ) as mock_completion_create:
@@ -158,11 +175,15 @@ async def test_vertexai_completion__async(palm_completion):
                 "top_k": 40,
             }
 
-            model = TextGenerationModel(model_id="text-bison@001")
-            result = await model.predict_async(
-                "Give me ten interview questions for the role of program manager.",
-                **parameters,
-            )
+            with patch(
+                "google.cloud.aiplatform.Endpoint._construct_sdk_resource_from_gapic",
+                return_value="endpoint",
+            ):
+                model = TextGenerationModel(model_id="text-bison@001")
+                result = await model.predict_async(
+                    "Give me ten interview questions for the role of program manager.",
+                    **parameters,
+                )
             assert result is not None
             assert mock_observer.call_count == 1
             interaction_watch = mock_observer.call_args[0][0]
@@ -233,7 +254,9 @@ def fixture_palm_completion_stream() -> list[TextGenerationResponse]:
     ]
 
 
-def test_vertexai_completion_stream(palm_completion_stream):
+def test_vertexai_completion_stream(
+    palm_completion_stream: list[TextGenerationResponse],
+) -> None:
     with patch(
         "vertexai.language_models.TextGenerationModel.predict_streaming"
     ) as mock_completion_stream:
@@ -247,14 +270,18 @@ def test_vertexai_completion_stream(palm_completion_stream):
                 "top_k": 40,
             }
 
-            model = TextGenerationModel(model_id="text-bison@001")
-            result = ""
-            for chunk in model.predict_streaming(
-                prompt="Give me two interview questions for the role of program "
-                "manager.",
-                **parameters,
+            with patch(
+                "google.cloud.aiplatform.Endpoint._construct_sdk_resource_from_gapic",
+                return_value="endpoint",
             ):
-                result += chunk.text
+                model = TextGenerationModel(model_id="text-bison@001")
+                result = ""
+                for chunk in model.predict_streaming(
+                    prompt="Give me two interview questions for the role of program "
+                    "manager.",
+                    **parameters,
+                ):
+                    result += chunk.text
 
             assert result is not None
             assert mock_observer.call_count == 1
@@ -276,7 +303,9 @@ def test_vertexai_completion_stream(palm_completion_stream):
             )
 
 
-def test_vertexai_chat__no_context_manager(palm_completion):
+def test_vertexai_chat__no_context_manager(
+    palm_completion: TextGenerationResponse,
+) -> None:
     with patch(
         "vertexai.language_models.ChatSession.send_message"
     ) as mock_completion_create:
@@ -290,21 +319,26 @@ def test_vertexai_chat__no_context_manager(palm_completion):
                 "top_p": 0.95,
                 "top_k": 40,
             }
-            chat_model = ChatModel("chat-bison@001")
-            chat = chat_model.start_chat(
-                context="My name is Miles. You are an astronomer, knowledgeable about "
-                "the solar system.",
-                examples=[
-                    InputOutputTextPair(
-                        input_text="How many moons does Mars have?",
-                        output_text="The planet Mars has two moons, Phobos and Deimos.",
-                    ),
-                ],
-            )
+            with patch(
+                "google.cloud.aiplatform.Endpoint._construct_sdk_resource_from_gapic",
+                return_value="endpoint",
+            ):
+                chat_model = ChatModel("chat-bison@001")
+                chat = chat_model.start_chat(
+                    context="My name is Miles. You are an astronomer, knowledgeable "
+                    "about the solar system.",
+                    examples=[
+                        InputOutputTextPair(
+                            input_text="How many moons does Mars have?",
+                            output_text="The planet Mars has two moons, Phobos and "
+                            "Deimos.",
+                        ),
+                    ],
+                )
 
-            result = chat.send_message(
-                "How many planets are there in the solar system?", **parameters
-            )
+                result = chat.send_message(
+                    "How many planets are there in the solar system?", **parameters
+                )
             assert result is not None
             assert mock_observer.call_count == 1
             interaction_watch = mock_observer.call_args[0][0]
@@ -323,7 +357,9 @@ def test_vertexai_chat__no_context_manager(palm_completion):
             )
 
 
-def test_vertexai_chat__no_context_manager__with_history(palm_completion):
+def test_vertexai_chat__no_context_manager__with_history(
+    palm_completion: TextGenerationResponse,
+) -> None:
     with patch(
         "vertexai.language_models.ChatSession.send_message"
     ) as mock_completion_create:
@@ -337,31 +373,36 @@ def test_vertexai_chat__no_context_manager__with_history(palm_completion):
                 "top_p": 0.95,
                 "top_k": 40,
             }
-            chat_model = ChatModel("chat-bison@001")
-            chat = chat_model.start_chat(
-                context="My name is Miles. You are an astronomer, knowledgeable about "
-                "the solar system.",
-                examples=[
-                    InputOutputTextPair(
-                        input_text="How many moons does Mars have?",
-                        output_text="The planet Mars has two moons, Phobos and Deimos.",
-                    ),
-                ],
-                message_history=[
-                    ChatMessage(
-                        content="How many moons does Mars have?",
-                        author="user",
-                    ),
-                    ChatMessage(
-                        content="The planet Mars has two moons, Phobos and Deimos.",
-                        author="bot",
-                    ),
-                ],
-            )
+            with patch(
+                "google.cloud.aiplatform.Endpoint._construct_sdk_resource_from_gapic",
+                return_value="endpoint",
+            ):
+                chat_model = ChatModel("chat-bison@001")
+                chat = chat_model.start_chat(
+                    context="My name is Miles. You are an astronomer, knowledgeable "
+                    "about the solar system.",
+                    examples=[
+                        InputOutputTextPair(
+                            input_text="How many moons does Mars have?",
+                            output_text="The planet Mars has two moons, Phobos and "
+                            "Deimos.",
+                        ),
+                    ],
+                    message_history=[
+                        ChatMessage(
+                            content="How many moons does Mars have?",
+                            author="user",
+                        ),
+                        ChatMessage(
+                            content="The planet Mars has two moons, Phobos and Deimos.",
+                            author="bot",
+                        ),
+                    ],
+                )
 
-            result = chat.send_message(
-                "How many planets are there in the solar system?", **parameters
-            )
+                result = chat.send_message(
+                    "How many planets are there in the solar system?", **parameters
+                )
 
             assert result is not None
             assert mock_observer.call_count == 1
@@ -385,7 +426,9 @@ def test_vertexai_chat__no_context_manager__with_history(palm_completion):
             )
 
 
-def test_vertexai_chat__with_context_manager(palm_completion):
+def test_vertexai_chat__with_context_manager(
+    palm_completion: TextGenerationResponse,
+) -> None:
     with patch(
         "vertexai.language_models.ChatSession.send_message"
     ) as mock_completion_create:
@@ -403,23 +446,28 @@ def test_vertexai_chat__with_context_manager(palm_completion):
                     "top_p": 0.95,
                     "top_k": 40,
                 }
-                chat_model = ChatModel("chat-bison@001")
-                chat = chat_model.start_chat(
-                    context="My name is Miles. You are an astronomer, knowledgeable "
-                    "about the solar system.",
-                    examples=[
-                        InputOutputTextPair(
-                            input_text="How many moons does Mars have?",
-                            output_text="The planet Mars has two moons, Phobos and "
-                            "Deimos.",
-                        ),
-                    ],
-                )
+                with patch(
+                    "google.cloud.aiplatform.Endpoint._construct_sdk_resource_"
+                    "from_gapic",
+                    return_value="endpoint",
+                ):
+                    chat_model = ChatModel("chat-bison@001")
+                    chat = chat_model.start_chat(
+                        context="My name is Miles. You are an astronomer, "
+                        "knowledgeable about the solar system.",
+                        examples=[
+                            InputOutputTextPair(
+                                input_text="How many moons does Mars have?",
+                                output_text="The planet Mars has two moons, Phobos and "
+                                "Deimos.",
+                            ),
+                        ],
+                    )
 
-                result = chat.send_message(
-                    "How many planets are there in the solar system?", **parameters
-                )
-                interaction.set_output(result.text)
+                    result = chat.send_message(
+                        "How many planets are there in the solar system?", **parameters
+                    )
+                    interaction.set_output(result.text)
             assert result is not None
             assert mock_completion_create.call_count == 1
             interaction_watch = mock_observer.call_args[0][0]
@@ -434,7 +482,7 @@ def test_vertexai_chat__with_context_manager(palm_completion):
 
 
 @pytest.mark.asyncio
-async def test_vertexai_chat__async(palm_completion):
+async def test_vertexai_chat__async(palm_completion: TextGenerationResponse) -> None:
     with patch(
         "vertexai.language_models.ChatSession.send_message_async"
     ) as mock_completion_create:
@@ -449,21 +497,26 @@ async def test_vertexai_chat__async(palm_completion):
                 "top_k": 40,
             }
 
-            chat_model = ChatModel("chat-bison@001")
-            chat = chat_model.start_chat(
-                context="My name is Miles. You are an astronomer, knowledgeable about "
-                "the solar system.",
-                examples=[
-                    InputOutputTextPair(
-                        input_text="How many moons does Mars have?",
-                        output_text="The planet Mars has two moons, Phobos and Deimos.",
-                    ),
-                ],
-            )
+            with patch(
+                "google.cloud.aiplatform.Endpoint._construct_sdk_resource_from_gapic",
+                return_value="endpoint",
+            ):
+                chat_model = ChatModel("chat-bison@001")
+                chat = chat_model.start_chat(
+                    context="My name is Miles. You are an astronomer, knowledgeable "
+                    "about the solar system.",
+                    examples=[
+                        InputOutputTextPair(
+                            input_text="How many moons does Mars have?",
+                            output_text="The planet Mars has two moons, Phobos and "
+                            "Deimos.",
+                        ),
+                    ],
+                )
 
-            result = await chat.send_message_async(
-                "How many planets are there in the solar system?", **parameters
-            )
+                result = await chat.send_message_async(
+                    "How many planets are there in the solar system?", **parameters
+                )
 
             assert result is not None
             assert mock_observer.call_count == 1
@@ -483,7 +536,9 @@ async def test_vertexai_chat__async(palm_completion):
             )
 
 
-def test_vertexai_chat__stream(palm_completion_stream):
+def test_vertexai_chat__stream(
+    palm_completion_stream: list[TextGenerationResponse],
+) -> None:
     with patch(
         "vertexai.language_models.ChatSession.send_message_streaming"
     ) as mock_completion_stream:
@@ -498,23 +553,29 @@ def test_vertexai_chat__stream(palm_completion_stream):
                 "top_k": 40,
             }
 
-            chat_model = ChatModel("chat-bison@001")
-            chat = chat_model.start_chat(
-                context="My name is Miles. You are an astronomer, knowledgeable about "
-                "the solar system.",
-                examples=[
-                    InputOutputTextPair(
-                        input_text="How many moons does Mars have?",
-                        output_text="The planet Mars has two moons, Phobos and Deimos.",
-                    ),
-                ],
-            )
-
-            result = ""
-            for chunk in chat.send_message_streaming(
-                message="How many planets are there in the solar system?", **parameters
+            with patch(
+                "google.cloud.aiplatform.Endpoint._construct_sdk_resource_from_gapic",
+                return_value="endpoint",
             ):
-                result += chunk.text
+                chat_model = ChatModel("chat-bison@001")
+                chat = chat_model.start_chat(
+                    context="My name is Miles. You are an astronomer, knowledgeable "
+                    "about the solar system.",
+                    examples=[
+                        InputOutputTextPair(
+                            input_text="How many moons does Mars have?",
+                            output_text="The planet Mars has two moons, Phobos and "
+                            "Deimos.",
+                        ),
+                    ],
+                )
+
+                result = ""
+                for chunk in chat.send_message_streaming(
+                    message="How many planets are there in the solar system?",
+                    **parameters,
+                ):
+                    result += chunk.text
 
             assert result is not None
             assert mock_observer.call_count == 1

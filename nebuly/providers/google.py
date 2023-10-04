@@ -1,18 +1,17 @@
+# pylint: disable=duplicate-code, wrong-import-position, import-error, no-name-in-module
 from __future__ import annotations
 
 import copyreg
 from typing import Any
 
-from google.generativeai.discuss import (  # pylint: disable=no-name-in-module
-    ChatResponse,
-)
-from google.generativeai.text import Completion  # pylint: disable=no-name-in-module
-from google.generativeai.types import discuss_types, text_types
+from google.generativeai.discuss import ChatResponse  # type: ignore
+from google.generativeai.text import Completion  # type: ignore
+from google.generativeai.types import discuss_types, text_types  # type: ignore
 
 from nebuly.providers.utils import get_argument
 
 
-class EditedCompletion(Completion):
+class EditedCompletion(Completion):  # type: ignore
     """The Completion class must be overridden to be pickled."""
 
     def __init__(self, **kwargs: Any):  # pylint: disable=super-init-not-called
@@ -42,19 +41,19 @@ def handle_google_unpickable_objects() -> None:
 
 
 def extract_google_input_and_history(
-    original_args: tuple[Any],
+    original_args: tuple[Any, ...],
     original_kwargs: dict[str, Any],
     function_name: str,
 ) -> tuple[str, list[tuple[str, Any]]]:
     if function_name == "generativeai.generate_text":
-        return original_kwargs.get("prompt"), []
+        return original_kwargs.get("prompt", ""), []
     if function_name in ["generativeai.chat", "generativeai.chat_async"]:
         history = [
             ("user" if i % 2 == 0 else "assistant", el)
-            for i, el in enumerate(original_kwargs.get("messages")[:-1])
-            if len(original_kwargs.get("messages")) > 1
+            for i, el in enumerate(original_kwargs.get("messages", [])[:-1])
+            if len(original_kwargs.get("messages", [])) > 1
         ]
-        return original_kwargs.get("messages")[-1], history
+        return original_kwargs.get("messages", [])[-1], history
     if function_name == "generativeai.discuss.ChatResponse.reply":
         prompt = get_argument(original_args, original_kwargs, "message", 1)
         history = [
@@ -70,12 +69,12 @@ def extract_google_output(
     function_name: str, output: text_types.Completion | discuss_types.ChatResponse
 ) -> str:
     if function_name == "generativeai.generate_text":
-        return output.result
+        return output.result  # type: ignore
     if function_name in [
         "generativeai.chat",
         "generativeai.chat_async",
         "generativeai.discuss.ChatResponse.reply",
     ]:
-        return output.messages[-1]["content"]
+        return output.messages[-1]["content"]  # type: ignore
 
     raise ValueError(f"Unknown function name: {function_name}")

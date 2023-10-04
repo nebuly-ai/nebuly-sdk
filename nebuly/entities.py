@@ -83,7 +83,7 @@ class InteractionWatch:  # pylint: disable=too-many-instance-attributes
     time_start: datetime
     spans: list[SpanWatch]
     history: list[tuple[str, str]]
-    hierarchy: dict[uuid.UUID, uuid.UUID]
+    hierarchy: dict[uuid.UUID, uuid.UUID | None]
     end_user: str | None = None
     end_user_group_profile: str | None = None
 

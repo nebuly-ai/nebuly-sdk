@@ -1,4 +1,6 @@
 # pylint: disable=too-many-lines, duplicate-code
+from __future__ import annotations
+
 import uuid
 from typing import Any
 from unittest.mock import PropertyMock, patch
@@ -92,7 +94,7 @@ def test_event_handler_on_chain_start__new_root_chain(
         inputs={"input": "Tragedy at sunset on the beach"},
         run_id=run_id,
         parent_run_id=None,
-        **default_kwargs
+        **default_kwargs,
     )
 
     assert event_handler.current_interaction_storage.events is not None
@@ -129,7 +131,7 @@ def test_event_handler_on_chain_start__existing_root_chain(
         inputs={"input": "Tragedy at sunset on the beach"},
         run_id=root_id,
         parent_run_id=None,
-        **default_kwargs
+        **default_kwargs,
     )
 
     run_id = uuid.uuid4()
@@ -138,7 +140,7 @@ def test_event_handler_on_chain_start__existing_root_chain(
         inputs={"title": "Tragedy at sunset on the beach"},
         run_id=run_id,
         parent_run_id=root_id,
-        **llm_chain_kwargs
+        **llm_chain_kwargs,
     )
 
     assert event_handler.current_interaction_storage.events is not None
@@ -149,11 +151,11 @@ def test_event_handler_on_chain_start__existing_root_chain(
         event_handler.current_interaction_storage.events[run_id].hierarchy is not None
     )
     assert (
-        event_handler.current_interaction_storage.events[run_id].hierarchy.parent_run_id
+        event_handler.current_interaction_storage.events[run_id].hierarchy.parent_run_id  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
         == root_id
     )
     assert (
-        event_handler.current_interaction_storage.events[run_id].hierarchy.root_run_id
+        event_handler.current_interaction_storage.events[run_id].hierarchy.root_run_id  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
         == root_id
     )
     assert (
@@ -183,7 +185,7 @@ def test_event_handler_on_chain_end__root_chain(
         inputs={"input": "Tragedy at sunset on the beach"},
         run_id=run_id,
         parent_run_id=None,
-        **default_kwargs
+        **default_kwargs,
     )
 
     output_kwargs = {"tags": ["step_1"]}
@@ -191,7 +193,7 @@ def test_event_handler_on_chain_end__root_chain(
         outputs={"text": "Tragedy at Sunset on the Beach"},
         run_id=run_id,
         parent_run_id=None,
-        **output_kwargs
+        **output_kwargs,
     )
 
     assert event_handler.current_interaction_storage.events is not None
@@ -227,7 +229,7 @@ def test_event_handler_on_chain_end__child_chain(
         inputs={"input": "Tragedy at sunset on the beach"},
         run_id=root_id,
         parent_run_id=None,
-        **default_kwargs
+        **default_kwargs,
     )
 
     run_id = uuid.uuid4()
@@ -236,7 +238,7 @@ def test_event_handler_on_chain_end__child_chain(
         inputs={"title": "Tragedy at sunset on the beach"},
         run_id=run_id,
         parent_run_id=root_id,
-        **default_kwargs
+        **default_kwargs,
     )
 
     output_kwargs = {"tags": ["step_1"]}
@@ -244,7 +246,7 @@ def test_event_handler_on_chain_end__child_chain(
         outputs={"text": "Tragedy at Sunset on the Beach"},
         run_id=run_id,
         parent_run_id=root_id,
-        **output_kwargs
+        **output_kwargs,
     )
 
     assert event_handler.current_interaction_storage.events is not None
@@ -315,7 +317,7 @@ def test_event_handler_on_tool_start(
         inputs={"input": "Who is Leo DiCaprio's girlfriend?"},
         run_id=chain_id,
         parent_run_id=None,
-        **default_kwargs
+        **default_kwargs,
     )
 
     parent_tool_id = uuid.uuid4()
@@ -329,7 +331,7 @@ def test_event_handler_on_tool_start(
         input_str="Leonardo DiCaprio's girlfriend",
         run_id=parent_tool_id,
         parent_run_id=chain_id,
-        **default_tool_kwargs
+        **default_tool_kwargs,
     )
 
     run_id = uuid.uuid4()
@@ -338,7 +340,7 @@ def test_event_handler_on_tool_start(
         input_str="Leonardo DiCaprio's girlfriend",
         run_id=run_id,
         parent_run_id=parent_tool_id,
-        **default_tool_kwargs
+        **default_tool_kwargs,
     )
 
     assert event_handler.current_interaction_storage.events is not None
@@ -355,9 +357,9 @@ def test_event_handler_on_tool_start(
     assert (
         event_handler.current_interaction_storage.events[
             parent_tool_id
-        ].hierarchy.parent_run_id
+        ].hierarchy.parent_run_id  # type: ignore
         == chain_id
-    )  # noqa: E501
+    )
     assert event_handler.current_interaction_storage.events[
         parent_tool_id
     ].data.kwargs == {
@@ -370,7 +372,7 @@ def test_event_handler_on_tool_start(
         event_handler.current_interaction_storage.events[run_id].hierarchy is not None
     )
     assert (
-        event_handler.current_interaction_storage.events[run_id].hierarchy.parent_run_id
+        event_handler.current_interaction_storage.events[run_id].hierarchy.parent_run_id  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
         == parent_tool_id
     )
     assert event_handler.current_interaction_storage.events[run_id].data.kwargs == {
@@ -416,7 +418,7 @@ def test_event_handler_on_tool_end(
         inputs={"input": "Who is Leo DiCaprio's girlfriend?"},
         run_id=chain_id,
         parent_run_id=None,
-        **default_kwargs
+        **default_kwargs,
     )
 
     parent_tool_id = uuid.uuid4()
@@ -426,7 +428,7 @@ def test_event_handler_on_tool_end(
         input_str="Leonardo DiCaprio's girlfriend",
         run_id=parent_tool_id,
         parent_run_id=chain_id,
-        **default_tool_kwargs
+        **default_tool_kwargs,
     )
 
     run_id = uuid.uuid4()
@@ -435,7 +437,7 @@ def test_event_handler_on_tool_end(
         input_str="Leonardo DiCaprio's girlfriend",
         run_id=run_id,
         parent_run_id=parent_tool_id,
-        **default_tool_kwargs
+        **default_tool_kwargs,
     )
 
     tool_end_sample_kwargs = {"color": "green", "name": "Wikipedia", "tags": []}
@@ -444,14 +446,14 @@ def test_event_handler_on_tool_end(
         output=tool_sample_output,
         run_id=run_id,
         parent_run_id=parent_tool_id,
-        **tool_end_sample_kwargs
+        **tool_end_sample_kwargs,
     )
 
     event_handler.on_tool_end(
         output=tool_sample_output,
         run_id=parent_tool_id,
         parent_run_id=chain_id,
-        **tool_end_sample_kwargs
+        **tool_end_sample_kwargs,
     )
 
     assert event_handler.current_interaction_storage.events is not None
@@ -528,7 +530,7 @@ def test_event_handler_on_retriever_start(
         inputs={"query": "What did the president say about Ketanji Brown Jackson"},
         run_id=chain_id,
         parent_run_id=None,
-        **default_kwargs
+        **default_kwargs,
     )
 
     retriever_id = uuid.uuid4()
@@ -539,7 +541,7 @@ def test_event_handler_on_retriever_start(
         query="What did the president say about Ketanji Brown Jackson",
         run_id=retriever_id,
         parent_run_id=chain_id,
-        **retriever_kwargs
+        **retriever_kwargs,
     )
 
     assert event_handler.current_interaction_storage.events is not None
@@ -556,7 +558,7 @@ def test_event_handler_on_retriever_start(
     assert (
         event_handler.current_interaction_storage.events[
             retriever_id
-        ].hierarchy.parent_run_id  # noqa: E501
+        ].hierarchy.parent_run_id  # type: ignore
         == chain_id
     )
     assert (
@@ -589,7 +591,7 @@ def test_event_handler_on_retriever_end(
         inputs={"query": "What did the president say about Ketanji Brown Jackson"},
         run_id=chain_id,
         parent_run_id=None,
-        **default_kwargs
+        **default_kwargs,
     )
 
     retriever_id = uuid.uuid4()
@@ -608,7 +610,7 @@ def test_event_handler_on_retriever_end(
         query="What did the president say about Ketanji Brown Jackson",
         run_id=retriever_id,
         parent_run_id=chain_id,
-        **retriever_kwargs
+        **retriever_kwargs,
     )
 
     retriever_output_documents_sample = [
@@ -636,7 +638,7 @@ def test_event_handler_on_retriever_end(
         documents=retriever_output_documents_sample,
         run_id=retriever_id,
         parent_run_id=chain_id,
-        **retrieval_output_kwargs
+        **retrieval_output_kwargs,
     )
 
     assert event_handler.current_interaction_storage.events is not None
@@ -708,7 +710,7 @@ def test_event_handler_on_llm_start(  # pylint: disable=too-many-arguments
         inputs={"era": "Victorian England", "title": "Tragedy at sunset on the beach"},
         run_id=chain_id,
         parent_run_id=None,
-        **default_kwargs
+        **default_kwargs,
     )
 
     llm_chain_id = uuid.uuid4()
@@ -717,7 +719,7 @@ def test_event_handler_on_llm_start(  # pylint: disable=too-many-arguments
         inputs={"era": "Victorian England", "title": "Tragedy at sunset on the beach"},
         run_id=llm_chain_id,
         parent_run_id=chain_id,
-        **llm_chain_kwargs
+        **llm_chain_kwargs,
     )
 
     llm_model_id = uuid.uuid4()
@@ -733,7 +735,7 @@ def test_event_handler_on_llm_start(  # pylint: disable=too-many-arguments
         run_id=llm_model_id,
         parent_run_id=llm_chain_id,
         invocation_params=llm_invocation_params,
-        **default_kwargs
+        **default_kwargs,
     )
 
     assert event_handler.current_interaction_storage.events is not None
@@ -750,7 +752,7 @@ def test_event_handler_on_llm_start(  # pylint: disable=too-many-arguments
     assert (
         event_handler.current_interaction_storage.events[
             llm_model_id
-        ].hierarchy.parent_run_id  # noqa: E501
+        ].hierarchy.parent_run_id  # type: ignore
         == llm_chain_id
     )
     assert (
@@ -814,7 +816,7 @@ def test_event_handler_on_chat_model_start(  # pylint: disable=too-many-argument
         inputs={"era": "Victorian England", "title": "Tragedy at sunset on the beach"},
         run_id=chain_id,
         parent_run_id=None,
-        **default_kwargs
+        **default_kwargs,
     )
 
     llm_chain_id = uuid.uuid4()
@@ -823,7 +825,7 @@ def test_event_handler_on_chat_model_start(  # pylint: disable=too-many-argument
         inputs={"era": "Victorian England", "title": "Tragedy at sunset on the beach"},
         run_id=llm_chain_id,
         parent_run_id=chain_id,
-        **llm_chain_kwargs
+        **llm_chain_kwargs,
     )
 
     llm_model_id = uuid.uuid4()
@@ -844,7 +846,7 @@ def test_event_handler_on_chat_model_start(  # pylint: disable=too-many-argument
         run_id=llm_model_id,
         parent_run_id=llm_chain_id,
         invocation_params=chat_invocation_params,
-        **default_kwargs
+        **default_kwargs,
     )
 
     assert event_handler.current_interaction_storage.events is not None
@@ -861,7 +863,7 @@ def test_event_handler_on_chat_model_start(  # pylint: disable=too-many-argument
     assert (
         event_handler.current_interaction_storage.events[
             llm_model_id
-        ].hierarchy.parent_run_id  # noqa: E501
+        ].hierarchy.parent_run_id  # type: ignore
         == llm_chain_id
     )
     assert (
@@ -898,7 +900,7 @@ def test_event_handler_on_llm_end(  # pylint: disable=too-many-arguments
         inputs={"era": "Victorian England", "title": "Tragedy at sunset on the beach"},
         run_id=chain_id,
         parent_run_id=None,
-        **default_kwargs
+        **default_kwargs,
     )
 
     llm_chain_id = uuid.uuid4()
@@ -907,7 +909,7 @@ def test_event_handler_on_llm_end(  # pylint: disable=too-many-arguments
         inputs={"era": "Victorian England", "title": "Tragedy at sunset on the beach"},
         run_id=llm_chain_id,
         parent_run_id=chain_id,
-        **llm_chain_kwargs
+        **llm_chain_kwargs,
     )
 
     llm_model_id = uuid.uuid4()
@@ -923,7 +925,7 @@ def test_event_handler_on_llm_end(  # pylint: disable=too-many-arguments
         run_id=llm_model_id,
         parent_run_id=llm_chain_id,
         invocation_params=llm_invocation_params,
-        **default_kwargs
+        **default_kwargs,
     )
 
     llm_model_sample_output = LLMResult(
@@ -992,7 +994,7 @@ def test_event_handler_on_llm_end__chat_model(  # pylint: disable=too-many-argum
         inputs={"era": "Victorian England", "title": "Tragedy at sunset on the beach"},
         run_id=chain_id,
         parent_run_id=None,
-        **default_kwargs
+        **default_kwargs,
     )
 
     llm_chain_id = uuid.uuid4()
@@ -1001,7 +1003,7 @@ def test_event_handler_on_llm_end__chat_model(  # pylint: disable=too-many-argum
         inputs={"era": "Victorian England", "title": "Tragedy at sunset on the beach"},
         run_id=llm_chain_id,
         parent_run_id=chain_id,
-        **llm_chain_kwargs
+        **llm_chain_kwargs,
     )
 
     chat_model_id = uuid.uuid4()
@@ -1022,7 +1024,7 @@ def test_event_handler_on_llm_end__chat_model(  # pylint: disable=too-many-argum
         run_id=chat_model_id,
         parent_run_id=llm_chain_id,
         invocation_params=chat_invocation_params,
-        **default_kwargs
+        **default_kwargs,
     )
 
     chat_model_sample_output = LLMResult(

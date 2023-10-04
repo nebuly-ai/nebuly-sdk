@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import importlib
 import logging
 import sys
@@ -10,6 +11,7 @@ from inspect import isasyncgenfunction, iscoroutinefunction
 from types import ModuleType
 from typing import Any, AsyncGenerator, Callable, Generator, Iterable
 
+from nebuly.config import NEBULY_KWARGS
 from nebuly.contextmanager import (
     NotInInteractionContext,
     get_nearest_open_interaction,
@@ -81,7 +83,7 @@ def _split_nebuly_kwargs(
     nebuly_kwargs = {}
     function_kwargs = {}
     for key in kwargs:
-        if key.startswith("platform_"):
+        if key in NEBULY_KWARGS:
             nebuly_kwargs[key] = kwargs[key]
         else:
             function_kwargs[key] = kwargs[key]
@@ -179,32 +181,40 @@ def _add_interaction_span(  # pylint: disable=too-many-arguments
     stream: bool = False,
 ) -> None:
     try:
+        user_input, history = _extract_input_and_history(
+            original_args, original_kwargs, module, function_name
+        )
+    except Exception:  # pylint: disable=broad-except
+        user_input, history = "", []
+    output = (
+        _extract_output(output, module, function_name)
+        if not stream
+        else _extract_output_generator(output, module, function_name)
+    )
+
+    try:
         interaction = get_nearest_open_interaction()
         interaction._set_observer(observer)  # pylint: disable=protected-access
         interaction._add_span(watched)  # pylint: disable=protected-access
+        if interaction.input is None:
+            interaction.set_input(user_input)
+        if interaction.history is None:
+            interaction.set_history(history)
+        if interaction.output is None:
+            interaction.set_output(output)
     except NotInInteractionContext:
-        try:
-            user_input, history = _extract_input_and_history(
-                original_args, original_kwargs, module, function_name
-            )
-        except Exception:  # pylint: disable=broad-except
-            user_input, history = None, None
         with new_interaction() as interaction:
             interaction.set_input(user_input)
             interaction.set_history(history)
             interaction._set_observer(observer)  # pylint: disable=protected-access
             interaction._add_span(watched)  # pylint: disable=protected-access
             interaction._set_user(  # pylint: disable=protected-access
-                nebuly_kwargs.get("platform_user")
+                nebuly_kwargs.get("user_id")  # type: ignore
             )
             interaction._set_user_group_profile(  # pylint: disable=protected-access
-                nebuly_kwargs.get("platform_user_group_profile")
+                nebuly_kwargs.get("user_group_profile")  # type: ignore
             )
-            interaction.set_output(
-                _extract_output(output, module, function_name)
-                if not stream
-                else _extract_output_generator(output, module, function_name)
-            )
+            interaction.set_output(output)
 
 
 def _extract_input_and_history(
@@ -672,7 +682,11 @@ def _patcher(
     """
 
     def inner(f: Callable[[Any], Any]) -> Callable[[Any], Any]:
-        if iscoroutinefunction(f) or isasyncgenfunction(f):
+        if (
+            iscoroutinefunction(f)
+            or asyncio.iscoroutinefunction(f)  # Needed for python 3.9
+            or isasyncgenfunction(f)
+        ):
             return coroutine_wrapper(f, observer, module, version, function_name)
 
         return function_wrapper(f, observer, module, version, function_name)

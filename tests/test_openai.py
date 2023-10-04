@@ -1,6 +1,8 @@
 # pylint: disable=duplicate-code
+from __future__ import annotations
+
 import json
-from typing import Any
+from typing import Any, AsyncGenerator
 from unittest.mock import patch
 
 import openai
@@ -14,7 +16,7 @@ from tests.common import nebuly_init
 
 
 @pytest.fixture(name="openai_completion")
-def fixture_openai_completion() -> dict:
+def fixture_openai_completion() -> dict[str, Any]:
     return {
         "id": "cmpl-81JyWoIj5m9qz0M9g7aLBGtwZzUIg",
         "object": "text_completion",
@@ -32,18 +34,20 @@ def fixture_openai_completion() -> dict:
     }
 
 
-def test_openai_completion__no_context_manager(openai_completion):
+def test_openai_completion__no_context_manager(
+    openai_completion: dict[str, Any]
+) -> None:
     with patch("openai.Completion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_completion
             nebuly_init(observer=mock_observer)
-            result = openai.Completion.create(
+            result = openai.Completion.create(  # type: ignore
                 model="gpt-3.5-turbo-instruct",
                 prompt="Say this is a test",
                 max_tokens=7,
                 temperature=0,
-                platform_user="test_user",
-                platform_user_group_profile="test_group",
+                user_id="test_user",
+                user_group_profile="test_group",
             )
             assert result is not None
             assert mock_observer.call_count == 1
@@ -62,16 +66,18 @@ def test_openai_completion__no_context_manager(openai_completion):
             )
 
 
-def test_openai_completion__with_context_manager(openai_completion):
+def test_openai_completion__with_context_manager(
+    openai_completion: dict[str, Any]
+) -> None:
     with patch("openai.Completion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_completion
             nebuly_init(observer=mock_observer)
             with new_interaction(
-                platform_user="test_user", platform_user_group_profile="test_group"
+                user_id="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Another input")
-                result = openai.Completion.create(
+                result = openai.Completion.create(  # type: ignore
                     model="gpt-3.5-turbo-instruct",
                     prompt="Say this is a test",
                     max_tokens=7,
@@ -96,23 +102,25 @@ def test_openai_completion__with_context_manager(openai_completion):
             )
 
 
-def test_openai_completion__multiple_spans_in_interaction(openai_completion):
+def test_openai_completion__multiple_spans_in_interaction(
+    openai_completion: dict[str, Any]
+) -> None:
     with patch("openai.Completion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_completion
             nebuly_init(observer=mock_observer)
             with new_interaction(
-                platform_user="test_user", platform_user_group_profile="test_group"
+                user_id="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Initial input")
-                result = openai.Completion.create(
+                result = openai.Completion.create(  # type: ignore
                     model="gpt-3.5-turbo-instruct",
                     prompt="Say this is a test",
                     max_tokens=7,
                     temperature=0,
                 )
                 assert result is not None
-                result = openai.Completion.create(
+                result = openai.Completion.create(  # type: ignore
                     model="gpt-3.5-turbo-instruct",
                     prompt="Say this is a test",
                     max_tokens=7,
@@ -140,16 +148,18 @@ def test_openai_completion__multiple_spans_in_interaction(openai_completion):
             )
 
 
-def test_openai_completion__multiple_interactions(openai_completion):
+def test_openai_completion__multiple_interactions(
+    openai_completion: dict[str, Any]
+) -> None:
     with patch("openai.Completion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_completion
             nebuly_init(observer=mock_observer)
             with new_interaction(
-                platform_user="test_user", platform_user_group_profile="test_group"
+                user_id="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Initial input 1")
-                result = openai.Completion.create(
+                result = openai.Completion.create(  # type: ignore
                     model="gpt-3.5-turbo-instruct",
                     prompt="Say this is a test",
                     max_tokens=7,
@@ -159,10 +169,10 @@ def test_openai_completion__multiple_interactions(openai_completion):
                 interaction.set_output("Final output 1")
 
             with new_interaction(
-                platform_user="test_user", platform_user_group_profile="test_group"
+                user_id="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Initial input 2")
-                result = openai.Completion.create(
+                result = openai.Completion.create(  # type: ignore
                     model="gpt-3.5-turbo-instruct",
                     prompt="Say this is a test",
                     max_tokens=7,
@@ -207,12 +217,12 @@ def test_openai_completion__multiple_interactions(openai_completion):
 
 
 @pytest.mark.asyncio
-async def test_openai_completion__async(openai_completion):
+async def test_openai_completion__async(openai_completion: dict[str, Any]) -> None:
     with patch("openai.Completion.acreate") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_completion
             nebuly_init(observer=mock_observer)
-            result = await openai.Completion.acreate(
+            result = await openai.Completion.acreate(  # type: ignore
                 model="gpt-3.5-turbo-instruct",
                 prompt="Say this is a test",
                 max_tokens=7,
@@ -234,7 +244,7 @@ async def test_openai_completion__async(openai_completion):
 
 
 @pytest.fixture(name="openai_chat")
-def fixture_openai_chat() -> dict:
+def fixture_openai_chat() -> dict[str, Any]:
     return {
         "id": "chatcmpl-81Kl80GyhDVsOiEBQLQ6vG8svCUPe",
         "object": "chat.completion",
@@ -254,12 +264,12 @@ def fixture_openai_chat() -> dict:
     }
 
 
-def test_openai_chat__no_context_manager(openai_chat):
+def test_openai_chat__no_context_manager(openai_chat: dict[str, Any]) -> None:
     with patch("openai.ChatCompletion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_chat
             nebuly_init(observer=mock_observer)
-            result = openai.ChatCompletion.create(
+            result = openai.ChatCompletion.create(  # type: ignore
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant."},
@@ -284,17 +294,17 @@ def test_openai_chat__no_context_manager(openai_chat):
             )
 
 
-def test_openai_chat__with_context_manager(openai_chat):
+def test_openai_chat__with_context_manager(openai_chat: dict[str, Any]) -> None:
     with patch("openai.ChatCompletion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_chat
             nebuly_init(observer=mock_observer)
             with new_interaction(
-                platform_user="test_user", platform_user_group_profile="test_group"
+                user_id="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Hello!")
                 interaction.set_history([("system", "You are a helpful assistant.")])
-                result = openai.ChatCompletion.create(
+                result = openai.ChatCompletion.create(  # type: ignore
                     model="gpt-3.5-turbo",
                     messages=[
                         {"role": "system", "content": "You are a helpful assistant."},
@@ -323,17 +333,19 @@ def test_openai_chat__with_context_manager(openai_chat):
             )
 
 
-def test_openai_chat__multiple_spans_in_interaction(openai_chat):
+def test_openai_chat__multiple_spans_in_interaction(
+    openai_chat: dict[str, Any]
+) -> None:
     with patch("openai.ChatCompletion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_chat
             nebuly_init(observer=mock_observer)
             with new_interaction(
-                platform_user="test_user", platform_user_group_profile="test_group"
+                user_id="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Hello!")
                 interaction.set_history([("system", "You are a helpful assistant.")])
-                result = openai.ChatCompletion.create(
+                result = openai.ChatCompletion.create(  # type: ignore
                     model="gpt-3.5-turbo",
                     messages=[
                         {"role": "system", "content": "You are a helpful assistant."},
@@ -341,7 +353,7 @@ def test_openai_chat__multiple_spans_in_interaction(openai_chat):
                     ],
                 )
                 assert result is not None
-                result = openai.ChatCompletion.create(
+                result = openai.ChatCompletion.create(  # type: ignore
                     model="gpt-3.5-turbo",
                     messages=[
                         {"role": "system", "content": "You are a helpful assistant."},
@@ -373,17 +385,17 @@ def test_openai_chat__multiple_spans_in_interaction(openai_chat):
             )
 
 
-def test_openai_chat__multiple_interactions(openai_chat):
+def test_openai_chat__multiple_interactions(openai_chat: dict[str, Any]) -> None:
     with patch("openai.ChatCompletion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_chat
             nebuly_init(observer=mock_observer)
             with new_interaction(
-                platform_user="test_user", platform_user_group_profile="test_group"
+                user_id="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Hello!")
                 interaction.set_history([("system", "You are a helpful assistant.")])
-                result = openai.ChatCompletion.create(
+                result = openai.ChatCompletion.create(  # type: ignore
                     model="gpt-3.5-turbo",
                     messages=[
                         {"role": "system", "content": "You are a helpful assistant."},
@@ -394,11 +406,11 @@ def test_openai_chat__multiple_interactions(openai_chat):
                 interaction.set_output("Another output")
 
             with new_interaction(
-                platform_user="test_user", platform_user_group_profile="test_group"
+                user_id="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Hello!")
                 interaction.set_history([("system", "You are a helpful assistant.")])
-                result = openai.ChatCompletion.create(
+                result = openai.ChatCompletion.create(  # type: ignore
                     model="gpt-3.5-turbo",
                     messages=[
                         {"role": "system", "content": "You are a helpful assistant."},
@@ -450,12 +462,12 @@ def test_openai_chat__multiple_interactions(openai_chat):
 
 
 @pytest.mark.asyncio
-async def test_openai_chat__async(openai_chat):
+async def test_openai_chat__async(openai_chat: dict[str, Any]) -> None:
     with patch("openai.ChatCompletion.acreate") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_chat
             nebuly_init(observer=mock_observer)
-            result = await openai.ChatCompletion.acreate(
+            result = await openai.ChatCompletion.acreate(  # type: ignore
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant."},
@@ -549,13 +561,13 @@ def fixture_openai_completion_gen() -> list[dict[str, Any]]:
     ]
 
 
-def test_openai_completion_gen(openai_completion_gen):
+def test_openai_completion_gen(openai_completion_gen: list[dict[str, Any]]) -> None:
     with patch("openai.Completion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = (el for el in openai_completion_gen)
             nebuly_init(observer=mock_observer)
             result = ""
-            for chunk in openai.Completion.create(
+            for chunk in openai.Completion.create(  # type: ignore
                 model="gpt-3.5-turbo-instruct",
                 prompt="Say this is a test",
                 max_tokens=7,
@@ -565,6 +577,44 @@ def test_openai_completion_gen(openai_completion_gen):
                 result += chunk["choices"][0]["text"]
 
             assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "Say this is a test"
+            assert interaction_watch.output == "\n\nThis is a test."
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+@pytest.fixture(name="openai_completion_gen_async")
+async def fixture_openai_completion_gen_async(
+    openai_completion_gen: list[dict[str, Any]]
+) -> AsyncGenerator[dict[str, Any], None]:
+    for el in openai_completion_gen:
+        yield el
+
+
+@pytest.mark.asyncio
+async def test_openai_completion_gen_async(
+    openai_completion_gen_async: AsyncGenerator[dict[str, Any], None]
+) -> None:
+    with patch("openai.Completion.acreate") as mock_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_create.return_value = openai_completion_gen_async
+            nebuly_init(observer=mock_observer)
+            async for _ in await openai.Completion.acreate(  # type: ignore
+                model="gpt-3.5-turbo-instruct",
+                prompt="Say this is a test",
+                max_tokens=7,
+                temperature=0,
+                stream=True,
+            ):
+                ...
             assert mock_observer.call_count == 1
             interaction_watch = mock_observer.call_args[0][0]
             assert isinstance(interaction_watch, InteractionWatch)
@@ -628,13 +678,58 @@ def fixture_openai_chat_gen() -> list[dict[str, Any]]:
     ]
 
 
-def test_openai_chat_gen(openai_chat_gen):
+def test_openai_chat_gen(openai_chat_gen: list[dict[str, Any]]) -> None:
     with patch("openai.ChatCompletion.create") as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = (el for el in openai_chat_gen)
             nebuly_init(observer=mock_observer)
             result = ""
-            for chunk in openai.ChatCompletion.create(
+            for chunk in openai.ChatCompletion.create(  # type: ignore
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": "Hello!"},
+                ],
+                stream=True,
+            ):
+                result += chunk["choices"][0]["delta"].get("content", "")
+
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "Hello!"
+            assert interaction_watch.history == [
+                ("system", "You are a helpful assistant."),
+            ]
+            assert interaction_watch.output == "Hello there"
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+@pytest.fixture(name="openai_chat_gen_async")
+async def fixture_openai_chat_gen_async(
+    openai_chat_gen: list[dict[str, Any]]
+) -> AsyncGenerator[dict[str, Any], None]:
+    for el in openai_chat_gen:
+        yield el
+
+
+@pytest.mark.asyncio
+async def test_openai_chat_gen_async(
+    openai_chat_gen_async: AsyncGenerator[dict[str, Any], None]
+) -> None:
+    with patch("openai.ChatCompletion.acreate") as mock_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_create.return_value = openai_chat_gen_async
+            nebuly_init(observer=mock_observer)
+            result = ""
+            async for chunk in await openai.ChatCompletion.acreate(  # type: ignore
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant."},

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, Sequence
 from uuid import UUID
 
 from langchain.callbacks.base import BaseCallbackHandler, BaseCallbackManager, Callbacks
@@ -43,16 +43,12 @@ def set_tracking_handlers() -> None:
     ) -> Any:
         callbacks = set_callbacks_arg(callbacks)
         if isinstance(inputs, dict):
-            tracking_handler.nebuly_user = inputs.pop("platform_user", None)
-            tracking_handler.nebuly_user_group = inputs.pop(
-                "platform_user_group_profile", None
-            )
+            tracking_handler.nebuly_user = inputs.pop("user_id", None)
+            tracking_handler.nebuly_user_group = inputs.pop("user_group_profile", None)
         if tracking_handler.nebuly_user is None:
-            tracking_handler.nebuly_user = kwargs.pop("platform_user", None)
+            tracking_handler.nebuly_user = kwargs.pop("user_id", None)
         if tracking_handler.nebuly_user_group is None:
-            tracking_handler.nebuly_user_group = kwargs.pop(
-                "platform_user_group_profile", None
-            )
+            tracking_handler.nebuly_user_group = kwargs.pop("user_group_profile", None)
         return original_call(
             self,
             inputs=inputs,
@@ -69,10 +65,8 @@ def set_tracking_handlers() -> None:
         **kwargs: Any,
     ) -> Any:
         callbacks = set_callbacks_arg(callbacks)
-        tracking_handler.nebuly_user = kwargs.pop("platform_user", None)
-        tracking_handler.nebuly_user_group = kwargs.pop(
-            "platform_user_group_profile", None
-        )
+        tracking_handler.nebuly_user = kwargs.pop("user_id", None)
+        tracking_handler.nebuly_user_group = kwargs.pop("user_group_profile", None)
         return original_acall(
             self,
             inputs=inputs,
@@ -149,7 +143,7 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
 
     def on_retriever_end(  # pylint: disable=arguments-differ
         self,
-        documents: list[Document],
+        documents: Sequence[Document],
         run_id: UUID,
         **kwargs: Any,
     ) -> None:

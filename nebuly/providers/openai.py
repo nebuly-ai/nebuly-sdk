@@ -24,10 +24,10 @@ def extract_openai_input_and_history(
     ]:
         history = [
             (el["role"], el["content"])
-            for el in original_kwargs.get("messages")[:-1]
+            for el in original_kwargs.get("messages", [])[:-1]
             if len(original_kwargs.get("messages", [])) > 1
         ]
-        return original_kwargs.get("messages")[-1]["content"], history
+        return original_kwargs.get("messages", [])[-1]["content"], history
 
     raise ValueError(f"Unknown function name: {function_name}")
 

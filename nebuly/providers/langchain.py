@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from inspect import isasyncgenfunction
 from typing import Any, Callable, cast
 from uuid import UUID
@@ -18,6 +19,7 @@ from nebuly.contextmanager import (
     get_nearest_open_interaction,
     new_interaction,
 )
+from nebuly.entities import Observer
 from nebuly.tracking_handlers import LangChainTrackingHandler
 
 
@@ -36,7 +38,7 @@ def _get_tracking_info_for_provider_call(**kwargs: Any) -> dict[str, Any]:
     # Get the parent_run_id from the CallbackManager
     callback_manager = callbacks
     parent_run_id = cast(UUID, callback_manager.parent_run_id)
-    additional_kwargs = {"platform_parent_run_id": parent_run_id}
+    additional_kwargs = {"parent_run_id": parent_run_id}
 
     # Get the root_run_id from the LangChainTrackingHandler
     for handler in callback_manager.handlers:
@@ -45,7 +47,7 @@ def _get_tracking_info_for_provider_call(**kwargs: Any) -> dict[str, Any]:
             root_run_id = interaction._events_storage.get_root_id(  # pylint: disable=protected-access  # noqa: E501
                 parent_run_id
             )
-            additional_kwargs["platform_root_run_id"] = root_run_id
+            additional_kwargs["root_run_id"] = root_run_id
             break
 
     return additional_kwargs
@@ -71,9 +73,9 @@ def _process_chat_prompt_template(
     messages = []
     for message in prompt.messages:
         if isinstance(inputs, dict):
-            input_vars = {key: inputs.get(key) for key in message.input_variables}
+            input_vars = {key: inputs.get(key) for key in message.input_variables}  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
         else:
-            input_vars = {message.input_variables[0]: inputs}
+            input_vars = {message.input_variables[0]: inputs}  # type: ignore
         if isinstance(message, SystemMessagePromptTemplate):
             messages.append(("system", message.format(**input_vars).content))
         elif isinstance(message, HumanMessagePromptTemplate):
@@ -112,20 +114,22 @@ def _get_input_and_history(
     raise ValueError(f"Unknown prompt type: {prompt}")
 
 
-def _get_output(chain: Chain, result: dict[str, Any]) -> dict[str, Any]:
+def _get_output(chain: Chain, result: dict[str, Any]) -> str:
+    if len(chain.output_keys) == 1:
+        return str(result[chain.output_keys[0]])
     output = {}
     for key in chain.output_keys:
         output[key] = result[key]
-    return output
+    return json.dumps(output)
 
 
 def wrap_langchain(
-    observer: Callable[[Any], None],
+    observer: Observer,
     function_name: str,
     f: Callable[[Any], Any],
-    args: tuple[Any],
+    args: tuple[Any, ...],
     kwargs: dict[str, Any],
-):
+) -> Any:
     if function_name.startswith(
         ("llms.base.BaseLLM", "chat_models.base.BaseChatModel")
     ):
@@ -140,19 +144,19 @@ def wrap_langchain(
                 inputs = kwargs.get("inputs")
                 handler = [
                     handler
-                    for handler in kwargs.get("callbacks")
+                    for handler in kwargs.get("callbacks", [])
                     if isinstance(handler, LangChainTrackingHandler)
                 ][0]
                 interaction._set_user(  # pylint: disable=protected-access
-                    handler.nebuly_user
+                    handler.nebuly_user  # type: ignore
                 )
                 interaction._set_user_group_profile(  # pylint: disable=protected-access
-                    handler.nebuly_user_group
+                    handler.nebuly_user_group  # type: ignore
                 )
                 interaction._set_observer(observer)  # pylint: disable=protected-access
                 chain_input, history = _get_input_and_history(args[0], inputs)
-                interaction.set_input(chain_input)
-                interaction.set_history(history)
+                interaction.set_input(chain_input)  # type: ignore
+                interaction.set_history(history)  # type: ignore
                 original_res = f(*args, **kwargs)
                 interaction.set_output(_get_output(args[0], original_res))
                 return original_res
@@ -161,12 +165,12 @@ def wrap_langchain(
 
 
 async def wrap_langchain_async(
-    observer: Callable[[Any], None],
+    observer: Observer,
     function_name: str,
     f: Callable[[Any], Any],
-    args: tuple[Any],
+    args: tuple[Any, ...],
     kwargs: dict[str, Any],
-):
+) -> Any:
     if function_name.startswith(
         ("llms.base.BaseLLM", "chat_models.base.BaseChatModel")
     ):
@@ -184,16 +188,16 @@ async def wrap_langchain_async(
             with new_interaction() as interaction:
                 inputs = kwargs.get("inputs")
                 if isinstance(inputs, dict):
-                    user = inputs.pop("platform_user", None)
-                    user_group = inputs.pop("platform_user_group_profile", None)
+                    user = inputs.pop("user_id", None)
+                    user_group = inputs.pop("user_group_profile", None)
                     interaction._set_user(user)  # pylint: disable=protected-access
                     interaction._set_user_group_profile(  # pylint: disable=protected-access  # noqa: E501
                         user_group
                     )
                 interaction._set_observer(observer)  # pylint: disable=protected-access
                 chain_input, history = _get_input_and_history(args[0], inputs)
-                interaction.set_input(chain_input)
-                interaction.set_history(history)
+                interaction.set_input(chain_input)  # type: ignore
+                interaction.set_history(history)  # type: ignore
                 if isasyncgenfunction(f):
                     original_res = f(*args, **kwargs)
                 else:

@@ -1,12 +1,18 @@
 # pylint: disable=duplicate-code
+from __future__ import annotations
+
 import json
 from unittest.mock import Mock, patch
 
-import cohere
+import cohere  # type: ignore
 import pytest
-from cohere.responses import Chat, Generation, Generations
-from cohere.responses.chat import StreamEnd, StreamStart, StreamTextGeneration
-from cohere.responses.generation import StreamingText
+from cohere.responses import Chat, Generation, Generations  # type: ignore
+from cohere.responses.chat import (  # type: ignore
+    StreamEnd,
+    StreamStart,
+    StreamTextGeneration,
+)
+from cohere.responses.generation import StreamingText  # type: ignore
 
 from nebuly.contextmanager import new_interaction
 from nebuly.entities import InteractionWatch, SpanWatch
@@ -17,7 +23,7 @@ from tests.common import nebuly_init
 
 @pytest.fixture(name="cohere_generate")
 def fixture_cohere_generate() -> list[Generation]:
-    return Generations.from_dict(
+    return Generations.from_dict(  # type: ignore
         {
             "id": "5dd1e0ae-ee97-42ac-91df-6ffe5eb4b498",
             "generations": [
@@ -34,7 +40,7 @@ def fixture_cohere_generate() -> list[Generation]:
     )
 
 
-def test_cohere_generate__no_context_manager(cohere_generate):
+def test_cohere_generate__no_context_manager(cohere_generate: list[Generation]) -> None:
     with patch("cohere.Client.generate") as mock_generate:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_generate.return_value = cohere_generate
@@ -43,8 +49,8 @@ def test_cohere_generate__no_context_manager(cohere_generate):
             co = cohere.Client("test")
             result = co.generate(  # pylint: disable=unexpected-keyword-arg
                 "Please explain to me how LLMs work",
-                platform_user="test_user",
-                platform_user_group_profile="test_group",
+                user_id="test_user",
+                user_group_profile="test_group",
             )
             assert result is not None
             assert mock_observer.call_count == 1
@@ -67,7 +73,9 @@ def test_cohere_generate__no_context_manager(cohere_generate):
             )
 
 
-def test_cohere_generate__with_context_manager(cohere_generate):
+def test_cohere_generate__with_context_manager(
+    cohere_generate: list[Generation],
+) -> None:
     with patch("cohere.Client.generate") as mock_generate:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_generate.return_value = cohere_generate
@@ -75,7 +83,7 @@ def test_cohere_generate__with_context_manager(cohere_generate):
 
             co = cohere.Client("test")
             with new_interaction(
-                platform_user="test_user", platform_user_group_profile="test_group"
+                user_id="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Sample input 1")
                 result = co.generate(
@@ -100,7 +108,7 @@ def test_cohere_generate__with_context_manager(cohere_generate):
 
 
 @pytest.mark.asyncio
-async def test_cohere_generate__async(cohere_generate):
+async def test_cohere_generate__async(cohere_generate: list[Generation]) -> None:
     with patch("cohere.AsyncClient.generate") as mock_generate:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_generate.return_value = cohere_generate
@@ -150,7 +158,7 @@ def fixture_cohere_chat() -> Chat:
     )
 
 
-def test_cohere_chat__no_context_manager(cohere_chat):
+def test_cohere_chat__no_context_manager(cohere_chat: Chat) -> None:
     with patch("cohere.Client.chat") as mock_chat:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_chat.return_value = cohere_chat
@@ -183,7 +191,7 @@ def test_cohere_chat__no_context_manager(cohere_chat):
             )
 
 
-def test_cohere_chat__with_context_manager(cohere_chat):
+def test_cohere_chat__with_context_manager(cohere_chat: Chat) -> None:
     with patch("cohere.Client.chat") as mock_chat:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_chat.return_value = cohere_chat
@@ -191,7 +199,7 @@ def test_cohere_chat__with_context_manager(cohere_chat):
 
             co = cohere.Client("test")
             with new_interaction(
-                platform_user="test_user", platform_user_group_profile="test_group"
+                user_id="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Sample input 1")
                 interaction.set_history(
@@ -233,7 +241,7 @@ def test_cohere_chat__with_context_manager(cohere_chat):
 
 
 @pytest.mark.asyncio
-async def test_cohere_chat__async(cohere_chat):
+async def test_cohere_chat__async(cohere_chat: Chat) -> None:
     with patch("cohere.AsyncClient.chat") as mock_chat:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_chat.return_value = cohere_chat
@@ -287,7 +295,7 @@ def fixture_cohere_generate_gen() -> list[StreamingText]:
     ]
 
 
-def test_cohere_generate_gen(cohere_generate_gen):
+def test_cohere_generate_gen(cohere_generate_gen: list[StreamingText]) -> None:
     with patch("cohere.Client.generate") as mock_generate:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_generate.return_value = (text for text in cohere_generate_gen)
@@ -349,7 +357,9 @@ def fixture_cohere_chat_gen() -> list[StreamStart | StreamTextGeneration | Strea
     ]
 
 
-def test_cohere_chat_gen(cohere_chat_gen):
+def test_cohere_chat_gen(
+    cohere_chat_gen: list[StreamStart | StreamTextGeneration | StreamEnd],
+) -> None:
     with patch("cohere.Client.chat") as mock_chat:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_chat.return_value = (text for text in cohere_chat_gen)

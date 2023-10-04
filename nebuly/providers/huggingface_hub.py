@@ -2,21 +2,24 @@ from __future__ import annotations
 
 from typing import Any, Iterator
 
-from huggingface_hub.inference._text_generation import (
+from huggingface_hub.inference._text_generation import (  # type: ignore
     TextGenerationResponse,
     TextGenerationStreamResponse,
 )
-from huggingface_hub.inference._types import ConversationalOutput
+from huggingface_hub.inference._types import ConversationalOutput  # type: ignore
 
 from nebuly.providers.utils import get_argument
 
 
 def extract_hf_hub_input_and_history(
-    original_args: tuple[Any],
+    original_args: tuple[Any, ...],
     original_kwargs: dict[str, Any],
     function_name: str,
 ) -> tuple[str, list[tuple[str, Any]]]:
-    if function_name == "InferenceClient.conversational":
+    if function_name in [
+        "InferenceClient.conversational",
+        "AsyncInferenceClient.conversational",
+    ]:
         prompt = get_argument(original_args, original_kwargs, "text", 1)
         generated_responses = get_argument(
             original_args, original_kwargs, "generated_responses", 2
@@ -32,7 +35,10 @@ def extract_hf_hub_input_and_history(
             history.append(("user", user_input))
             history.append(("assistant", assistant_response))
         return prompt, history
-    if function_name == "InferenceClient.text_generation":
+    if function_name in [
+        "InferenceClient.text_generation",
+        "AsyncInferenceClient.text_generation",
+    ]:
         prompt = get_argument(original_args, original_kwargs, "prompt", 1)
         return prompt, []
 
@@ -42,11 +48,17 @@ def extract_hf_hub_input_and_history(
 def extract_hf_hub_output(
     function_name: str, output: str | ConversationalOutput | TextGenerationResponse
 ) -> str:
-    if function_name == "InferenceClient.conversational":
-        return output["generated_text"]
-    if function_name == "InferenceClient.text_generation":
+    if function_name in [
+        "InferenceClient.conversational",
+        "AsyncInferenceClient.conversational",
+    ]:
+        return output["generated_text"]  # type: ignore
+    if function_name in [
+        "InferenceClient.text_generation",
+        "AsyncInferenceClient.text_generation",
+    ]:
         if isinstance(output, TextGenerationResponse):
-            return output.generated_text
+            return output.generated_text  # type: ignore
         return output
 
     raise ValueError(f"Unknown function name: {function_name}")
@@ -55,7 +67,10 @@ def extract_hf_hub_output(
 def extract_hf_hub_output_generator(
     function_name: str, outputs: Iterator[str | TextGenerationStreamResponse]
 ) -> str:
-    if function_name == "InferenceClient.text_generation":
+    if function_name in [
+        "InferenceClient.text_generation",
+        "AsyncInferenceClient.text_generation",
+    ]:
         return "".join(
             [
                 output

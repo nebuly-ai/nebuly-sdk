@@ -7,7 +7,7 @@ from anthropic import Anthropic, AsyncAnthropic, AsyncStream, Stream
 from anthropic.types import Completion
 
 
-def is_anthropic_generator(function: Callable) -> bool:
+def is_anthropic_generator(function: Callable[[Any], Any]) -> bool:
     return isinstance(function, (Stream, AsyncStream))
 
 
@@ -56,7 +56,7 @@ def extract_anthropic_input_and_history(
         "resources.Completions.create",
         "resources.AsyncCompletions.create",
     ]:
-        return original_kwargs.get("prompt"), []
+        return original_kwargs["prompt"], []
 
     raise ValueError(f"Unknown function name: {function_name}")
 
@@ -72,7 +72,7 @@ def extract_anthropic_output(function_name: str, output: Completion) -> str:
 
 
 def extract_anthropic_output_generator(
-    function_name: str, outputs: Stream[Completion] | AsyncStream[Completion]
+    function_name: str, outputs: list[Completion]
 ) -> str:
     if function_name in [
         "resources.Completions.create",

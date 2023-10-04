@@ -2,6 +2,13 @@ from __future__ import annotations
 
 from nebuly.entities import Package
 
+NEBULY_KWARGS = {
+    "user_id",
+    "user_group_profile",
+    "parent_run_id",
+    "root_run_id",
+}
+
 PACKAGES = (
     Package(
         "openai",
@@ -46,7 +53,12 @@ PACKAGES = (
     Package(
         "huggingface_hub",
         ("0.12.0",),
-        ("InferenceClient.conversational", "InferenceClient.text_generation"),
+        (
+            "InferenceClient.conversational",
+            "InferenceClient.text_generation",
+            "AsyncInferenceClient.conversational",
+            "AsyncInferenceClient.text_generation",
+        ),
     ),
     Package(
         "google",

@@ -4,7 +4,7 @@ import inspect
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Generator
+from typing import Any, Dict, Generator, Tuple, cast
 from uuid import UUID
 
 from nebuly.entities import EventType, InteractionWatch, Observer, SpanWatch
@@ -13,8 +13,8 @@ from nebuly.entities import EventType, InteractionWatch, Observer, SpanWatch
 @dataclass
 class EventData:
     type: EventType
-    args: tuple[Any, ...] | None = field(default_factory=tuple)
-    kwargs: dict[str, Any] | None = field(default_factory=dict)
+    args: tuple[Any, ...] | None = None
+    kwargs: dict[str, Any] | None = None
     output: Any | None = None
 
     def add_end_event_data(
@@ -25,6 +25,10 @@ class EventData:
     ) -> None:
         if kwargs is not None:
             kwargs.pop("parent_run_id")
+        if self.args is None:
+            self.args = tuple()
+        if self.kwargs is None:
+            self.kwargs = {}
         self.args += args if args is not None else tuple()
         self.kwargs = dict(self.kwargs, **kwargs) if kwargs is not None else self.kwargs
         self.output = output
@@ -46,6 +50,8 @@ class Event:
     end_time: datetime | None = None
 
     def as_span_watch(self) -> SpanWatch:
+        if self.end_time is None:
+            raise ValueError("Event has not been finished yet.")
         return SpanWatch(
             span_id=self.event_id,
             module=self.module,
@@ -53,8 +59,8 @@ class Event:
             function=self._get_function(),
             called_start=self.start_time,
             called_end=self.end_time,
-            called_with_args=self.data.args,
-            called_with_kwargs=self.data.kwargs,
+            called_with_args=cast(Tuple[Any], self.data.args),
+            called_with_kwargs=cast(Dict[str, Any], self.data.kwargs),
             returned=self.data.output,
             generator=False,
             generator_first_element_timestamp=None,
@@ -65,15 +71,19 @@ class Event:
         )
 
     def _get_function(self) -> str:
+        if self.data.kwargs is None or len(self.data.kwargs) == 0:
+            raise ValueError("Event has no kwargs.")
         if self.data.type is EventType.TOOL:
-            return self.data.kwargs["serialized"]["name"]
+            return self.data.kwargs["serialized"]["name"]  # type: ignore
         return ".".join(self.data.kwargs["serialized"]["id"])
 
     def _get_rag_source(self) -> str | None:
+        if self.data.kwargs is None or len(self.data.kwargs) == 0:
+            raise ValueError("Event has no kwargs.")
         if self.data.type is EventType.TOOL:
-            return self.data.kwargs["serialized"]["name"]
+            return self.data.kwargs["serialized"]["name"]  # type: ignore
         if self.data.type is EventType.RETRIEVAL:
-            return self.data.kwargs["serialized"]["id"][-1]
+            return self.data.kwargs["serialized"]["id"][-1]  # type: ignore
 
         return None
 
@@ -166,7 +176,7 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
         initial_input: str | None = None,
         final_output: str | None = None,
         history: list[tuple[str, str]] | None = None,
-        hierarchy: dict[UUID, UUID] | None = None,
+        hierarchy: dict[UUID, UUID | None] | None = None,
         spans: list[SpanWatch] | None = None,
         do_not_call_directly: bool = False,
     ) -> None:
@@ -175,17 +185,17 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
                 "Interaction cannot be directly instantiate, use the"
                 " 'new_interaction' contextmanager"
             )
-        self._events_storage = EventsStorage()
-        self._observer = None
-        self._finished = False
+        self._events_storage: EventsStorage = EventsStorage()
+        self._observer: Observer | None = None
+        self._finished: bool = False
 
         self.user = user
         self.user_group_profile = user_group_profile
         self.input = initial_input
         self.output = final_output
         self.spans = [] if spans is None else spans
-        self.history = [] if history is None else history
-        self.hierarchy = {} if hierarchy is None else hierarchy
+        self.history = history
+        self.hierarchy = hierarchy
         self.time_start = datetime.now(timezone.utc)
 
     def set_input(self, value: str) -> None:
@@ -198,8 +208,7 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
         self.output = value
 
     def _set_observer(self, observer: Observer) -> None:
-        if self._observer is None:
-            self._observer = observer
+        self._observer = observer
 
     def _add_span(self, value: SpanWatch) -> None:
         self.spans.append(value)
@@ -214,13 +223,16 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
                 else None
                 for event in self._events_storage.events.values()
             }
+        else:
+            self.hierarchy = {}
         for span in self.spans:
             if span.provider_extras is None:
                 continue
-            parent_id = span.provider_extras.get("platform_parent_run_id")
+            parent_id: UUID | None = span.provider_extras.get("parent_run_id")
             if parent_id is not None:
                 self.hierarchy[span.span_id] = parent_id
-        self._observer(self._as_interaction_watch())
+        if self._observer is not None:
+            self._observer(self._as_interaction_watch())
 
     def _set_user(self, value: str) -> None:
         self.user = value
@@ -228,15 +240,26 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
     def _set_user_group_profile(self, value: str) -> None:
         self.user_group_profile = value
 
+    def _validate_interaction(self) -> None:
+        if self.input is None:
+            raise ValueError("Interaction has no input.")
+        if self.output is None:
+            raise ValueError("Interaction has no output.")
+        if self.history is None:
+            raise ValueError("Interaction has no history.")
+        if self.hierarchy is None:
+            raise ValueError("Interaction has no hierarchy.")
+
     def _as_interaction_watch(self) -> InteractionWatch:
+        self._validate_interaction()
         return InteractionWatch(
-            input=self.input,
-            output=self.output,
+            input=self.input,  # type: ignore
+            output=self.output,  # type: ignore
             time_start=self.time_start,
             time_end=datetime.now(timezone.utc),
             spans=self.spans,
-            history=self.history,
-            hierarchy=self.hierarchy,
+            history=self.history,  # type: ignore
+            hierarchy=self.hierarchy,  # type: ignore
             end_user=self.user,
             end_user_group_profile=self.user_group_profile,
         )
@@ -256,7 +279,7 @@ def get_nearest_open_interaction() -> InteractionContext:
 
 @contextmanager
 def new_interaction(
-    platform_user: str | None = None, platform_user_group_profile: str | None = None
+    user_id: str | None = None, user_group_profile: str | None = None
 ) -> Generator[InteractionContext, None, None]:
     try:
         get_nearest_open_interaction()
@@ -265,9 +288,7 @@ def new_interaction(
         pass
 
     try:
-        yield InteractionContext(
-            platform_user, platform_user_group_profile, do_not_call_directly=True
-        )
+        yield InteractionContext(user_id, user_group_profile, do_not_call_directly=True)
     finally:
         try:
             interaction = get_nearest_open_interaction()
