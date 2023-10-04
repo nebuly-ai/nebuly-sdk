@@ -5,12 +5,12 @@ from nebuly.entities import Package
 PACKAGES = (
     Package(
         "openai",
-        ("0.10.2",),
+        ("1.0.0",),
         (
-            "Completion.create",
-            "Completion.acreate",
-            "ChatCompletion.create",
-            "ChatCompletion.acreate",
+            "resources.chat.completions.Completions.create",
+            "resources.chat.completions.Completions.acreate",
+            "resources.completions.Completions.create",
+            "resources.completions.Completions.acreate",
         ),
     ),
     Package(

@@ -384,6 +384,14 @@ def _handle_unpickleable_objects() -> None:
     using the deepcopy function
     """
     try:
+        from nebuly.providers.openai import (  # pylint: disable=import-outside-toplevel
+            handle_openai_unpickable_objects,
+        )
+
+        handle_openai_unpickable_objects()
+    except ImportError:
+        pass
+    try:
         from nebuly.providers.cohere import (  # pylint: disable=import-outside-toplevel
             handle_cohere_unpickable_objects,
         )
@@ -436,6 +444,9 @@ def _setup_args_kwargs(
     nebuly_kwargs, function_kwargs = _split_nebuly_kwargs(kwargs)
 
     _handle_unpickleable_objects()
+    print(args)
+    print("##############")
+    print(kwargs)
     original_args = deepcopy(args)
     nebuly_kwargs = deepcopy(nebuly_kwargs)
     original_kwargs = deepcopy(function_kwargs)
@@ -446,6 +457,16 @@ def _setup_args_kwargs(
 def _is_generator(obj: Any) -> bool:
     if isinstance(obj, (Generator, AsyncGenerator)):
         return True
+
+    try:
+        from nebuly.providers.openai import (  # pylint: disable=import-outside-toplevel
+            is_openai_generator,
+        )
+
+        if is_openai_generator(obj):
+            return True
+    except ImportError:
+        pass
 
     try:
         from nebuly.providers.cohere import (  # pylint: disable=import-outside-toplevel
@@ -592,6 +613,7 @@ def function_wrapper(
         called_start = datetime.now(timezone.utc)
         result = f(*args, **function_kwargs)
 
+        print(type(result))
         if _is_generator(result):
             logger.debug("Result is a generator")
             return watch_from_generator(
