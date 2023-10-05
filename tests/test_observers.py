@@ -19,7 +19,7 @@ def test_observer_calls_publisher_when_patched_is_called() -> None:
     patched = _patcher(observer.on_event_received, "module", "0.1.0", "function_name")(
         function
     )
-    result = patched(1.0, 2, c=3)
+    result = patched(1.0, 2, c=3, user_id="test", user_group_profile="test")
 
     assert result == 6
     assert len(publisher) == 1

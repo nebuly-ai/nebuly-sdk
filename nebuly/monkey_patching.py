@@ -7,9 +7,12 @@ import sys
 from copy import deepcopy
 from datetime import datetime, timezone
 from functools import wraps
+from importlib.metadata import version
 from inspect import isasyncgenfunction, iscoroutinefunction
 from types import ModuleType
 from typing import Any, AsyncGenerator, Callable, Generator, Iterable
+
+from packaging.version import parse as parse_version
 
 from nebuly.config import NEBULY_KWARGS
 from nebuly.contextmanager import (
@@ -44,15 +47,39 @@ def import_and_patch_packages(packages: Iterable[Package], observer: Observer) -
 
 def _monkey_patch(package: Package, observer: Observer) -> None:
     module = importlib.import_module(package.name)
+    try:
+        package_version = version(package.name)
+    except Exception:  # pylint: disable=broad-except
+        package_version = "unknown"
+
+    if package_version != "unknown":
+        max_version_str = package.versions.max_version
+        min_version = parse_version(package.versions.min_version)
+        pkg_version = parse_version(package_version)
+
+        if max_version_str is None and (
+            min_version
+            > pkg_version
+            != min_version.base_version
+            != pkg_version.base_version
+        ):
+            return
+        if (
+            max_version_str is not None
+            and not min_version <= pkg_version < parse_version(max_version_str)
+        ):
+            return
+
     for attr in package.to_patch:
         try:
-            _monkey_patch_attribute(attr, module, observer)
+            _monkey_patch_attribute(attr, module, package_version, observer)
         except (AttributeError, ImportError):
             logger.warning("Failed to patch %s", attr)
 
 
-def _monkey_patch_attribute(attr: str, module: ModuleType, observer: Observer) -> None:
-    version = module.__version__ if hasattr(module, "__version__") else "unknown"
+def _monkey_patch_attribute(
+    attr: str, module: ModuleType, package_version: str, observer: Observer
+) -> None:
     tmp_component = module
     path = attr.split(".")
     for i, component_name in enumerate(path[:-1]):
@@ -67,7 +94,7 @@ def _monkey_patch_attribute(attr: str, module: ModuleType, observer: Observer) -
     setattr(
         tmp_component,
         path[-1],
-        _patcher(observer, module.__name__, version, attr)(
+        _patcher(observer, module.__name__, package_version, attr)(
             getattr(tmp_component, path[-1])
         ),
     )
@@ -96,7 +123,16 @@ def _extract_output(  # pylint: disable=too-many-return-statements
     function_name: str,
 ) -> str:
     if module == "openai":
-        from nebuly.providers.openai import (  # pylint: disable=import-outside-toplevel
+        if (
+            parse_version(version(module)) < parse_version("1.0.0")
+            and parse_version(version(module)).base_version != "1.0.0"
+        ):
+            from nebuly.providers.openai_legacy import (  # pylint: disable=import-outside-toplevel  # noqa: E501
+                extract_openai_output,
+            )
+
+            return extract_openai_output(function_name, output)
+        from nebuly.providers.openai import (  # pylint: disable=import-outside-toplevel  # noqa: E501
             extract_openai_output,
         )
 
@@ -136,7 +172,16 @@ def _extract_output(  # pylint: disable=too-many-return-statements
 
 def _extract_output_generator(outputs: Any, module: str, function_name: str) -> str:
     if module == "openai":
-        from nebuly.providers.openai import (  # pylint: disable=import-outside-toplevel
+        if (
+            parse_version(version(module)) < parse_version("1.0.0")
+            and parse_version(version(module)).base_version != "1.0.0"
+        ):
+            from nebuly.providers.openai_legacy import (  # pylint: disable=import-outside-toplevel  # noqa: E501
+                extract_openai_output_generator,
+            )
+
+            return extract_openai_output_generator(function_name, outputs)
+        from nebuly.providers.openai import (  # pylint: disable=import-outside-toplevel  # noqa: E501
             extract_openai_output_generator,
         )
 
@@ -217,14 +262,23 @@ def _add_interaction_span(  # pylint: disable=too-many-arguments
             interaction.set_output(output)
 
 
-def _extract_input_and_history(
+def _extract_input_and_history(  # pylint: disable=too-many-return-statements
     original_args: tuple[Any, ...],
     original_kwargs: dict[str, Any],
     module: str,
     function_name: str,
 ) -> tuple[str, list[tuple[str, Any]]]:
     if module == "openai":
-        from nebuly.providers.openai import (  # pylint: disable=import-outside-toplevel
+        if (
+            parse_version(version(module)) < parse_version("1.0.0")
+            and parse_version(version(module)).base_version != "1.0.0"
+        ):
+            from nebuly.providers.openai_legacy import (  # pylint: disable=import-outside-toplevel  # noqa: E501
+                extract_openai_input_and_history,
+            )
+
+            return extract_openai_input_and_history(original_kwargs, function_name)
+        from nebuly.providers.openai import (  # pylint: disable=import-outside-toplevel  # noqa: E501
             extract_openai_input_and_history,
         )
 
@@ -276,7 +330,7 @@ def watch_from_generator(  # pylint: disable=too-many-arguments
     generator: Generator[Any, Any, Any],
     observer: Observer,
     module: str,
-    version: str,
+    package_version: str,
     function_name: str,
     called_start: datetime,
     original_args: tuple[Any, ...],
@@ -305,7 +359,7 @@ def watch_from_generator(  # pylint: disable=too-many-arguments
 
     watched = SpanWatch(
         module=module,
-        version=version,
+        version=package_version,
         function=function_name,
         called_start=called_start,
         called_end=called_end,
@@ -335,7 +389,7 @@ async def watch_from_generator_async(  # pylint: disable=too-many-arguments
     generator: AsyncGenerator[Any, Any],
     observer: Observer,
     module: str,
-    version: str,
+    package_version: str,
     function_name: str,
     called_start: datetime,
     original_args: tuple[Any, ...],
@@ -364,7 +418,7 @@ async def watch_from_generator_async(  # pylint: disable=too-many-arguments
 
     watched = SpanWatch(
         module=module,
-        version=version,
+        version=package_version,
         function=function_name,
         called_start=called_start,
         called_end=called_end,
@@ -502,7 +556,7 @@ def coroutine_wrapper(
     f: Callable[[Any], Any],
     observer: Observer,
     module: str,
-    version: str,
+    package_version: str,
     function_name: str,
 ) -> Callable[[Any], Any]:
     @wraps(f)
@@ -544,7 +598,7 @@ def coroutine_wrapper(
                 generator=result,
                 observer=observer,
                 module=module,
-                version=version,
+                package_version=package_version,
                 function_name=function_name,
                 called_start=called_start,
                 original_args=original_args,
@@ -558,7 +612,7 @@ def coroutine_wrapper(
         called_end = datetime.now(timezone.utc)
         watched = SpanWatch(
             module=module,
-            version=version,
+            version=package_version,
             function=function_name,
             called_start=called_start,
             called_end=called_end,
@@ -588,7 +642,7 @@ def function_wrapper(
     f: Callable[[Any], Any],
     observer: Observer,
     module: str,
-    version: str,
+    package_version: str,
     function_name: str,
 ) -> Callable[[Any], Any]:
     @wraps(f)
@@ -626,7 +680,7 @@ def function_wrapper(
                 generator=result,
                 observer=observer,
                 module=module,
-                version=version,
+                package_version=package_version,
                 function_name=function_name,
                 called_start=called_start,
                 original_args=original_args,
@@ -640,7 +694,7 @@ def function_wrapper(
         called_end = datetime.now(timezone.utc)
         watched = SpanWatch(
             module=module,
-            version=version,
+            version=package_version,
             function=function_name,
             called_start=called_start,
             called_end=called_end,
@@ -667,7 +721,7 @@ def function_wrapper(
 
 
 def _patcher(
-    observer: Observer, module: str, version: str, function_name: str
+    observer: Observer, module: str, package_version: str, function_name: str
 ) -> Callable[[Any], Any]:
     """
     Decorator that calls observer with a SpanWatch instance when the decorated
@@ -682,9 +736,12 @@ def _patcher(
             iscoroutinefunction(f)
             or asyncio.iscoroutinefunction(f)  # Needed for python 3.9
             or isasyncgenfunction(f)
+            or "async" in function_name.lower()
         ):
-            return coroutine_wrapper(f, observer, module, version, function_name)
+            return coroutine_wrapper(
+                f, observer, module, package_version, function_name
+            )
 
-        return function_wrapper(f, observer, module, version, function_name)
+        return function_wrapper(f, observer, module, package_version, function_name)
 
     return inner

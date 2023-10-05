@@ -1,4 +1,4 @@
-# pylint: disable=duplicate-code
+# pylint: disable=duplicate-code, unexpected-keyword-arg
 from __future__ import annotations
 
 import json
@@ -117,6 +117,8 @@ async def test_cohere_generate__async(cohere_generate: list[Generation]) -> None
             co = cohere.AsyncClient("test")
             result = await co.generate(
                 prompt="Please explain to me how LLMs work",
+                user_id="test_user",
+                user_group_profile="test_group",
             )
             assert result is not None
             assert mock_observer.call_count == 1
@@ -171,6 +173,8 @@ def test_cohere_chat__no_context_manager(cohere_chat: Chat) -> None:
                     {"user_name": "User", "message": "Hi!"},
                     {"user_name": "Chatbot", "message": "How can I help you today?"},
                 ],
+                user_id="test_user",
+                user_group_profile="test_group",
             )
             assert result is not None
             assert mock_observer.call_count == 1
@@ -254,6 +258,8 @@ async def test_cohere_chat__async(cohere_chat: Chat) -> None:
                     {"user_name": "User", "message": "Hi!"},
                     {"user_name": "Chatbot", "message": "How can I help you today?"},
                 ],
+                user_id="test_user",
+                user_group_profile="test_group",
             )
             assert result is not None
             assert mock_observer.call_count == 1
@@ -306,6 +312,8 @@ def test_cohere_generate_gen(cohere_generate_gen: list[StreamingText]) -> None:
                 prompt="How are you?",
                 max_tokens=20,
                 stream=True,
+                user_id="test_user",
+                user_group_profile="test_group",
             ):
                 ...
             assert mock_observer.call_count == 1
@@ -373,6 +381,8 @@ def test_cohere_chat_gen(
                     {"user_name": "Chatbot", "message": "How can I help you today?"},
                 ],
                 stream=True,
+                user_id="test_user",
+                user_group_profile="test_group",
             ):
                 ...
             assert mock_observer.call_count == 1

@@ -1,4 +1,4 @@
-# pylint: disable=duplicate-code, wrong-import-position, import-error, no-name-in-module
+# pylint: disable=duplicate-code, wrong-import-position, import-error, no-name-in-module, unexpected-keyword-arg  # noqa: E501
 from __future__ import annotations
 
 import json
@@ -169,7 +169,11 @@ def test_google_palm_chat__first_interaction__no_context_manager(
             nebuly_init(observer=mock_observer)
             palm.configure(api_key="test")
 
-            result = palm.chat(messages=["Hello."])
+            result = palm.chat(
+                messages=["Hello."],
+                user_id="test_user",
+                user_group_profile="test_group",
+            )
             assert result is not None
             assert mock_observer.call_count == 1
             interaction_watch: InteractionWatch = mock_observer.call_args[0][0]
@@ -284,7 +288,9 @@ def test_google_palm_chat__with_history__no_context_manager(
                     "Hello.",
                     "Hello! How can I help you today?",
                     "What can you do?",
-                ]
+                ],
+                user_id="test_user",
+                user_group_profile="test_group",
             )
             assert result is not None
             assert mock_observer.call_count == 1
@@ -366,7 +372,11 @@ def test_google_palm_chat__reply__no_context_manager(
             nebuly_init(observer=mock_observer)
             palm.configure(api_key="test")
 
-            result = palm_chat_response.reply(message="What can you do?")
+            result = palm_chat_response.reply(
+                message="What can you do?",
+                user_id="test_user",
+                user_group_profile="test_group",
+            )
 
             assert result is not None
             assert mock_observer.call_count == 1
@@ -431,7 +441,11 @@ async def test_google_palm_chat__async(palm_chat_response: ChatResponse) -> None
             nebuly_init(observer=mock_observer)
             palm.configure(api_key="test")
 
-            result = await palm.chat_async(messages=["Hello."])
+            result = await palm.chat_async(
+                messages=["Hello."],
+                user_id="test_user",
+                user_group_profile="test_group",
+            )
             assert result is not None
             assert mock_observer.call_count == 1
             interaction_watch: InteractionWatch = mock_observer.call_args[0][0]

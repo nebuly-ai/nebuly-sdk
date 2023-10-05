@@ -1,4 +1,4 @@
-# pylint: disable=duplicate-code
+# pylint: disable=duplicate-code, unexpected-keyword-arg
 from __future__ import annotations
 
 import json
@@ -91,6 +91,8 @@ def test_vertexai_completion__no_context_manager(
                 result = model.predict(
                     "Give me ten interview questions for the role of program manager.",
                     **parameters,
+                    user_id="user_id",
+                    user_group_profile="test_group",
                 )
             assert result is not None
             assert mock_observer.call_count == 1
@@ -121,7 +123,7 @@ def test_vertexai_completion__with_context_manager(
             nebuly_init(observer=mock_observer)
 
             with new_interaction(
-                "Give me ten interview questions for the role of program manager."
+                user_id="user_id", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input(
                     "Give me ten interview questions for the role of program manager."
@@ -183,6 +185,8 @@ async def test_vertexai_completion__async(
                 result = await model.predict_async(
                     "Give me ten interview questions for the role of program manager.",
                     **parameters,
+                    user_id="user_id",
+                    user_group_profile="test_group",
                 )
             assert result is not None
             assert mock_observer.call_count == 1
@@ -280,6 +284,8 @@ def test_vertexai_completion_stream(
                     prompt="Give me two interview questions for the role of program "
                     "manager.",
                     **parameters,
+                    user_id="user_id",
+                    user_group_profile="test_group",
                 ):
                     result += chunk.text
 
@@ -337,7 +343,10 @@ def test_vertexai_chat__no_context_manager(
                 )
 
                 result = chat.send_message(
-                    "How many planets are there in the solar system?", **parameters
+                    "How many planets are there in the solar system?",
+                    **parameters,
+                    user_id="user_id",
+                    user_group_profile="test_group",
                 )
             assert result is not None
             assert mock_observer.call_count == 1
@@ -401,7 +410,10 @@ def test_vertexai_chat__no_context_manager__with_history(
                 )
 
                 result = chat.send_message(
-                    "How many planets are there in the solar system?", **parameters
+                    "How many planets are there in the solar system?",
+                    **parameters,
+                    user_id="user_id",
+                    user_group_profile="test_group",
                 )
 
             assert result is not None
@@ -437,7 +449,7 @@ def test_vertexai_chat__with_context_manager(
             nebuly_init(observer=mock_observer)
 
             with new_interaction(
-                "How many planets are there in the solar system?"
+                user_id="user_id", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("How many planets are there in the solar system?")
                 parameters = {
@@ -515,7 +527,10 @@ async def test_vertexai_chat__async(palm_completion: TextGenerationResponse) -> 
                 )
 
                 result = await chat.send_message_async(
-                    "How many planets are there in the solar system?", **parameters
+                    "How many planets are there in the solar system?",
+                    **parameters,
+                    user_id="user_id",
+                    user_group_profile="test_group",
                 )
 
             assert result is not None
@@ -574,6 +589,8 @@ def test_vertexai_chat__stream(
                 for chunk in chat.send_message_streaming(
                     message="How many planets are there in the solar system?",
                     **parameters,
+                    user_id="user_id",
+                    user_group_profile="test_group",
                 ):
                     result += chunk.text
 

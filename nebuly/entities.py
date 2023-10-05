@@ -20,13 +20,19 @@ class EventType(Enum):
 
 
 @dataclass(frozen=True)
+class SupportedVersion:
+    min_version: str
+    max_version: str | None = None
+
+
+@dataclass(frozen=True)
 class Package:
     """
     Package represents a package to be patched.
     """
 
     name: str
-    versions: tuple[str, ...]
+    versions: SupportedVersion
     to_patch: tuple[str, ...]
 
 
@@ -84,8 +90,8 @@ class InteractionWatch:  # pylint: disable=too-many-instance-attributes
     spans: list[SpanWatch]
     history: list[tuple[str, str]]
     hierarchy: dict[uuid.UUID, uuid.UUID | None]
-    end_user: str | None = None
-    end_user_group_profile: str | None = None
+    end_user: str
+    end_user_group_profile: str
 
     def to_dict(self) -> dict[str, Any]:
         """

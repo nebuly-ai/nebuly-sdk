@@ -249,6 +249,10 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
             raise ValueError("Interaction has no history.")
         if self.hierarchy is None:
             raise ValueError("Interaction has no hierarchy.")
+        if self.user is None:
+            raise ValueError("Interaction has no user.")
+        if self.user_group_profile is None:
+            raise ValueError("Interaction has no user group profile.")
 
     def _as_interaction_watch(self) -> InteractionWatch:
         self._validate_interaction()
@@ -260,8 +264,8 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
             spans=self.spans,
             history=self.history,  # type: ignore
             hierarchy=self.hierarchy,  # type: ignore
-            end_user=self.user,
-            end_user_group_profile=self.user_group_profile,
+            end_user=self.user,  # type: ignore
+            end_user_group_profile=self.user_group_profile,  # type: ignore
         )
 
 

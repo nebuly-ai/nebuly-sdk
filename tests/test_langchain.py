@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import sys
+from importlib.metadata import version
 from typing import Any
 from unittest.mock import patch
 
@@ -11,6 +12,9 @@ import pytest
 if sys.version_info < (3, 8, 1):
     # pylint: disable=import-error, no-name-in-module
     pytest.skip("Cannot use langchain in python<3.8.1", allow_module_level=True)
+
+if not version("openai").startswith("0."):
+    pytest.skip("Langchain doesn't support openai 1.X", allow_module_level=True)
 
 import langchain
 from langchain.agents import AgentExecutor, OpenAIFunctionsAgent, tool
