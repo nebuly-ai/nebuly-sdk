@@ -1,9 +1,10 @@
 # pylint: disable=duplicate-code, import-error, no-name-in-module
+# mypy: ignore-errors
 from __future__ import annotations
 
 from typing import Any
 
-from openai.openai_object import OpenAIObject  # mypy: ignore-errors  # type: ignore
+from openai.openai_object import OpenAIObject  # type: ignore
 
 
 def extract_openai_input_and_history(
