@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from asyncio import sleep
 from datetime import datetime, timezone
 from typing import Any, AsyncGenerator, Generator
@@ -9,7 +10,7 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from nebuly.entities import InteractionWatch, Package
+from nebuly.entities import InteractionWatch, Package, SupportedVersion
 from nebuly.monkey_patching import (
     _monkey_patch,
     _patcher,
@@ -36,7 +37,9 @@ def test_patcher_doesnt_change_any_behavior(
 
     patched = _patcher(lambda _: None, "module", "0.1.0", "function_name")(to_patched)
 
-    assert patched(*args, **kwargs) == to_patched(*args, **kwargs)
+    assert patched(
+        *args, **kwargs, user_id="test", user_group_profile="test"
+    ) == to_patched(*args, **kwargs)
     assert patched.__name__ == to_patched.__name__
     assert patched.__doc__ == to_patched.__doc__
     assert patched.__module__ == to_patched.__module__
@@ -57,12 +60,10 @@ def test_patcher_calls_observer(
 
     observer: list[InteractionWatch] = []
 
-    patched = _patcher(observer.append, "module", "0.1.0", "function_name")(
-        to_patched
-    )  # noqa: E501
+    patched = _patcher(observer.append, "module", "0.1.0", "function_name")(to_patched)
 
     before = datetime.now(timezone.utc)
-    patched(*args, **kwargs)
+    patched(*args, **kwargs, user_id="test", user_group_profile="test")
     after = datetime.now(timezone.utc)
 
     assert len(observer) == 1
@@ -86,7 +87,9 @@ def test_watched_is_immutable() -> None:
     observer: list[InteractionWatch] = []
     mutable: list[int] = []
 
-    _patcher(observer.append, "module", "0.1.0", "function_name")(to_patched)(mutable)
+    _patcher(observer.append, "module", "0.1.0", "function_name")(to_patched)(
+        mutable, user_id="test", user_group_profile="test"
+    )
 
     mutable.append(2)
 
@@ -134,7 +137,7 @@ def test_nebuly_args_are_intercepted() -> None:
 
 @patch("nebuly.monkey_patching.logger")
 def test_logs_warning_when_package_already_imported(logger: MagicMock) -> None:
-    package = Package("nebuly", ("0.1.0",), ("non_existent",))
+    package = Package("nebuly", SupportedVersion("0.1.0"), ("non_existent",))
     check_no_packages_already_imported([package])
     logger.warning.assert_called_once_with("%s already imported", "nebuly")
 
@@ -142,7 +145,7 @@ def test_logs_warning_when_package_already_imported(logger: MagicMock) -> None:
 def test_monkey_patch() -> None:
     package = Package(
         "tests.to_patch",
-        ("0.1.0",),
+        SupportedVersion("0.1.0"),
         (
             "ToPatch.to_patch_one",
             "ToPatch.to_patch_two",
@@ -154,14 +157,20 @@ def test_monkey_patch() -> None:
 
     from .to_patch import ToPatch  # pylint: disable=import-outside-toplevel
 
-    result = ToPatch().to_patch_one(1, 2.0, c=3)
+    with patch(
+        "nebuly.contextmanager.InteractionContext._validate_interaction",
+        return_value=True,
+    ):
+        result = ToPatch().to_patch_one(  # type: ignore  # pylint: disable=unexpected-keyword-arg  # noqa: E501
+            1, 2.0, c=3, user_id="test", user_group_profile="test"
+        )
     assert result == 6
 
 
 def test_monkey_patch_missing_module_doesnt_break() -> None:
     package = Package(
         "non_existent",
-        ("0.1.0",),
+        SupportedVersion("0.1.0"),
         ("ToPatch.to_patch_one",),
     )
     observer: list[InteractionWatch] = []
@@ -170,9 +179,10 @@ def test_monkey_patch_missing_module_doesnt_break() -> None:
 
 
 def test_monkey_patch_missing_component_doesnt_break_other_patches() -> None:
+    del sys.modules["tests"]
     package = Package(
         "tests.to_patch",
-        ("0.1.0",),
+        SupportedVersion("0.1.0"),
         (
             "ToPatch.non_existent",
             "ToPatch.to_patch_one",
@@ -184,7 +194,13 @@ def test_monkey_patch_missing_component_doesnt_break_other_patches() -> None:
 
     from .to_patch import ToPatch  # pylint: disable=import-outside-toplevel
 
-    result = ToPatch().to_patch_one(1, 2.0, c=3)
+    with patch(
+        "nebuly.contextmanager.InteractionContext._validate_interaction",
+        return_value=True,
+    ):
+        result = ToPatch().to_patch_one(  # type: ignore  # pylint: disable=unexpected-keyword-arg  # noqa: E501
+            1, 2.0, c=3, user_id="test", user_group_profile="test"
+        )
     assert result == 6
 
 
@@ -246,7 +262,7 @@ async def test_patcher_async_function() -> None:
         to_patched_async_function
     )
 
-    assert await patched() == 1
+    assert await patched(user_id="test", user_group_profile="test") == 1
 
 
 @pytest.mark.asyncio

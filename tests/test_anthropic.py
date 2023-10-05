@@ -122,11 +122,13 @@ async def test_anthropic_completion__async(anthropic_completion: Completion) -> 
                 api_key="my api key",
             )
 
-            result = await client.completions.create(
+            result = await client.completions.create(  # type: ignore
                 model="claude-2",
                 max_tokens_to_sample=300,
                 prompt=f"{HUMAN_PROMPT} how does a court case get to the "
                 f"Supreme Court?{AI_PROMPT}",
+                user_id="test_user",
+                user_group_profile="test_group",
             )
             assert result is not None
             assert mock_observer.call_count == 1
@@ -176,12 +178,14 @@ def test_anthropic_completion_gen(anthropic_completion_gen: list[Completion]) ->
                 api_key="my api key",
             )
 
-            for _ in client.completions.create(  # pylint: disable=not-an-iterable
+            for _ in client.completions.create(  # type: ignore  # pylint: disable=not-an-iterable  # noqa: E501
                 model="claude-2",
                 max_tokens_to_sample=300,
                 prompt=f"{HUMAN_PROMPT} how does a court case get to the "
                 f"Supreme Court?{AI_PROMPT}",
                 stream=True,
+                user_id="test_user",
+                user_group_profile="test_group",
             ):
                 ...
             assert mock_observer.call_count == 1
@@ -237,12 +241,14 @@ async def test_anthropic_completion_async_gen(
                 api_key="my api key",
             )
 
-            async for _ in await client.completions.create(  # pylint: disable=not-an-iterable  # noqa: E501
+            async for _ in await client.completions.create(  # type: ignore  # pylint: disable=not-an-iterable  # noqa: E501
                 model="claude-2",
                 max_tokens_to_sample=300,
                 prompt=f"{HUMAN_PROMPT} how does a court case get to the "
                 f"Supreme Court?{AI_PROMPT}",
                 stream=True,
+                user_id="test_user",
+                user_group_profile="test_group",
             ):
                 ...
             assert mock_observer.call_count == 1
@@ -254,6 +260,8 @@ async def test_anthropic_completion_async_gen(
                 f"Supreme Court?{AI_PROMPT}"
             )
             assert interaction_watch.output == " Hello!"
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_group"
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)

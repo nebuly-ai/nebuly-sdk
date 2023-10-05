@@ -102,8 +102,10 @@ def _get_input_and_history(
         # If the chain is not a SequentialChain, we need to get
         # the prompt from the chain
         prompt = getattr(chain, "prompt", None)
-        if not isinstance(inputs, dict) and prompt is None:
-            return inputs, None
+        if prompt is None:
+            if not isinstance(inputs, dict):
+                return inputs, None
+            return inputs["input"], None
 
     if isinstance(prompt, PromptTemplate):
         return _process_prompt_template(inputs, prompt)

@@ -1,12 +1,29 @@
-# pylint: disable=duplicate-code
+# pylint: disable=duplicate-code, import-error, no-name-in-module, wrong-import-position, wrong-import-order  # noqa: E501
+# mypy: ignore-errors
 from __future__ import annotations
 
 import json
-from typing import Any, AsyncGenerator
-from unittest.mock import patch
+from importlib.metadata import version
+from typing import AsyncGenerator
+from unittest.mock import AsyncMock, patch
+
+import pytest
+
+if version("openai").startswith("0."):
+    pytest.skip(
+        "Tests enabled only when openai version is 1.X", allow_module_level=True
+    )
 
 import openai
-import pytest
+from openai import AsyncOpenAI, OpenAI
+from openai.types import Completion, CompletionChoice, CompletionUsage
+from openai.types.chat import (
+    ChatCompletion,
+    ChatCompletionChunk,
+    ChatCompletionMessage,
+    chat_completion_chunk,
+)
+from openai.types.chat.chat_completion import Choice
 
 from nebuly.contextmanager import new_interaction
 from nebuly.entities import InteractionWatch, SpanWatch
@@ -16,36 +33,35 @@ from tests.common import nebuly_init
 
 
 @pytest.fixture(name="openai_completion")
-def fixture_openai_completion() -> dict[str, Any]:
-    return {
-        "id": "cmpl-81JyWoIj5m9qz0M9g7aLBGtwZzUIg",
-        "object": "text_completion",
-        "created": 1695325804,
-        "model": "gpt-3.5-turbo-instruct",
-        "choices": [
-            {
-                "text": "\n\nThis is a test.",
-                "index": 0,
-                "logprobs": None,
-                "finish_reason": "stop",
-            }
+def fixture_openai_completion() -> Completion:
+    return Completion(
+        id="cmpl-86EVWjLg0rentPFmNfvt5ZlVjKsWW",
+        choices=[
+            CompletionChoice(
+                finish_reason="stop",
+                index=0,
+                logprobs=None,
+                text="\n\nThis is a test.",
+            )
         ],
-        "usage": {"prompt_tokens": 5, "completion_tokens": 6, "total_tokens": 11},
-    }
+        created=1696496426,
+        model="gpt-3.5-turbo-instruct",
+        object="text_completion",
+        usage=CompletionUsage(completion_tokens=7, prompt_tokens=5, total_tokens=12),
+    )
 
 
-def test_openai_completion__no_context_manager(
-    openai_completion: dict[str, Any]
-) -> None:
-    with patch("openai.Completion.create") as mock_completion_create:
+def test_openai_completion__old_format(openai_completion: Completion) -> None:
+    with patch(
+        "openai.resources.completions.Completions.create"
+    ) as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_completion
             nebuly_init(observer=mock_observer)
-            result = openai.Completion.create(  # type: ignore
+
+            result = openai.completions.create(  # type: ignore  # pylint: disable=no-member  # noqa: E501
                 model="gpt-3.5-turbo-instruct",
                 prompt="Say this is a test",
-                max_tokens=7,
-                temperature=0,
                 user_id="test_user",
                 user_group_profile="test_group",
             )
@@ -66,167 +82,22 @@ def test_openai_completion__no_context_manager(
             )
 
 
-def test_openai_completion__with_context_manager(
-    openai_completion: dict[str, Any]
-) -> None:
-    with patch("openai.Completion.create") as mock_completion_create:
+def test_openai_completion__no_context_manager(openai_completion: Completion) -> None:
+    with patch(
+        "openai.resources.completions.Completions.create"
+    ) as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_completion
             nebuly_init(observer=mock_observer)
-            with new_interaction(
-                user_id="test_user", user_group_profile="test_group"
-            ) as interaction:
-                interaction.set_input("Another input")
-                result = openai.Completion.create(  # type: ignore
-                    model="gpt-3.5-turbo-instruct",
-                    prompt="Say this is a test",
-                    max_tokens=7,
-                    temperature=0,
-                )
-                assert result is not None
-                interaction.set_output("Another output")
 
-            assert mock_observer.call_count == 1
-            interaction_watch: InteractionWatch = mock_observer.call_args[0][0]
-            assert isinstance(interaction_watch, InteractionWatch)
-            assert interaction_watch.input == "Another input"
-            assert interaction_watch.output == "Another output"
-            assert interaction.user == "test_user"
-            assert interaction.user_group_profile == "test_group"
-            assert len(interaction_watch.spans) == 1
-            span: SpanWatch = interaction_watch.spans[0]
-            assert isinstance(span, SpanWatch)
-            assert (
-                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
-                is not None
+            client = OpenAI(
+                api_key="ciao",
             )
-
-
-def test_openai_completion__multiple_spans_in_interaction(
-    openai_completion: dict[str, Any]
-) -> None:
-    with patch("openai.Completion.create") as mock_completion_create:
-        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
-            mock_completion_create.return_value = openai_completion
-            nebuly_init(observer=mock_observer)
-            with new_interaction(
-                user_id="test_user", user_group_profile="test_group"
-            ) as interaction:
-                interaction.set_input("Initial input")
-                result = openai.Completion.create(  # type: ignore
-                    model="gpt-3.5-turbo-instruct",
-                    prompt="Say this is a test",
-                    max_tokens=7,
-                    temperature=0,
-                )
-                assert result is not None
-                result = openai.Completion.create(  # type: ignore
-                    model="gpt-3.5-turbo-instruct",
-                    prompt="Say this is a test",
-                    max_tokens=7,
-                    temperature=0,
-                )
-                assert result is not None
-                interaction.set_output("Final output")
-
-            assert mock_observer.call_count == 1
-            interaction_watch: InteractionWatch = mock_observer.call_args[0][0]
-            assert isinstance(interaction_watch, InteractionWatch)
-            assert interaction_watch.input == "Initial input"
-            assert interaction_watch.output == "Final output"
-            assert interaction.user == "test_user"
-            assert interaction.user_group_profile == "test_group"
-            assert len(interaction_watch.spans) == 2
-            span_0: SpanWatch = interaction_watch.spans[0]
-            assert isinstance(span_0, SpanWatch)
-            span_1: SpanWatch = interaction_watch.spans[1]
-            assert isinstance(span_1, SpanWatch)
-            assert span_0.span_id != span_1.span_id
-            assert (
-                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
-                is not None
-            )
-
-
-def test_openai_completion__multiple_interactions(
-    openai_completion: dict[str, Any]
-) -> None:
-    with patch("openai.Completion.create") as mock_completion_create:
-        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
-            mock_completion_create.return_value = openai_completion
-            nebuly_init(observer=mock_observer)
-            with new_interaction(
-                user_id="test_user", user_group_profile="test_group"
-            ) as interaction:
-                interaction.set_input("Initial input 1")
-                result = openai.Completion.create(  # type: ignore
-                    model="gpt-3.5-turbo-instruct",
-                    prompt="Say this is a test",
-                    max_tokens=7,
-                    temperature=0,
-                )
-                assert result is not None
-                interaction.set_output("Final output 1")
-
-            with new_interaction(
-                user_id="test_user", user_group_profile="test_group"
-            ) as interaction:
-                interaction.set_input("Initial input 2")
-                result = openai.Completion.create(  # type: ignore
-                    model="gpt-3.5-turbo-instruct",
-                    prompt="Say this is a test",
-                    max_tokens=7,
-                    temperature=0,
-                )
-                assert result is not None
-                interaction.set_output("Final output 2")
-
-            assert mock_observer.call_count == 2
-            interaction_watch_0: InteractionWatch = mock_observer.call_args_list[0][0][
-                0
-            ]
-            assert isinstance(interaction_watch_0, InteractionWatch)
-            assert interaction_watch_0.input == "Initial input 1"
-            assert interaction_watch_0.output == "Final output 1"
-            assert interaction_watch_0.end_user == "test_user"
-            assert interaction_watch_0.end_user_group_profile == "test_group"
-            assert len(interaction_watch_0.spans) == 1
-            span_0: SpanWatch = interaction_watch_0.spans[0]
-            assert isinstance(span_0, SpanWatch)
-            assert (
-                json.dumps(interaction_watch_0.to_dict(), cls=CustomJSONEncoder)
-                is not None
-            )
-
-            interaction_watch_1: InteractionWatch = mock_observer.call_args_list[1][0][
-                0
-            ]
-            assert isinstance(interaction_watch_1, InteractionWatch)
-            assert interaction_watch_1.input == "Initial input 2"
-            assert interaction_watch_1.output == "Final output 2"
-            assert interaction_watch_1.end_user == "test_user"
-            assert interaction_watch_1.end_user_group_profile == "test_group"
-            assert len(interaction_watch_1.spans) == 1
-            span_1: SpanWatch = interaction_watch_1.spans[0]
-            assert isinstance(span_1, SpanWatch)
-            assert span_0.span_id != span_1.span_id
-            assert (
-                json.dumps(interaction_watch_1.to_dict(), cls=CustomJSONEncoder)
-                is not None
-            )
-
-
-@pytest.mark.asyncio
-async def test_openai_completion__async(openai_completion: dict[str, Any]) -> None:
-    with patch("openai.Completion.acreate") as mock_completion_create:
-        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
-            mock_completion_create.return_value = openai_completion
-            nebuly_init(observer=mock_observer)
-            result = await openai.Completion.acreate(  # type: ignore
+            result = client.completions.create(  # type: ignore
                 model="gpt-3.5-turbo-instruct",
                 prompt="Say this is a test",
-                max_tokens=7,
-                temperature=0,
+                user_id="test_user",
+                user_group_profile="test_group",
             )
             assert result is not None
             assert mock_observer.call_count == 1
@@ -234,6 +105,8 @@ async def test_openai_completion__async(openai_completion: dict[str, Any]) -> No
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == "Say this is a test"
             assert interaction_watch.output == "\n\nThis is a test."
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_group"
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
@@ -243,246 +116,69 @@ async def test_openai_completion__async(openai_completion: dict[str, Any]) -> No
             )
 
 
-@pytest.fixture(name="openai_chat")
-def fixture_openai_chat() -> dict[str, Any]:
-    return {
-        "id": "chatcmpl-81Kl80GyhDVsOiEBQLQ6vG8svCUPe",
-        "object": "chat.completion",
-        "created": 1695328818,
-        "model": "gpt-3.5-turbo-0613",
-        "choices": [
-            {
-                "index": 0,
-                "message": {
-                    "role": "assistant",
-                    "content": "Hi there! How can I assist you today?",
-                },
-                "finish_reason": "stop",
-            }
-        ],
-        "usage": {"prompt_tokens": 19, "completion_tokens": 10, "total_tokens": 29},
-    }
-
-
-def test_openai_chat__no_context_manager(openai_chat: dict[str, Any]) -> None:
-    with patch("openai.ChatCompletion.create") as mock_completion_create:
+def test_openai_completion__context_manager(openai_completion: Completion) -> None:
+    with patch(
+        "openai.resources.completions.Completions.create"
+    ) as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
-            mock_completion_create.return_value = openai_chat
+            mock_completion_create.return_value = openai_completion
             nebuly_init(observer=mock_observer)
-            result = openai.ChatCompletion.create(  # type: ignore
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": "Hello!"},
-                ],
+
+            client = OpenAI(
+                api_key="ciao",
             )
+
+            with new_interaction(
+                user_id="test_user", user_group_profile="test_group"
+            ) as interaction:
+                interaction.set_input("Say this is a test")
+                result = client.completions.create(
+                    model="gpt-3.5-turbo-instruct",
+                    prompt="Say this is a test",
+                )
             assert result is not None
             assert mock_observer.call_count == 1
             interaction_watch = mock_observer.call_args[0][0]
             assert isinstance(interaction_watch, InteractionWatch)
-            assert interaction_watch.input == "Hello!"
-            assert interaction_watch.history == [
-                ("system", "You are a helpful assistant."),
-            ]
-            assert interaction_watch.output == "Hi there! How can I assist you today?"
+            assert interaction_watch.input == "Say this is a test"
+            assert interaction_watch.output == "\n\nThis is a test."
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_group"
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
             assert (
                 json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
-                is not None
-            )
-
-
-def test_openai_chat__with_context_manager(openai_chat: dict[str, Any]) -> None:
-    with patch("openai.ChatCompletion.create") as mock_completion_create:
-        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
-            mock_completion_create.return_value = openai_chat
-            nebuly_init(observer=mock_observer)
-            with new_interaction(
-                user_id="test_user", user_group_profile="test_group"
-            ) as interaction:
-                interaction.set_input("Hello!")
-                interaction.set_history([("system", "You are a helpful assistant.")])
-                result = openai.ChatCompletion.create(  # type: ignore
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "system", "content": "You are a helpful assistant."},
-                        {"role": "user", "content": "Hello!"},
-                    ],
-                )
-                assert result is not None
-                interaction.set_output("Another output")
-
-            assert mock_observer.call_count == 1
-            interaction_watch: InteractionWatch = mock_observer.call_args[0][0]
-            assert isinstance(interaction_watch, InteractionWatch)
-            assert interaction_watch.input == "Hello!"
-            assert interaction_watch.history == [
-                ("system", "You are a helpful assistant."),
-            ]
-            assert interaction_watch.output == "Another output"
-            assert interaction.user == "test_user"
-            assert interaction.user_group_profile == "test_group"
-            assert len(interaction_watch.spans) == 1
-            span: SpanWatch = interaction_watch.spans[0]
-            assert isinstance(span, SpanWatch)
-            assert (
-                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
-                is not None
-            )
-
-
-def test_openai_chat__multiple_spans_in_interaction(
-    openai_chat: dict[str, Any]
-) -> None:
-    with patch("openai.ChatCompletion.create") as mock_completion_create:
-        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
-            mock_completion_create.return_value = openai_chat
-            nebuly_init(observer=mock_observer)
-            with new_interaction(
-                user_id="test_user", user_group_profile="test_group"
-            ) as interaction:
-                interaction.set_input("Hello!")
-                interaction.set_history([("system", "You are a helpful assistant.")])
-                result = openai.ChatCompletion.create(  # type: ignore
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "system", "content": "You are a helpful assistant."},
-                        {"role": "user", "content": "Hello!"},
-                    ],
-                )
-                assert result is not None
-                result = openai.ChatCompletion.create(  # type: ignore
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "system", "content": "You are a helpful assistant."},
-                        {"role": "user", "content": "Hello!"},
-                    ],
-                )
-                assert result is not None
-                interaction.set_output("Another output")
-
-            assert mock_observer.call_count == 1
-            interaction_watch: InteractionWatch = mock_observer.call_args[0][0]
-            assert isinstance(interaction_watch, InteractionWatch)
-            assert interaction_watch.input == "Hello!"
-            assert interaction_watch.history == [
-                ("system", "You are a helpful assistant."),
-            ]
-            assert interaction_watch.output == "Another output"
-            assert interaction.user == "test_user"
-            assert interaction.user_group_profile == "test_group"
-            assert len(interaction_watch.spans) == 2
-            span_0: SpanWatch = interaction_watch.spans[0]
-            assert isinstance(span_0, SpanWatch)
-            span_1: SpanWatch = interaction_watch.spans[1]
-            assert isinstance(span_1, SpanWatch)
-            assert span_0.span_id != span_1.span_id
-            assert (
-                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
-                is not None
-            )
-
-
-def test_openai_chat__multiple_interactions(openai_chat: dict[str, Any]) -> None:
-    with patch("openai.ChatCompletion.create") as mock_completion_create:
-        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
-            mock_completion_create.return_value = openai_chat
-            nebuly_init(observer=mock_observer)
-            with new_interaction(
-                user_id="test_user", user_group_profile="test_group"
-            ) as interaction:
-                interaction.set_input("Hello!")
-                interaction.set_history([("system", "You are a helpful assistant.")])
-                result = openai.ChatCompletion.create(  # type: ignore
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "system", "content": "You are a helpful assistant."},
-                        {"role": "user", "content": "Hello!"},
-                    ],
-                )
-                assert result is not None
-                interaction.set_output("Another output")
-
-            with new_interaction(
-                user_id="test_user", user_group_profile="test_group"
-            ) as interaction:
-                interaction.set_input("Hello!")
-                interaction.set_history([("system", "You are a helpful assistant.")])
-                result = openai.ChatCompletion.create(  # type: ignore
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "system", "content": "You are a helpful assistant."},
-                        {"role": "user", "content": "Hello!"},
-                    ],
-                )
-                assert result is not None
-                interaction.set_output("Another output")
-
-            assert mock_observer.call_count == 2
-            interaction_watch_0: InteractionWatch = mock_observer.call_args_list[0][0][
-                0
-            ]
-            assert isinstance(interaction_watch_0, InteractionWatch)
-            assert interaction_watch_0.input == "Hello!"
-            assert interaction_watch_0.history == [
-                ("system", "You are a helpful assistant."),
-            ]
-            assert interaction_watch_0.output == "Another output"
-            assert interaction_watch_0.end_user == "test_user"
-            assert interaction_watch_0.end_user_group_profile == "test_group"
-            assert len(interaction_watch_0.spans) == 1
-            assert (
-                json.dumps(interaction_watch_0.to_dict(), cls=CustomJSONEncoder)
-                is not None
-            )
-            span_0: SpanWatch = interaction_watch_0.spans[0]
-            assert isinstance(span_0, SpanWatch)
-
-            interaction_watch_1: InteractionWatch = mock_observer.call_args_list[1][0][
-                0
-            ]
-            assert isinstance(interaction_watch_1, InteractionWatch)
-            assert interaction_watch_1.input == "Hello!"
-            assert interaction_watch_1.history == [
-                ("system", "You are a helpful assistant."),
-            ]
-            assert interaction_watch_1.output == "Another output"
-            assert interaction_watch_1.end_user == "test_user"
-            assert interaction_watch_1.end_user_group_profile == "test_group"
-            assert len(interaction_watch_1.spans) == 1
-            span_1: SpanWatch = interaction_watch_1.spans[0]
-            assert isinstance(span_1, SpanWatch)
-            assert span_0.span_id != span_1.span_id
-            assert (
-                json.dumps(interaction_watch_1.to_dict(), cls=CustomJSONEncoder)
                 is not None
             )
 
 
 @pytest.mark.asyncio
-async def test_openai_chat__async(openai_chat: dict[str, Any]) -> None:
-    with patch("openai.ChatCompletion.acreate") as mock_completion_create:
+async def test_openai_completion__async(openai_completion: Completion) -> None:
+    with patch(
+        "openai.resources.completions.AsyncCompletions.create", new=AsyncMock()
+    ) as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
-            mock_completion_create.return_value = openai_chat
+            mock_completion_create.return_value = openai_completion
             nebuly_init(observer=mock_observer)
-            result = await openai.ChatCompletion.acreate(  # type: ignore
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": "Hello!"},
-                ],
+
+            client = AsyncOpenAI(
+                api_key="ciao",
+            )
+            result = await client.completions.create(  # type: ignore
+                model="gpt-3.5-turbo-instruct",
+                prompt="Say this is a test",
+                user_id="test_user",
+                user_group_profile="test_group",
             )
             assert result is not None
             assert mock_observer.call_count == 1
             interaction_watch = mock_observer.call_args[0][0]
             assert isinstance(interaction_watch, InteractionWatch)
-            assert interaction_watch.input == "Hello!"
-            assert interaction_watch.history == [
-                ("system", "You are a helpful assistant."),
-            ]
-            assert interaction_watch.output == "Hi there! How can I assist you today?"
+            assert interaction_watch.input == "Say this is a test"
+            assert interaction_watch.output == "\n\nThis is a test."
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_group"
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
@@ -492,127 +188,111 @@ async def test_openai_chat__async(openai_chat: dict[str, Any]) -> None:
             )
 
 
-@pytest.fixture(name="openai_completion_gen")
-def fixture_openai_completion_gen() -> list[dict[str, Any]]:
+@pytest.fixture(name="openai_completion_stream")
+def fixture_openai_completion_stream() -> list[Completion]:
     return [
-        {
-            "id": "cmpl-81Z9F6z257cbJK1ZB9LQTuG8ePppT",
-            "object": "text_completion",
-            "created": 1695384129,
-            "choices": [
-                {"text": "\n\n", "index": 0, "logprobs": None, "finish_reason": None}
+        Completion(
+            id="cmpl-86FiOh8n7Hjnh4FLNcDe9iuXk7eVf",
+            choices=[
+                CompletionChoice(
+                    finish_reason="stop", index=0, logprobs=None, text="\n\n"
+                )
             ],
-            "model": "gpt-3.5-turbo-instruct",
-        },
-        {
-            "id": "cmpl-81Z9F6z257cbJK1ZB9LQTuG8ePppT",
-            "object": "text_completion",
-            "created": 1695384129,
-            "choices": [
-                {"text": "This", "index": 0, "logprobs": None, "finish_reason": None}
+            created=1696501068,
+            model="gpt-3.5-turbo-instruct",
+            object="text_completion",
+            usage=None,
+        ),
+        Completion(
+            id="cmpl-86FiOh8n7Hjnh4FLNcDe9iuXk7eVf",
+            choices=[
+                CompletionChoice(
+                    finish_reason="stop", index=0, logprobs=None, text="This"
+                )
             ],
-            "model": "gpt-3.5-turbo-instruct",
-        },
-        {
-            "id": "cmpl-81Z9F6z257cbJK1ZB9LQTuG8ePppT",
-            "object": "text_completion",
-            "created": 1695384129,
-            "choices": [
-                {"text": " is", "index": 0, "logprobs": None, "finish_reason": None}
+            created=1696501068,
+            model="gpt-3.5-turbo-instruct",
+            object="text_completion",
+            usage=None,
+        ),
+        Completion(
+            id="cmpl-86FiOh8n7Hjnh4FLNcDe9iuXk7eVf",
+            choices=[
+                CompletionChoice(
+                    finish_reason="stop", index=0, logprobs=None, text=" is"
+                )
             ],
-            "model": "gpt-3.5-turbo-instruct",
-        },
-        {
-            "id": "cmpl-81Z9F6z257cbJK1ZB9LQTuG8ePppT",
-            "object": "text_completion",
-            "created": 1695384129,
-            "choices": [
-                {"text": " a", "index": 0, "logprobs": None, "finish_reason": None}
+            created=1696501068,
+            model="gpt-3.5-turbo-instruct",
+            object="text_completion",
+            usage=None,
+        ),
+        Completion(
+            id="cmpl-86FiOh8n7Hjnh4FLNcDe9iuXk7eVf",
+            choices=[
+                CompletionChoice(
+                    finish_reason="stop", index=0, logprobs=None, text=" a"
+                )
             ],
-            "model": "gpt-3.5-turbo-instruct",
-        },
-        {
-            "id": "cmpl-81Z9F6z257cbJK1ZB9LQTuG8ePppT",
-            "object": "text_completion",
-            "created": 1695384129,
-            "choices": [
-                {"text": " test", "index": 0, "logprobs": None, "finish_reason": None}
+            created=1696501068,
+            model="gpt-3.5-turbo-instruct",
+            object="text_completion",
+            usage=None,
+        ),
+        Completion(
+            id="cmpl-86FiOh8n7Hjnh4FLNcDe9iuXk7eVf",
+            choices=[
+                CompletionChoice(
+                    finish_reason="stop", index=0, logprobs=None, text=" test"
+                )
             ],
-            "model": "gpt-3.5-turbo-instruct",
-        },
-        {
-            "id": "cmpl-81Z9F6z257cbJK1ZB9LQTuG8ePppT",
-            "object": "text_completion",
-            "created": 1695384129,
-            "choices": [
-                {"text": ".", "index": 0, "logprobs": None, "finish_reason": None}
+            created=1696501068,
+            model="gpt-3.5-turbo-instruct",
+            object="text_completion",
+            usage=None,
+        ),
+        Completion(
+            id="cmpl-86FiOh8n7Hjnh4FLNcDe9iuXk7eVf",
+            choices=[
+                CompletionChoice(finish_reason="stop", index=0, logprobs=None, text=".")
             ],
-            "model": "gpt-3.5-turbo-instruct",
-        },
-        {
-            "id": "cmpl-81Z9F6z257cbJK1ZB9LQTuG8ePppT",
-            "object": "text_completion",
-            "created": 1695384129,
-            "choices": [
-                {"text": "", "index": 0, "logprobs": None, "finish_reason": "stop"}
+            created=1696501068,
+            model="gpt-3.5-turbo-instruct",
+            object="text_completion",
+            usage=None,
+        ),
+        Completion(
+            id="cmpl-86FiOh8n7Hjnh4FLNcDe9iuXk7eVf",
+            choices=[
+                CompletionChoice(finish_reason="stop", index=0, logprobs=None, text="")
             ],
-            "model": "gpt-3.5-turbo-instruct",
-        },
+            created=1696501068,
+            model="gpt-3.5-turbo-instruct",
+            object="text_completion",
+            usage=None,
+        ),
     ]
 
 
-def test_openai_completion_gen(openai_completion_gen: list[dict[str, Any]]) -> None:
-    with patch("openai.Completion.create") as mock_completion_create:
+def test_openai_completion__stream(openai_completion_stream: list[Completion]) -> None:
+    with patch(
+        "openai.resources.completions.Completions.create"
+    ) as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
-            mock_completion_create.return_value = (el for el in openai_completion_gen)
-            nebuly_init(observer=mock_observer)
-            result = ""
-            for chunk in openai.Completion.create(  # type: ignore
-                model="gpt-3.5-turbo-instruct",
-                prompt="Say this is a test",
-                max_tokens=7,
-                temperature=0,
-                stream=True,
-            ):
-                result += chunk["choices"][0]["text"]
-
-            assert result is not None
-            assert mock_observer.call_count == 1
-            interaction_watch = mock_observer.call_args[0][0]
-            assert isinstance(interaction_watch, InteractionWatch)
-            assert interaction_watch.input == "Say this is a test"
-            assert interaction_watch.output == "\n\nThis is a test."
-            assert len(interaction_watch.spans) == 1
-            span = interaction_watch.spans[0]
-            assert isinstance(span, SpanWatch)
-            assert (
-                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
-                is not None
+            mock_completion_create.return_value = (
+                el for el in openai_completion_stream
             )
-
-
-@pytest.fixture(name="openai_completion_gen_async")
-async def fixture_openai_completion_gen_async(
-    openai_completion_gen: list[dict[str, Any]]
-) -> AsyncGenerator[dict[str, Any], None]:
-    for el in openai_completion_gen:
-        yield el
-
-
-@pytest.mark.asyncio
-async def test_openai_completion_gen_async(
-    openai_completion_gen_async: AsyncGenerator[dict[str, Any], None]
-) -> None:
-    with patch("openai.Completion.acreate") as mock_completion_create:
-        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
-            mock_completion_create.return_value = openai_completion_gen_async
             nebuly_init(observer=mock_observer)
-            async for _ in await openai.Completion.acreate(  # type: ignore
+
+            client = OpenAI(
+                api_key="ciao",
+            )
+            for _ in client.completions.create(  # type: ignore  # pylint: disable=not-an-iterable  # noqa: E501
                 model="gpt-3.5-turbo-instruct",
                 prompt="Say this is a test",
-                max_tokens=7,
-                temperature=0,
                 stream=True,
+                user_id="test_user",
+                user_group_profile="test_group",
             ):
                 ...
             assert mock_observer.call_count == 1
@@ -620,6 +300,8 @@ async def test_openai_completion_gen_async(
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == "Say this is a test"
             assert interaction_watch.output == "\n\nThis is a test."
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_group"
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
@@ -629,128 +311,417 @@ async def test_openai_completion_gen_async(
             )
 
 
-@pytest.fixture(name="openai_chat_gen")
-def fixture_openai_chat_gen() -> list[dict[str, Any]]:
-    return [
-        {
-            "id": "chatcmpl-123",
-            "object": "chat.completion.chunk",
-            "created": 1677652288,
-            "model": "gpt-3.5-turbo",
-            "choices": [
-                {
-                    "index": 0,
-                    "delta": {
-                        "content": "Hello",
-                    },
-                    "finish_reason": "stop",
-                }
-            ],
-        },
-        {
-            "id": "chatcmpl-123",
-            "object": "chat.completion.chunk",
-            "created": 1677652288,
-            "model": "gpt-3.5-turbo",
-            "choices": [
-                {
-                    "index": 0,
-                    "delta": {
-                        "content": " there",
-                    },
-                    "finish_reason": "stop",
-                }
-            ],
-        },
-        {
-            "id": "chatcmpl-123",
-            "object": "chat.completion.chunk",
-            "created": 1677652288,
-            "model": "gpt-3.5-turbo",
-            "choices": [
-                {
-                    "index": 0,
-                    "delta": {},
-                    "finish_reason": "stop",
-                }
-            ],
-        },
-    ]
-
-
-def test_openai_chat_gen(openai_chat_gen: list[dict[str, Any]]) -> None:
-    with patch("openai.ChatCompletion.create") as mock_completion_create:
-        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
-            mock_completion_create.return_value = (el for el in openai_chat_gen)
-            nebuly_init(observer=mock_observer)
-            result = ""
-            for chunk in openai.ChatCompletion.create(  # type: ignore
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": "Hello!"},
-                ],
-                stream=True,
-            ):
-                result += chunk["choices"][0]["delta"].get("content", "")
-
-            assert result is not None
-            assert mock_observer.call_count == 1
-            interaction_watch = mock_observer.call_args[0][0]
-            assert isinstance(interaction_watch, InteractionWatch)
-            assert interaction_watch.input == "Hello!"
-            assert interaction_watch.history == [
-                ("system", "You are a helpful assistant."),
-            ]
-            assert interaction_watch.output == "Hello there"
-            assert len(interaction_watch.spans) == 1
-            span = interaction_watch.spans[0]
-            assert isinstance(span, SpanWatch)
-            assert (
-                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
-                is not None
-            )
-
-
-@pytest.fixture(name="openai_chat_gen_async")
-async def fixture_openai_chat_gen_async(
-    openai_chat_gen: list[dict[str, Any]]
-) -> AsyncGenerator[dict[str, Any], None]:
-    for el in openai_chat_gen:
+@pytest.fixture(name="openai_completion_stream_async")
+async def fixture_openai_completion_stream_async(
+    openai_completion_stream: list[Completion],
+) -> AsyncGenerator[Completion, None]:
+    for el in openai_completion_stream:
         yield el
 
 
 @pytest.mark.asyncio
-async def test_openai_chat_gen_async(
-    openai_chat_gen_async: AsyncGenerator[dict[str, Any], None]
+async def test_openai_completion__stream_async(
+    openai_completion_stream_async: AsyncGenerator[Completion, None]
 ) -> None:
-    with patch("openai.ChatCompletion.acreate") as mock_completion_create:
+    with patch(
+        "openai.resources.completions.AsyncCompletions.create", new=AsyncMock()
+    ) as mock_completion_create:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
-            mock_completion_create.return_value = openai_chat_gen_async
+            mock_completion_create.return_value = openai_completion_stream_async
             nebuly_init(observer=mock_observer)
-            result = ""
-            async for chunk in await openai.ChatCompletion.acreate(  # type: ignore
+
+            client = AsyncOpenAI(
+                api_key="ciao",
+            )
+            async for _ in await client.completions.create(  # type: ignore
+                model="gpt-3.5-turbo-instruct",
+                prompt="Say this is a test",
+                stream=True,
+                user_id="test_user",
+                user_group_profile="test_group",
+            ):
+                ...
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "Say this is a test"
+            assert interaction_watch.output == "\n\nThis is a test."
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_group"
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+@pytest.fixture(name="openai_chat_completion")
+def fixture_openai_chat_completion() -> ChatCompletion:
+    return ChatCompletion(
+        id="chatcmpl-86HFm0Y1fWK3XOKb0vQ7j09ZUdPws",
+        choices=[
+            Choice(
+                finish_reason="stop",
+                index=0,
+                message=ChatCompletionMessage(
+                    content="\n\nThis is a test.", role="assistant", function_call=None
+                ),
+            )
+        ],
+        created=1696506982,
+        model="gpt-3.5-turbo-0613",
+        object="chat.completion",
+        usage=CompletionUsage(completion_tokens=5, prompt_tokens=12, total_tokens=17),
+    )
+
+
+def test_openai_chat__old_format(openai_chat_completion: ChatCompletion) -> None:
+    with patch(
+        "openai.resources.chat.completions.Completions.create"
+    ) as mock_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_create.return_value = openai_chat_completion
+            nebuly_init(observer=mock_observer)
+
+            result = openai.chat.completions.create(  # type: ignore  # pylint: disable=no-member  # noqa: E501
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": "Hello!"},
+                    {
+                        "role": "user",
+                        "content": "Say this is a test",
+                    }
                 ],
-                stream=True,
-            ):
-                result += chunk["choices"][0]["delta"].get("content", "")
-
+                user_id="test_user",
+                user_group_profile="test_group",
+            )
             assert result is not None
             assert mock_observer.call_count == 1
             interaction_watch = mock_observer.call_args[0][0]
             assert isinstance(interaction_watch, InteractionWatch)
-            assert interaction_watch.input == "Hello!"
-            assert interaction_watch.history == [
-                ("system", "You are a helpful assistant."),
-            ]
-            assert interaction_watch.output == "Hello there"
+            assert interaction_watch.input == "Say this is a test"
+            assert interaction_watch.output == "\n\nThis is a test."
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_group"
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+def test_openai_chat__no_context_manager(
+    openai_chat_completion: ChatCompletion,
+) -> None:
+    with patch(
+        "openai.resources.chat.completions.Completions.create"
+    ) as mock_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_create.return_value = openai_chat_completion
+            nebuly_init(observer=mock_observer)
+
+            client = OpenAI(
+                api_key="ciao",
+            )
+            result = client.chat.completions.create(  # type: ignore
+                model="gpt-3.5-turbo",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": "Say this is a test",
+                    }
+                ],
+                user_id="test_user",
+                user_group_profile="test_group",
+            )
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "Say this is a test"
+            assert interaction_watch.output == "\n\nThis is a test."
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_group"
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+def test_openai_chat__context_manager(openai_chat_completion: ChatCompletion) -> None:
+    with patch(
+        "openai.resources.chat.completions.Completions.create"
+    ) as mock_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_create.return_value = openai_chat_completion
+            nebuly_init(observer=mock_observer)
+
+            client = OpenAI(
+                api_key="ciao",
+            )
+
+            with new_interaction(
+                user_id="test_user", user_group_profile="test_group"
+            ) as interaction:
+                interaction.set_input("Say this is a test")
+                result = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": "Say this is a test",
+                        }
+                    ],
+                )
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "Say this is a test"
+            assert interaction_watch.output == "\n\nThis is a test."
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_group"
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+@pytest.mark.asyncio
+async def test_openai_chat__async(openai_chat_completion: ChatCompletion) -> None:
+    with patch(
+        "openai.resources.chat.completions.AsyncCompletions.create", new=AsyncMock()
+    ) as mock_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_create.return_value = openai_chat_completion
+            nebuly_init(observer=mock_observer)
+
+            client = AsyncOpenAI(
+                api_key="ciao",
+            )
+            result = await client.chat.completions.create(  # type: ignore
+                model="gpt-3.5-turbo",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": "Say this is a test",
+                    }
+                ],
+                user_id="test_user",
+                user_group_profile="test_group",
+            )
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "Say this is a test"
+            assert interaction_watch.output == "\n\nThis is a test."
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_group"
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+@pytest.fixture(name="openai_chat_completion_stream")
+def fixture_openai_chat_completion_stream() -> list[ChatCompletionChunk]:
+    return [
+        ChatCompletionChunk(
+            id="chatcmpl-86HPTGAKCDFXJwEM68ekpoBumMh4H",
+            choices=[
+                chat_completion_chunk.Choice(
+                    delta=chat_completion_chunk.ChoiceDelta(
+                        content="", function_call=None, role="assistant"
+                    ),
+                    finish_reason="stop",
+                    index=0,
+                )
+            ],
+            created=1696507583,
+            model="gpt-3.5-turbo-0613",
+            object="chat.completion.chunk",
+        ),
+        ChatCompletionChunk(
+            id="chatcmpl-86HPTGAKCDFXJwEM68ekpoBumMh4H",
+            choices=[
+                chat_completion_chunk.Choice(
+                    delta=chat_completion_chunk.ChoiceDelta(
+                        content="This", function_call=None, role=None
+                    ),
+                    finish_reason="stop",
+                    index=0,
+                )
+            ],
+            created=1696507583,
+            model="gpt-3.5-turbo-0613",
+            object="chat.completion.chunk",
+        ),
+        ChatCompletionChunk(
+            id="chatcmpl-86HPTGAKCDFXJwEM68ekpoBumMh4H",
+            choices=[
+                chat_completion_chunk.Choice(
+                    delta=chat_completion_chunk.ChoiceDelta(
+                        content=" is", function_call=None, role=None
+                    ),
+                    finish_reason="stop",
+                    index=0,
+                )
+            ],
+            created=1696507583,
+            model="gpt-3.5-turbo-0613",
+            object="chat.completion.chunk",
+        ),
+        ChatCompletionChunk(
+            id="chatcmpl-86HPTGAKCDFXJwEM68ekpoBumMh4H",
+            choices=[
+                chat_completion_chunk.Choice(
+                    delta=chat_completion_chunk.ChoiceDelta(
+                        content=" a", function_call=None, role=None
+                    ),
+                    finish_reason="stop",
+                    index=0,
+                )
+            ],
+            created=1696507583,
+            model="gpt-3.5-turbo-0613",
+            object="chat.completion.chunk",
+        ),
+        ChatCompletionChunk(
+            id="chatcmpl-86HPTGAKCDFXJwEM68ekpoBumMh4H",
+            choices=[
+                chat_completion_chunk.Choice(
+                    delta=chat_completion_chunk.ChoiceDelta(
+                        content=" test", function_call=None, role=None
+                    ),
+                    finish_reason="stop",
+                    index=0,
+                )
+            ],
+            created=1696507583,
+            model="gpt-3.5-turbo-0613",
+            object="chat.completion.chunk",
+        ),
+        ChatCompletionChunk(
+            id="chatcmpl-86HPTGAKCDFXJwEM68ekpoBumMh4H",
+            choices=[
+                chat_completion_chunk.Choice(
+                    delta=chat_completion_chunk.ChoiceDelta(
+                        content=".", function_call=None, role=None
+                    ),
+                    finish_reason="stop",
+                    index=0,
+                )
+            ],
+            created=1696507583,
+            model="gpt-3.5-turbo-0613",
+            object="chat.completion.chunk",
+        ),
+        ChatCompletionChunk(
+            id="chatcmpl-86HPTGAKCDFXJwEM68ekpoBumMh4H",
+            choices=[
+                chat_completion_chunk.Choice(
+                    delta=chat_completion_chunk.ChoiceDelta(
+                        content=None, function_call=None, role=None
+                    ),
+                    finish_reason="stop",
+                    index=0,
+                )
+            ],
+            created=1696507583,
+            model="gpt-3.5-turbo-0613",
+            object="chat.completion.chunk",
+        ),
+    ]
+
+
+def test_openai_chat__stream(
+    openai_chat_completion_stream: list[ChatCompletionChunk],
+) -> None:
+    with patch(
+        "openai.resources.chat.completions.Completions.create"
+    ) as mock_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_create.return_value = (
+                el for el in openai_chat_completion_stream
+            )
+            nebuly_init(observer=mock_observer)
+
+            client = OpenAI(
+                api_key="ciao",
+            )
+            for _ in client.chat.completions.create(  # type: ignore  # pylint: disable=not-an-iterable  # noqa: E501
+                model="gpt-3.5-turbo",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": "Say this is a test",
+                    }
+                ],
+                stream=True,
+                user_id="test_user",
+                user_group_profile="test_group",
+            ):
+                ...
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+@pytest.fixture(name="openai_chat_completion_stream_async")
+async def fixture_openai_chat_completion_stream_async(
+    openai_chat_completion_stream: list[ChatCompletionChunk],
+) -> AsyncGenerator[ChatCompletionChunk, None]:
+    for el in openai_chat_completion_stream:
+        yield el
+
+
+@pytest.mark.asyncio
+async def test_openai_chat__stream_async(
+    openai_chat_completion_stream_async: AsyncGenerator[ChatCompletionChunk, None]
+) -> None:
+    with patch(
+        "openai.resources.chat.completions.AsyncCompletions.create", new=AsyncMock()
+    ) as mock_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_create.return_value = openai_chat_completion_stream_async
+            nebuly_init(observer=mock_observer)
+
+            client = AsyncOpenAI(
+                api_key="ciao",
+            )
+            async for _ in await client.chat.completions.create(  # type: ignore
+                model="gpt-3.5-turbo",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": "Say this is a test",
+                    }
+                ],
+                stream=True,
+                user_id="test_user",
+                user_group_profile="test_group",
+            ):
+                ...
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
             assert (
                 json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
                 is not None

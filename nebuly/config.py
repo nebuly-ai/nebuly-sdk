@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from nebuly.entities import Package
+from nebuly.entities import Package, SupportedVersion
 
 NEBULY_KWARGS = {
     "user_id",
@@ -12,7 +12,7 @@ NEBULY_KWARGS = {
 PACKAGES = (
     Package(
         "openai",
-        ("0.10.2",),
+        SupportedVersion("0.10.0", "0.30.0"),
         (
             "Completion.create",
             "Completion.acreate",
@@ -21,8 +21,18 @@ PACKAGES = (
         ),
     ),
     Package(
+        "openai",
+        SupportedVersion("1.0.0"),
+        (
+            "resources.chat.completions.Completions.create",
+            "resources.chat.completions.AsyncCompletions.create",
+            "resources.completions.Completions.create",
+            "resources.completions.AsyncCompletions.create",
+        ),
+    ),
+    Package(
         "langchain",
-        ("0.0.200",),
+        SupportedVersion("0.0.200"),
         (
             "chains.base.Chain.__call__",
             "chains.base.Chain.acall",
@@ -34,7 +44,7 @@ PACKAGES = (
     ),
     Package(
         "cohere",
-        ("4.0.0",),
+        SupportedVersion("4.0.0"),
         (
             "Client.generate",
             "AsyncClient.generate",
@@ -44,7 +54,7 @@ PACKAGES = (
     ),
     Package(
         "anthropic",
-        ("0.3.0",),
+        SupportedVersion("0.3.0"),
         (
             "resources.Completions.create",
             "resources.AsyncCompletions.create",
@@ -52,7 +62,7 @@ PACKAGES = (
     ),
     Package(
         "huggingface_hub",
-        ("0.12.0",),
+        SupportedVersion("0.12.0"),
         (
             "InferenceClient.conversational",
             "InferenceClient.text_generation",
@@ -62,7 +72,7 @@ PACKAGES = (
     ),
     Package(
         "google",
-        ("0.0.1",),
+        SupportedVersion("0.0.1"),
         (
             "generativeai.generate_text",
             "generativeai.chat",
@@ -72,7 +82,7 @@ PACKAGES = (
     ),
     Package(
         "vertexai",
-        ("0.0.1",),
+        SupportedVersion("0.0.1"),
         (
             "language_models.TextGenerationModel.predict",
             "language_models.TextGenerationModel.predict_async",
