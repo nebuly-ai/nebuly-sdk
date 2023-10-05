@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from openai.openai_object import OpenAIObject  # type: ignore  # mypy: ignore-errors
+from openai.openai_object import OpenAIObject  # mypy: ignore-errors  # type: ignore
 
 
 def extract_openai_input_and_history(

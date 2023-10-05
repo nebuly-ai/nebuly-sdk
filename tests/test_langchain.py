@@ -291,7 +291,12 @@ def test_langchain_chat_chain__no_context_manager(openai_chat: dict[str, Any]) -
                 ]
             )
             chain = LLMChain(llm=llm, prompt=chat_prompt)
-            result = chain.run(prompt=chat_prompt, name="Valerio")
+            result = chain.run(
+                prompt=chat_prompt,
+                name="Valerio",
+                user_id="test",
+                user_group_profile="tier 1",
+            )
 
             assert result is not None
             assert mock_observer.call_count == 1
@@ -369,7 +374,11 @@ def test_langchain__chain_with_function_tool(
             prompt = OpenAIFunctionsAgent.create_prompt(system_message=system_message)
             agent = OpenAIFunctionsAgent(llm=llm, tools=tools, prompt=prompt)  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
             agent_executor = AgentExecutor(agent=agent, tools=tools)  # type: ignore
-            agent_executor.run("how many letters in the word educa?")
+            agent_executor.run(
+                input="how many letters in the word educa?",
+                user_id="test",
+                user_group_profile="tier 1",
+            )
 
             assert mock_observer.call_count == 1
             interaction_watch = mock_observer.call_args[0][0]
@@ -436,8 +445,10 @@ def test_langchain_sequential_chain_single_input_var(
                 output_variables=["synopsis", "review"],
             )
 
-            overall_chain(
+            overall_chain(  # type: ignore
                 "Tragedy at sunset on the beach",
+                user_id="test",
+                user_group_profile="tier 1",
             )
 
             assert mock_observer.call_count == 1
@@ -485,8 +496,10 @@ def test_langchain_sequential_chain_multiple_input_vars(
                 output_variables=["synopsis", "review"],
             )
 
-            overall_chain(
+            overall_chain(  # type: ignore
                 {"title": "Tragedy at sunset on the beach", "era": "Victorian England"},
+                user_id="test",
+                user_group_profile="tier 1",
             )
 
             assert mock_observer.call_count == 1

@@ -1,17 +1,20 @@
 # pylint: disable=duplicate-code, import-error, no-name-in-module
+# mypy: ignore-errors
 from __future__ import annotations
 
 import copyreg
 from typing import Any, Callable, cast
 
 import openai
-from openai import AsyncOpenAI, OpenAI, _ModuleClient  # mypy: ignore-errors
-from openai.types.chat.chat_completion import (  # mypy: ignore-errors
+from openai import AsyncOpenAI, OpenAI, _ModuleClient  # type: ignore  # noqa: E501
+from openai.types.chat.chat_completion import (  # type: ignore  # noqa: E501
     ChatCompletion,
     Choice,
 )
-from openai.types.completion import Completion  # mypy: ignore-errors
-from openai.types.completion_choice import CompletionChoice  # mypy: ignore-errors
+from openai.types.completion import Completion  # type: ignore  # noqa: E501
+from openai.types.completion_choice import (  # type: ignore  # noqa: E501
+    CompletionChoice,
+)
 
 
 def extract_openai_input_and_history(
@@ -105,5 +108,5 @@ def handle_openai_unpickable_objects() -> None:
 
 def is_openai_generator(obj: Any) -> bool:
     return isinstance(
-        obj, (openai.Stream, openai.AsyncStream)
-    )  # mypy: ignore-errors  # pylint: disable=no-member  # noqa: E501
+        obj, (openai.Stream, openai.AsyncStream)  # pylint: disable=no-member
+    )

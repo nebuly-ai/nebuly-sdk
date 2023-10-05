@@ -1,4 +1,5 @@
 # pylint: disable=duplicate-code, import-error, no-name-in-module, wrong-import-position, wrong-import-order  # noqa: E501
+# mypy: ignore-errors
 from __future__ import annotations
 
 import json
@@ -14,19 +15,15 @@ if version("openai").startswith("0."):
     )
 
 import openai
-from openai import AsyncOpenAI, OpenAI  # mypy: ignore-errors
-from openai.types import (  # mypy: ignore-errors
-    Completion,
-    CompletionChoice,
-    CompletionUsage,
-)
-from openai.types.chat import (  # mypy: ignore-errors
+from openai import AsyncOpenAI, OpenAI
+from openai.types import Completion, CompletionChoice, CompletionUsage
+from openai.types.chat import (
     ChatCompletion,
     ChatCompletionChunk,
     ChatCompletionMessage,
     chat_completion_chunk,
 )
-from openai.types.chat.chat_completion import Choice  # mypy: ignore-errors
+from openai.types.chat.chat_completion import Choice
 
 from nebuly.contextmanager import new_interaction
 from nebuly.entities import InteractionWatch, SpanWatch
@@ -62,7 +59,7 @@ def test_openai_completion__old_format(openai_completion: Completion) -> None:
             mock_completion_create.return_value = openai_completion
             nebuly_init(observer=mock_observer)
 
-            result = openai.completions.create(  # type: ignore
+            result = openai.completions.create(  # type: ignore  # pylint: disable=no-member  # noqa: E501
                 model="gpt-3.5-turbo-instruct",
                 prompt="Say this is a test",
                 user_id="test_user",
@@ -388,7 +385,7 @@ def test_openai_chat__old_format(openai_chat_completion: ChatCompletion) -> None
             mock_completion_create.return_value = openai_chat_completion
             nebuly_init(observer=mock_observer)
 
-            result = openai.chat.completions.create(  # type: ignore
+            result = openai.chat.completions.create(  # type: ignore  # pylint: disable=no-member  # noqa: E501
                 model="gpt-3.5-turbo",
                 messages=[
                     {

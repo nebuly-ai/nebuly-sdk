@@ -232,6 +232,8 @@ async def test_openai_completion__async(openai_completion: dict[str, Any]) -> No
                 prompt="Say this is a test",
                 max_tokens=7,
                 temperature=0,
+                user_id="test_user",
+                user_group_profile="test_group",
             )
             assert result is not None
             assert mock_observer.call_count == 1
@@ -280,6 +282,8 @@ def test_openai_chat__no_context_manager(openai_chat: dict[str, Any]) -> None:
                     {"role": "system", "content": "You are a helpful assistant."},
                     {"role": "user", "content": "Hello!"},
                 ],
+                user_id="test_user",
+                user_group_profile="test_group",
             )
             assert result is not None
             assert mock_observer.call_count == 1
@@ -478,6 +482,8 @@ async def test_openai_chat__async(openai_chat: dict[str, Any]) -> None:
                     {"role": "system", "content": "You are a helpful assistant."},
                     {"role": "user", "content": "Hello!"},
                 ],
+                user_id="test_user",
+                user_group_profile="test_group",
             )
             assert result is not None
             assert mock_observer.call_count == 1
@@ -578,6 +584,8 @@ def test_openai_completion_gen(openai_completion_gen: list[dict[str, Any]]) -> N
                 max_tokens=7,
                 temperature=0,
                 stream=True,
+                user_id="test_user",
+                user_group_profile="test_group",
             ):
                 result += chunk["choices"][0]["text"]
 
@@ -618,6 +626,8 @@ async def test_openai_completion_gen_async(
                 max_tokens=7,
                 temperature=0,
                 stream=True,
+                user_id="test_user",
+                user_group_profile="test_group",
             ):
                 ...
             assert mock_observer.call_count == 1
@@ -696,6 +706,8 @@ def test_openai_chat_gen(openai_chat_gen: list[dict[str, Any]]) -> None:
                     {"role": "user", "content": "Hello!"},
                 ],
                 stream=True,
+                user_id="test_user",
+                user_group_profile="test_group",
             ):
                 result += chunk["choices"][0]["delta"].get("content", "")
 
@@ -741,6 +753,8 @@ async def test_openai_chat_gen_async(
                     {"role": "user", "content": "Hello!"},
                 ],
                 stream=True,
+                user_id="test_user",
+                user_group_profile="test_group",
             ):
                 result += chunk["choices"][0]["delta"].get("content", "")
 
