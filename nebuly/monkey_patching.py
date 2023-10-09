@@ -155,6 +155,12 @@ def _extract_output(  # pylint: disable=too-many-return-statements
         )
 
         return extract_hf_hub_output(function_name, output)
+    if module == "transformers":
+        from nebuly.providers.huggingface import (  # pylint: disable=import-outside-toplevel  # noqa: E501
+            extract_hf_pipeline_output,
+        )
+
+        return extract_hf_pipeline_output(function_name, output)
     if module == "google":
         from nebuly.providers.google import (  # pylint: disable=import-outside-toplevel
             extract_google_output,
@@ -305,6 +311,12 @@ def _extract_input_and_history(  # pylint: disable=too-many-return-statements
         return extract_hf_hub_input_and_history(
             original_args, original_kwargs, function_name
         )
+    if module == "transformers":
+        from nebuly.providers.huggingface import (  # pylint: disable=import-outside-toplevel  # noqa: E501
+            extract_hf_pipeline_input_and_history,
+        )
+
+        return extract_hf_pipeline_input_and_history(original_args, function_name)
     if module == "google":
         from nebuly.providers.google import (  # pylint: disable=import-outside-toplevel
             extract_google_input_and_history,

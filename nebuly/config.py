@@ -71,6 +71,11 @@ PACKAGES = (
         ),
     ),
     Package(
+        "transformers",
+        SupportedVersion("4.10.0"),
+        ("pipelines.base.Pipeline.__call__",),
+    ),
+    Package(
         "google",
         SupportedVersion("0.0.1"),
         (
