@@ -18,6 +18,15 @@ def extract_openai_input_and_history(
             (el["role"], el["content"])
             for el in original_kwargs.get("messages", [])[:-1]
             if len(original_kwargs.get("messages", [])) > 1
+            and el["role"] in ["user", "assistant"]
+        ]
+        if len(history) % 2 != 0:
+            return original_kwargs.get("messages", [])[-1]["content"], []
+        # Convert the history to [(user, assistant), ...] format
+        history = [
+            (history[i][1], history[i + 1][1])
+            for i in range(0, len(history), 2)
+            if i < len(history) - 1
         ]
         return original_kwargs.get("messages", [])[-1]["content"], history
 

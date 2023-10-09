@@ -430,9 +430,21 @@ def test_openai_chat__no_context_manager(
                 model="gpt-3.5-turbo",
                 messages=[
                     {
+                        "role": "system",
+                        "content": "Say this is a test",
+                    },
+                    {
                         "role": "user",
                         "content": "Say this is a test",
-                    }
+                    },
+                    {
+                        "role": "assistant",
+                        "content": "This is a test",
+                    },
+                    {
+                        "role": "user",
+                        "content": "Say again this is a test",
+                    },
                 ],
                 user_id="test_user",
                 user_group_profile="test_group",
@@ -441,8 +453,11 @@ def test_openai_chat__no_context_manager(
             assert mock_observer.call_count == 1
             interaction_watch = mock_observer.call_args[0][0]
             assert isinstance(interaction_watch, InteractionWatch)
-            assert interaction_watch.input == "Say this is a test"
+            assert interaction_watch.input == "Say again this is a test"
             assert interaction_watch.output == "\n\nThis is a test."
+            assert interaction_watch.history == [
+                ("Say this is a test", "This is a test"),
+            ]
             assert interaction_watch.end_user == "test_user"
             assert interaction_watch.end_user_group_profile == "test_group"
             assert len(interaction_watch.spans) == 1

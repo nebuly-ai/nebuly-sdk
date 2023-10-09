@@ -290,9 +290,7 @@ def test_openai_chat__no_context_manager(openai_chat: dict[str, Any]) -> None:
             interaction_watch = mock_observer.call_args[0][0]
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == "Hello!"
-            assert interaction_watch.history == [
-                ("system", "You are a helpful assistant."),
-            ]
+            assert interaction_watch.history == []
             assert interaction_watch.output == "Hi there! How can I assist you today?"
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
@@ -479,7 +477,8 @@ async def test_openai_chat__async(openai_chat: dict[str, Any]) -> None:
             result = await openai.ChatCompletion.acreate(  # type: ignore
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": "Hello!"},
+                    {"role": "assistant", "content": "Hello!"},
                     {"role": "user", "content": "Hello!"},
                 ],
                 user_id="test_user",
@@ -491,7 +490,7 @@ async def test_openai_chat__async(openai_chat: dict[str, Any]) -> None:
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == "Hello!"
             assert interaction_watch.history == [
-                ("system", "You are a helpful assistant."),
+                ("Hello!", "Hello!"),
             ]
             assert interaction_watch.output == "Hi there! How can I assist you today?"
             assert len(interaction_watch.spans) == 1
@@ -716,9 +715,7 @@ def test_openai_chat_gen(openai_chat_gen: list[dict[str, Any]]) -> None:
             interaction_watch = mock_observer.call_args[0][0]
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == "Hello!"
-            assert interaction_watch.history == [
-                ("system", "You are a helpful assistant."),
-            ]
+            assert interaction_watch.history == []
             assert interaction_watch.output == "Hello there"
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
@@ -763,9 +760,7 @@ async def test_openai_chat_gen_async(
             interaction_watch = mock_observer.call_args[0][0]
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == "Hello!"
-            assert interaction_watch.history == [
-                ("system", "You are a helpful assistant."),
-            ]
+            assert interaction_watch.history == []
             assert interaction_watch.output == "Hello there"
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
