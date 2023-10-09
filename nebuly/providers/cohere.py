@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copyreg
+import logging
 from typing import Any, Callable
 
 from cohere.client import Client  # type: ignore
@@ -11,6 +12,8 @@ from cohere.responses.generation import (  # type: ignore
 )
 
 from nebuly.providers.utils import get_argument
+
+logger = logging.getLogger(__name__)
 
 
 def is_cohere_generator(function: Callable[[Any], Any]) -> bool:
@@ -44,7 +47,18 @@ def extract_cohere_input_and_history(
     if function_name in ["Client.chat", "AsyncClient.chat"]:
         prompt = get_argument(original_args, original_kwargs, "message", 1)
         chat_history = get_argument(original_args, original_kwargs, "chat_history", 7)
-        history = [(el["user_name"], el["message"]) for el in chat_history]
+        chat_history = [
+            el for el in chat_history if el["user_name"] in ["User", "Chatbot"]
+        ]
+        if len(chat_history) % 2 != 0:
+            logger.warning("Chat history is not even, the history will be ignored")
+            return prompt, []
+        # Convert the history to [(user, assistant), ...] format
+        history = [
+            (chat_history[i]["message"], chat_history[i + 1]["message"])
+            for i in range(0, len(chat_history), 2)
+            if i < len(chat_history) - 1
+        ]
         return prompt, history
 
     raise ValueError(f"Unknown function name: {function_name}")

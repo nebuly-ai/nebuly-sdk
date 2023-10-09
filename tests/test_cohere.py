@@ -182,8 +182,7 @@ def test_cohere_chat__no_context_manager(cohere_chat: Chat) -> None:
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == "How are you?"
             assert interaction_watch.history == [
-                ("User", "Hi!"),
-                ("Chatbot", "How can I help you today?"),
+                ("Hi!", "How can I help you today?"),
             ]
             assert interaction_watch.output == "I'm doing well, thanks for asking!"
             assert len(interaction_watch.spans) == 1
@@ -267,8 +266,7 @@ async def test_cohere_chat__async(cohere_chat: Chat) -> None:
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == "How are you?"
             assert interaction_watch.history == [
-                ("User", "Hi!"),
-                ("Chatbot", "How can I help you today?"),
+                ("Hi!", "How can I help you today?"),
             ]
             assert interaction_watch.output == "I'm doing well, thanks for asking!"
             assert len(interaction_watch.spans) == 1
@@ -390,8 +388,7 @@ def test_cohere_chat_gen(
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == "How are you?"
             assert interaction_watch.history == [
-                ("User", "Hi!"),
-                ("Chatbot", "How can I help you today?"),
+                ("Hi!", "How can I help you today?"),
             ]
             assert interaction_watch.output == "Hi there"
             assert len(interaction_watch.spans) == 1
