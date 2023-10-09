@@ -587,6 +587,13 @@ def coroutine_wrapper(
                 args=args,
                 kwargs=kwargs,
             )
+        if module == "transformers":
+            from nebuly.providers.huggingface import (  # pylint: disable=import-outside-toplevel  # noqa: E501
+                is_pipeline_supported,
+            )
+
+            if not is_pipeline_supported(args[0]):
+                return f(*args, **kwargs)
 
         (
             original_args,
@@ -673,6 +680,13 @@ def function_wrapper(
                 args=args,
                 kwargs=kwargs,
             )
+        if module == "transformers":
+            from nebuly.providers.huggingface import (  # pylint: disable=import-outside-toplevel  # noqa: E501
+                is_pipeline_supported,
+            )
+
+            if not is_pipeline_supported(args[0]):
+                return f(*args, **kwargs)
 
         (
             original_args,

@@ -3,7 +3,16 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from transformers.pipelines import Conversation, ConversationalPipeline  # type: ignore
+from transformers.pipelines import (  # type: ignore
+    Conversation,
+    ConversationalPipeline,
+    Pipeline,
+    TextGenerationPipeline,
+)
+
+
+def is_pipeline_supported(pipeline: Pipeline) -> bool:
+    return isinstance(pipeline, (ConversationalPipeline, TextGenerationPipeline))
 
 
 def extract_hf_pipeline_input_and_history(
@@ -25,6 +34,11 @@ def extract_hf_pipeline_input_and_history(
             history.append(("user", user_input))
             history.append(("assistant", assistant_response))
         return prompt, history
+    if isinstance(original_args[0], TextGenerationPipeline):
+        prompt = original_args[1]
+        if isinstance(prompt, list):
+            prompt = prompt[0]
+        return prompt, []
 
     raise ValueError(f"Unknown function name: {function_name}")
 
@@ -34,7 +48,16 @@ def extract_hf_pipeline_output(
 ) -> str:
     if isinstance(output, Conversation):
         return cast(str, output.generated_responses[-1])
-    if isinstance(output, list) and isinstance(output[0], Conversation):
-        return cast(str, output[0].generated_responses[-1])
+    if isinstance(output, list):
+        if isinstance(output[0], Conversation):
+            return cast(str, output[0].generated_responses[-1])
+        if isinstance(output[0], dict) and "generated_text" in output[0]:
+            return cast(str, output[0]["generated_text"])
+        if (
+            isinstance(output[0], list)
+            and isinstance(output[0][0], dict)
+            and "generated_text" in output[0][0]
+        ):
+            return cast(str, output[0][0]["generated_text"])
 
     raise ValueError(f"Unknown function name: {function_name}")

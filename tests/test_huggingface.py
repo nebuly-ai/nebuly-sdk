@@ -108,3 +108,132 @@ def test_hf_conversational_pipelines__prompt_list(
                 json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
                 is not None
             )
+
+
+@pytest.fixture(name="hf_text_generation_pipelines")
+def fixture_hf_text_generation_pipelines() -> list[dict[str, str]]:
+    return [{"generated_text": "The Big Lebowski"}]
+
+
+def test_hf_text_generation_pipelines__single_prompt(
+    hf_text_generation_pipelines: list[dict[str, str]]
+) -> None:
+    with patch("transformers.pipelines.base.Pipeline.__call__") as mock_text_generation:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_text_generation.return_value = hf_text_generation_pipelines
+            nebuly_init(observer=mock_observer)
+
+            user_input = "As far as I am concerned, I will"
+            generator = pipeline("text-generation")
+            result = generator(
+                user_input,
+                user_id="test_user",
+                user_group_profile="test_group",
+            )
+
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == user_input
+            assert interaction_watch.history == []
+            assert interaction_watch.output == "The Big Lebowski"
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_group"
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+def test_hf_text_generation_pipelines__single_prompt__multiple_return_sequences(
+    hf_text_generation_pipelines: list[dict[str, str]]
+) -> None:
+    with patch("transformers.pipelines.base.Pipeline.__call__") as mock_text_generation:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_text_generation.return_value = [
+                hf_text_generation_pipelines[0],
+                hf_text_generation_pipelines[0],
+            ]
+            nebuly_init(observer=mock_observer)
+
+            user_input = "As far as I am concerned, I will"
+            generator = pipeline("text-generation")
+            result = generator(
+                user_input,
+                num_return_sequences=2,
+                user_id="test_user",
+                user_group_profile="test_group",
+            )
+
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == user_input
+            assert interaction_watch.history == []
+            assert interaction_watch.output == "The Big Lebowski"
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_group"
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+@pytest.fixture(name="hf_text_generation_pipelines_batch")
+def fixture_hf_text_generation_pipelines_batch() -> list[list[dict[str, str]]]:
+    return [
+        [{"generated_text": "The Big Lebowski"}],
+        [{"generated_text": "The Big Lebowski"}],
+    ]
+
+
+def test_hf_text_generation_pipelines__batch_prompt(
+    hf_text_generation_pipelines_batch: list[list[dict[str, str]]]
+) -> None:
+    with patch("transformers.pipelines.base.Pipeline.__call__") as mock_text_generation:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_text_generation.return_value = hf_text_generation_pipelines_batch
+            nebuly_init(observer=mock_observer)
+
+            user_input = "As far as I am concerned, I will"
+            generator = pipeline("text-generation")
+            result = generator(
+                [user_input, user_input],
+                user_id="test_user",
+                user_group_profile="test_group",
+            )
+
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == user_input
+            assert interaction_watch.history == []
+            assert interaction_watch.output == "The Big Lebowski"
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_group"
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+def test_nebuly_init_does_not_break_other_pipelines() -> None:
+    with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+        nebuly_init(observer=mock_observer)
+
+        generator = pipeline("text-classification")
+        result = generator("As far as I am concerned, I will")
+
+        assert result is not None
