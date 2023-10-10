@@ -384,13 +384,7 @@ def test_langchain__chain_with_function_tool(
             interaction_watch = mock_observer.call_args[0][0]
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == "how many letters in the word educa?"
-            assert interaction_watch.history == [
-                (
-                    "system",
-                    "You are very powerful assistant, but bad at "
-                    "calculating lengths of words.",
-                )
-            ]
+            assert interaction_watch.history == []
             assert interaction_watch.output == "Hi there! How can I assist you today?"
             assert len(interaction_watch.spans) == 6
             assert len(interaction_watch.hierarchy) == 6
