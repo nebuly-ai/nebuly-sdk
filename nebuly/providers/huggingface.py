@@ -1,6 +1,7 @@
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
+import logging
 from typing import Any, cast
 
 from transformers.pipelines import (  # type: ignore
@@ -10,9 +11,37 @@ from transformers.pipelines import (  # type: ignore
     TextGenerationPipeline,
 )
 
+logger = logging.getLogger(__name__)
+
 
 def is_pipeline_supported(pipeline: Pipeline) -> bool:
     return isinstance(pipeline, (ConversationalPipeline, TextGenerationPipeline))
+
+
+def _extract_hf_pipeline_history(
+    conversations: Conversation,
+) -> list[tuple[str, str]]:
+    history = conversations.messages[:-1]
+
+    # Remove messages that are not from the user or the assistant
+    history = [
+        message
+        for message in history
+        if len(history) > 1 and message["role"] in ["user", "assistant"]
+    ]
+
+    if len(history) % 2 != 0:
+        logger.warning("Odd number of chat history elements, ignoring last element")
+        history = history[:-1]
+
+    # Convert the history to [(user, assistant), ...] format
+    history = [
+        (history[i]["content"], history[i + 1]["content"])
+        for i in range(0, len(history), 2)
+        if i < len(history) - 1
+    ]
+
+    return history  # type: ignore
 
 
 def extract_hf_pipeline_input_and_history(
@@ -24,15 +53,7 @@ def extract_hf_pipeline_input_and_history(
         if isinstance(conversations, list):
             conversations = conversations[0]
         prompt = conversations.messages[-1]["content"]
-        generated_responses = conversations.generated_responses
-        past_user_inputs = conversations.past_user_inputs
-        history = []
-        for user_input, assistant_response in zip(
-            past_user_inputs if past_user_inputs is not None else [],
-            generated_responses if generated_responses is not None else [],
-        ):
-            history.append(("user", user_input))
-            history.append(("assistant", assistant_response))
+        history = _extract_hf_pipeline_history(conversations)
         return prompt, history
     if isinstance(original_args[0], TextGenerationPipeline):
         prompt = original_args[1]

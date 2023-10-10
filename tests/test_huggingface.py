@@ -22,7 +22,7 @@ def fixture_hf_conversational_pipelines() -> Conversation:
     return conversation
 
 
-def test_hf_conversational_pipelines__single_prompt(
+def test_hf_conversational_pipelines__single_prompt__with_history(
     hf_conversational_pipelines: Conversation,
 ) -> None:
     with patch("transformers.pipelines.base.Pipeline.__call__") as mock_conversational:
@@ -32,7 +32,18 @@ def test_hf_conversational_pipelines__single_prompt(
 
             converse = pipeline(task="conversational")
             conversation = Conversation(
-                "Going to the movies tonight - any suggestions?"
+                [
+                    {
+                        "content": "Going to the movies tonight - any suggestions?",
+                        "role": "user",
+                    },
+                    {"content": "The Big Lebowski", "role": "assistant"},
+                    {
+                        "content": "Going to the movies also tomorrow - any "
+                        "suggestions?",
+                        "role": "user",
+                    },
+                ]
             )
             result = converse(
                 conversation, user_id="test_user", user_group_profile="test_group"
@@ -44,9 +55,14 @@ def test_hf_conversational_pipelines__single_prompt(
             assert isinstance(interaction_watch, InteractionWatch)
             assert (
                 interaction_watch.input
-                == "Going to the movies tonight - any suggestions?"
+                == "Going to the movies also tomorrow - any suggestions?"
             )
-            assert interaction_watch.history == []
+            assert interaction_watch.history == [
+                (
+                    "Going to the movies tonight - any suggestions?",
+                    "The Big Lebowski",
+                )
+            ]
             assert interaction_watch.output == "The Big Lebowski"
             assert interaction_watch.end_user == "test_user"
             assert interaction_watch.end_user_group_profile == "test_group"
