@@ -7,15 +7,10 @@ from typing import Any, cast
 from transformers.pipelines import (  # type: ignore
     Conversation,
     ConversationalPipeline,
-    Pipeline,
     TextGenerationPipeline,
 )
 
 logger = logging.getLogger(__name__)
-
-
-def is_pipeline_supported(pipeline: Pipeline) -> bool:
-    return isinstance(pipeline, (ConversationalPipeline, TextGenerationPipeline))
 
 
 def _extract_hf_pipeline_history(

@@ -73,7 +73,10 @@ PACKAGES = (
     Package(
         "transformers",
         SupportedVersion("4.10.0"),
-        ("pipelines.base.Pipeline.__call__",),
+        (
+            "pipelines.conversational.ConversationalPipeline.__call__",
+            "pipelines.text_generation.TextGenerationPipeline.__call__",
+        ),
     ),
     Package(
         "google",

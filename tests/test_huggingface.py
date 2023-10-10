@@ -27,7 +27,9 @@ def fixture_hf_conversational_pipelines() -> Conversation:
 def test_hf_conversational_pipelines__single_prompt__with_history(
     hf_conversational_pipelines: Conversation,
 ) -> None:
-    with patch("transformers.pipelines.base.Pipeline.__call__") as mock_conversational:
+    with patch(
+        "transformers.pipelines.conversational.ConversationalPipeline.__call__"
+    ) as mock_conversational:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_conversational.return_value = hf_conversational_pipelines
             nebuly_init(observer=mock_observer)
@@ -91,7 +93,9 @@ def fixture_hf_conversational_pipelines_batch() -> list[Conversation]:
 def test_hf_conversational_pipelines__prompt_list(
     hf_conversational_pipelines_batch: list[Conversation],
 ) -> None:
-    with patch("transformers.pipelines.base.Pipeline.__call__") as mock_conversational:
+    with patch(
+        "transformers.pipelines.conversational.ConversationalPipeline.__call__"
+    ) as mock_conversational:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_conversational.return_value = hf_conversational_pipelines_batch
             nebuly_init(observer=mock_observer)
@@ -136,7 +140,9 @@ def fixture_hf_text_generation_pipelines() -> list[dict[str, str]]:
 def test_hf_text_generation_pipelines__single_prompt(
     hf_text_generation_pipelines: list[dict[str, str]]
 ) -> None:
-    with patch("transformers.pipelines.base.Pipeline.__call__") as mock_text_generation:
+    with patch(
+        "transformers.pipelines.text_generation.TextGenerationPipeline.__call__"
+    ) as mock_text_generation:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_text_generation.return_value = hf_text_generation_pipelines
             nebuly_init(observer=mock_observer)
@@ -170,7 +176,9 @@ def test_hf_text_generation_pipelines__single_prompt(
 def test_hf_text_generation_pipelines__single_prompt__multiple_return_sequences(
     hf_text_generation_pipelines: list[dict[str, str]]
 ) -> None:
-    with patch("transformers.pipelines.base.Pipeline.__call__") as mock_text_generation:
+    with patch(
+        "transformers.pipelines.text_generation.TextGenerationPipeline.__call__"
+    ) as mock_text_generation:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_text_generation.return_value = [
                 hf_text_generation_pipelines[0],
@@ -216,7 +224,9 @@ def fixture_hf_text_generation_pipelines_batch() -> list[list[dict[str, str]]]:
 def test_hf_text_generation_pipelines__batch_prompt(
     hf_text_generation_pipelines_batch: list[list[dict[str, str]]]
 ) -> None:
-    with patch("transformers.pipelines.base.Pipeline.__call__") as mock_text_generation:
+    with patch(
+        "transformers.pipelines.text_generation.TextGenerationPipeline.__call__"
+    ) as mock_text_generation:
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_text_generation.return_value = hf_text_generation_pipelines_batch
             nebuly_init(observer=mock_observer)
