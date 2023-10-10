@@ -12,6 +12,26 @@ from huggingface_hub.inference._types import ConversationalOutput  # type: ignor
 from nebuly.providers.utils import get_argument
 
 
+def _extract_hf_hub_history(
+    original_args: tuple[Any, ...],
+    original_kwargs: dict[str, Any],
+) -> list[tuple[str, str]]:
+    generated_responses = get_argument(
+        original_args, original_kwargs, "generated_responses", 2
+    )
+    past_user_inputs = get_argument(
+        original_args, original_kwargs, "past_user_inputs", 3
+    )
+    history = []
+
+    for user_input, assistant_response in zip(
+        past_user_inputs if past_user_inputs is not None else [],
+        generated_responses if generated_responses is not None else [],
+    ):
+        history.append((user_input, assistant_response))
+    return history
+
+
 def extract_hf_hub_input_and_history(
     original_args: tuple[Any, ...],
     original_kwargs: dict[str, Any],
@@ -22,19 +42,7 @@ def extract_hf_hub_input_and_history(
         "AsyncInferenceClient.conversational",
     ]:
         prompt = get_argument(original_args, original_kwargs, "text", 1)
-        generated_responses = get_argument(
-            original_args, original_kwargs, "generated_responses", 2
-        )
-        past_user_inputs = get_argument(
-            original_args, original_kwargs, "past_user_inputs", 3
-        )
-        history = []
-        for user_input, assistant_response in zip(
-            past_user_inputs if past_user_inputs is not None else [],
-            generated_responses if generated_responses is not None else [],
-        ):
-            history.append(("user", user_input))
-            history.append(("assistant", assistant_response))
+        history = _extract_hf_hub_history(original_args, original_kwargs)
         return prompt, history
     if function_name in [
         "InferenceClient.text_generation",

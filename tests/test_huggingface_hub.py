@@ -384,9 +384,8 @@ def test_hf_hub_conversational__no_context_manager__with_history(
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == "Wow, that's scary!"
             assert interaction_watch.history == [
-                ("user", "Hello, who are you?"),
                 (
-                    "assistant",
+                    "Hello, who are you?",
                     " My name is samantha, and I am a student at "
                     "the University of Pittsburgh.",
                 ),
