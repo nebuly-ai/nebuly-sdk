@@ -35,9 +35,15 @@ class CustomJSONEncoder(json.JSONEncoder):
             type(None),
         )
         has_correct_type = isinstance(value, correct_types)
-        is_valid_class = not isinstance(value, Mock) and any(
-            (hasattr(value, key) for key in CustomJSONEncoder.ACCEPTED_KEYS)
-        )
+        is_valid_class = False
+        try:
+            if hasattr(value, "__dict__"):
+                json.dumps(value.__dict__)
+                is_valid_class = True
+        except TypeError:
+            is_valid_class = not isinstance(value, Mock) and any(
+                (hasattr(value, key) for key in CustomJSONEncoder.ACCEPTED_KEYS)
+            )
         return has_correct_type or is_valid_class
 
     def default(self, o: Any) -> Any:
