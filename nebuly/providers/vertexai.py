@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import copyreg
+import logging
 from typing import Any, Iterator
 
 from vertexai.language_models import (  # type: ignore
+    ChatMessage,
     ChatModel,
     ChatSession,
     TextGenerationModel,
@@ -11,6 +13,8 @@ from vertexai.language_models import (  # type: ignore
 )
 
 from nebuly.providers.utils import get_argument
+
+logger = logging.getLogger(__name__)
 
 
 def handle_vertexai_unpickable_objects() -> None:
@@ -42,6 +46,34 @@ def handle_vertexai_unpickable_objects() -> None:
     copyreg.pickle(ChatSession, _pickle_chat_session)
 
 
+def _extract_vertexai_history(
+    original_args: tuple[Any, ...],
+) -> list[tuple[str, str]]:
+    message_history: list[ChatMessage] = getattr(
+        original_args[0], "message_history", []
+    )
+
+    # Remove messages that are not from the user or the assistant
+    message_history = [
+        message
+        for message in message_history
+        if len(message_history) > 1 and message.author in ["user", "bot"]
+    ]
+
+    if len(message_history) % 2 != 0:
+        logger.warning("Odd number of chat history elements, ignoring last element")
+        message_history = message_history[:-1]
+
+    # Convert the history to [(user, assistant), ...] format
+    history: list[tuple[str, str]] = [
+        (message_history[i].content, message_history[i + 1].content)
+        for i in range(0, len(message_history), 2)
+        if i < len(message_history) - 1
+    ]
+
+    return history
+
+
 def extract_vertexai_input_and_history(
     original_args: tuple[Any, ...],
     original_kwargs: dict[str, Any],
@@ -61,10 +93,7 @@ def extract_vertexai_input_and_history(
             arg_name="prompt" if "TextGenerationModel" in function_name else "message",
             arg_idx=1,
         )
-        history = [
-            ("user" if el.author == "user" else "assistant", el.content)
-            for el in getattr(original_args[0], "message_history", [])
-        ]
+        history = _extract_vertexai_history(original_args)
         return prompt, history
 
     raise ValueError(f"Unknown function name: {function_name}")
