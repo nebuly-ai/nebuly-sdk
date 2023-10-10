@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copyreg
+import logging
 from typing import Any, Callable, cast
 
 import openai
@@ -15,6 +16,33 @@ from openai.types.completion import Completion  # type: ignore  # noqa: E501
 from openai.types.completion_choice import (  # type: ignore  # noqa: E501
     CompletionChoice,
 )
+
+logger = logging.getLogger(__name__)
+
+
+def _extract_openai_history(
+    original_kwargs: dict[str, Any],
+) -> list[tuple[str, str]]:
+    history = original_kwargs.get("messages", [])[:-1]
+
+    # Remove messages that are not from the user or the assistant
+    history = [
+        message
+        for message in history
+        if len(history) > 1 and message["role"] in ["user", "assistant"]
+    ]
+
+    if len(history) % 2 != 0:
+        logger.warning("Odd number of chat history elements, ignoring last element")
+        history = history[:-1]
+
+    # Convert the history to [(user, assistant), ...] format
+    history = [
+        (history[i]["content"], history[i + 1]["content"])
+        for i in range(0, len(history), 2)
+        if i < len(history) - 1
+    ]
+    return history
 
 
 def extract_openai_input_and_history(
@@ -30,21 +58,9 @@ def extract_openai_input_and_history(
         "resources.chat.completions.Completions.create",
         "resources.chat.completions.AsyncCompletions.create",
     ]:
-        history = [
-            (el["role"], el["content"])
-            for el in original_kwargs.get("messages", [])[:-1]
-            if len(original_kwargs.get("messages", [])) > 1
-            and el["role"] in ["user", "assistant"]
-        ]
-        if len(history) % 2 != 0:
-            return original_kwargs.get("messages", [])[-1]["content"], []
-        # Convert the history to [(user, assistant), ...] format
-        history = [
-            (history[i][1], history[i + 1][1])
-            for i in range(0, len(history), 2)
-            if i < len(history) - 1
-        ]
-        return original_kwargs.get("messages", [])[-1]["content"], history
+        prompt = original_kwargs.get("messages", [])[-1]["content"]
+        history = _extract_openai_history(original_kwargs)
+        return prompt, history
 
     raise ValueError(f"Unknown function name: {function_name}")
 

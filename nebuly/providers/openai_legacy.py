@@ -2,9 +2,37 @@
 # mypy: ignore-errors
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from openai.openai_object import OpenAIObject  # type: ignore
+
+logger = logging.getLogger(__name__)
+
+
+def _extract_openai_history(
+    original_kwargs: dict[str, Any],
+) -> list[tuple[str, str]]:
+    history = original_kwargs.get("messages", [])[:-1]
+
+    # Remove messages that are not from the user or the assistant
+    history = [
+        message
+        for message in history
+        if len(history) > 1 and message["role"] in ["user", "assistant"]
+    ]
+
+    if len(history) % 2 != 0:
+        logger.warning("Odd number of chat history elements, ignoring last element")
+        history = history[:-1]
+
+    # Convert the history to [(user, assistant), ...] format
+    history = [
+        (history[i]["content"], history[i + 1]["content"])
+        for i in range(0, len(history), 2)
+        if i < len(history) - 1
+    ]
+    return history
 
 
 def extract_openai_input_and_history(
@@ -14,21 +42,9 @@ def extract_openai_input_and_history(
     if function_name in ["Completion.create", "Completion.acreate"]:
         return original_kwargs.get("prompt", ""), []
     if function_name in ["ChatCompletion.create", "ChatCompletion.acreate"]:
-        history = [
-            (el["role"], el["content"])
-            for el in original_kwargs.get("messages", [])[:-1]
-            if len(original_kwargs.get("messages", [])) > 1
-            and el["role"] in ["user", "assistant"]
-        ]
-        if len(history) % 2 != 0:
-            return original_kwargs.get("messages", [])[-1]["content"], []
-        # Convert the history to [(user, assistant), ...] format
-        history = [
-            (history[i][1], history[i + 1][1])
-            for i in range(0, len(history), 2)
-            if i < len(history) - 1
-        ]
-        return original_kwargs.get("messages", [])[-1]["content"], history
+        prompt = original_kwargs.get("messages", [])[-1]["content"]
+        history = _extract_openai_history(original_kwargs)
+        return prompt, history
 
     raise ValueError(f"Unknown function name: {function_name}")
 
