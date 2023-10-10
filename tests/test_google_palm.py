@@ -298,8 +298,7 @@ def test_google_palm_chat__with_history__no_context_manager(
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == "What can you do?"
             assert interaction_watch.history == [
-                ("user", "Hello."),
-                ("assistant", "Hello! How can I help you today?"),
+                ("Hello.", "Hello! How can I help you today?"),
             ]
             assert (
                 interaction_watch.output
@@ -384,8 +383,7 @@ def test_google_palm_chat__reply__no_context_manager(
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == "What can you do?"
             assert interaction_watch.history == [
-                ("user", "Hello."),
-                ("assistant", "Hello! How can I help you today?"),
+                ("Hello.", "Hello! How can I help you today?"),
             ]
             assert (
                 interaction_watch.output

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import copyreg
+import logging
 from typing import Any
 
 from google.generativeai.discuss import ChatResponse  # type: ignore
@@ -9,6 +10,8 @@ from google.generativeai.text import Completion  # type: ignore
 from google.generativeai.types import discuss_types, text_types  # type: ignore
 
 from nebuly.providers.utils import get_argument
+
+logger = logging.getLogger(__name__)
 
 
 class EditedCompletion(Completion):  # type: ignore
@@ -40,6 +43,31 @@ def handle_google_unpickable_objects() -> None:
     copyreg.pickle(ChatResponse, _pickle_google_chat)
 
 
+def _extract_google_history(
+    original_args: tuple[Any, ...],
+    original_kwargs: dict[str, Any],
+    function_name: str,
+) -> list[tuple[str, str]]:
+    if function_name == "generativeai.discuss.ChatResponse.reply":
+        history = getattr(original_args[0], "messages", [])
+        history = [message["content"] for message in history]
+    else:
+        history = original_kwargs.get("messages", [])[:-1]
+
+    if len(history) % 2 != 0:
+        logger.warning("Odd number of chat history elements, ignoring last element")
+        history = history[:-1]
+
+    # Convert the history to [(user, assistant), ...] format
+    history = [
+        (history[i], history[i + 1])
+        for i in range(0, len(history), 2)
+        if i < len(history) - 1
+    ]
+
+    return history
+
+
 def extract_google_input_and_history(
     original_args: tuple[Any, ...],
     original_kwargs: dict[str, Any],
@@ -48,18 +76,12 @@ def extract_google_input_and_history(
     if function_name == "generativeai.generate_text":
         return original_kwargs.get("prompt", ""), []
     if function_name in ["generativeai.chat", "generativeai.chat_async"]:
-        history = [
-            ("user" if i % 2 == 0 else "assistant", el)
-            for i, el in enumerate(original_kwargs.get("messages", [])[:-1])
-            if len(original_kwargs.get("messages", [])) > 1
-        ]
-        return original_kwargs.get("messages", [])[-1], history
+        prompt = original_kwargs.get("messages", [])[-1]
+        history = _extract_google_history(original_args, original_kwargs, function_name)
+        return prompt, history
     if function_name == "generativeai.discuss.ChatResponse.reply":
         prompt = get_argument(original_args, original_kwargs, "message", 1)
-        history = [
-            ("user" if el["author"] == "0" else "assistant", el["content"])
-            for el in getattr(original_args[0], "messages", [])
-        ]
+        history = _extract_google_history(original_args, original_kwargs, function_name)
         return prompt, history
 
     raise ValueError(f"Unknown function name: {function_name}")
