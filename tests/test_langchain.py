@@ -304,8 +304,7 @@ def test_langchain_chat_chain__no_context_manager(openai_chat: dict[str, Any]) -
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == "I need help with my computer."
             assert interaction_watch.history == [
-                ("human", "Hello! I am Valerio"),
-                ("ai", "Hi there! How can I assist you today?"),
+                ("Hello! I am Valerio", "Hi there! How can I assist you today?"),
             ]
             assert interaction_watch.output == "Hi there! How can I assist you today?"
             assert len(interaction_watch.spans) == 3

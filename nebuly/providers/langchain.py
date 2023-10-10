@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from inspect import isasyncgenfunction
 from typing import Any, Callable, cast
 from uuid import UUID
@@ -8,11 +9,7 @@ from uuid import UUID
 from langchain.callbacks.manager import CallbackManager
 from langchain.chains.base import Chain
 from langchain.prompts import ChatPromptTemplate, PromptTemplate
-from langchain.prompts.chat import (
-    AIMessagePromptTemplate,
-    HumanMessagePromptTemplate,
-    SystemMessagePromptTemplate,
-)
+from langchain.prompts.chat import AIMessagePromptTemplate, HumanMessagePromptTemplate
 
 from nebuly.contextmanager import (
     NotInInteractionContext,
@@ -21,6 +18,8 @@ from nebuly.contextmanager import (
 )
 from nebuly.entities import Observer
 from nebuly.tracking_handlers import LangChainTrackingHandler
+
+logger = logging.getLogger(__name__)
 
 
 def _get_tracking_info_for_provider_call(**kwargs: Any) -> dict[str, Any]:
@@ -55,44 +54,43 @@ def _get_tracking_info_for_provider_call(**kwargs: Any) -> dict[str, Any]:
 
 def _process_prompt_template(
     inputs: dict[str, Any] | Any, prompt: PromptTemplate
-) -> tuple[str, None]:
+) -> str:
     if isinstance(inputs, dict):
-        return (
-            prompt.format(**{key: inputs.get(key) for key in prompt.input_variables}),
-            None,
-        )
-    return (
-        prompt.format(**{prompt.input_variables[0]: inputs}),
-        None,
-    )
+        return prompt.format(**{key: inputs.get(key) for key in prompt.input_variables})
+    return prompt.format(**{prompt.input_variables[0]: inputs})
 
 
 def _process_chat_prompt_template(
     inputs: dict[str, Any] | Any, prompt: ChatPromptTemplate
-) -> tuple[str | None, list[tuple[str, Any]] | None]:
+) -> tuple[str, list[tuple[str, Any]]]:
     messages = []
     for message in prompt.messages:
         if isinstance(inputs, dict):
             input_vars = {key: inputs.get(key) for key in message.input_variables}  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
         else:
             input_vars = {message.input_variables[0]: inputs}  # type: ignore
-        if isinstance(message, SystemMessagePromptTemplate):
-            messages.append(("system", message.format(**input_vars).content))
-        elif isinstance(message, HumanMessagePromptTemplate):
-            messages.append(("human", message.format(**input_vars).content))
-        elif isinstance(message, AIMessagePromptTemplate):
-            messages.append(("ai", message.format(**input_vars).content))
-    if len(messages) > 0:
-        if len(messages) == 1:
-            return messages[0][1], None
-        return messages[-1][1], messages[:-1]
+        if isinstance(message, (HumanMessagePromptTemplate, AIMessagePromptTemplate)):
+            messages.append((message.format(**input_vars).content))
+    last_prompt = messages[-1]
+    message_history = messages[:-1]
 
-    raise ValueError("ChatPromptTemplate must have at least one message")
+    if len(message_history) % 2 != 0:
+        logger.warning("Odd number of chat history elements, ignoring last element")
+        message_history = message_history[:-1]
+
+    # Convert the history to [(user, assistant), ...] format
+    history = [
+        (message_history[i], message_history[i + 1])
+        for i in range(0, len(message_history), 2)
+        if i < len(message_history) - 1
+    ]
+
+    return last_prompt, history
 
 
 def _get_input_and_history(
     chain: Chain, inputs: dict[str, Any] | Any
-) -> tuple[str | None, list[tuple[str, Any]] | None]:
+) -> tuple[str, list[tuple[str, Any]] | None]:
     chains = getattr(chain, "chains", None)
     if chains is not None:
         # If the chain is a SequentialChain, we need to get the
@@ -108,7 +106,7 @@ def _get_input_and_history(
             return inputs["input"], None
 
     if isinstance(prompt, PromptTemplate):
-        return _process_prompt_template(inputs, prompt)
+        return _process_prompt_template(inputs, prompt), None
 
     if isinstance(prompt, ChatPromptTemplate):
         return _process_chat_prompt_template(inputs, prompt)
@@ -157,7 +155,7 @@ def wrap_langchain(
                 )
                 interaction._set_observer(observer)  # pylint: disable=protected-access
                 chain_input, history = _get_input_and_history(args[0], inputs)
-                interaction.set_input(chain_input)  # type: ignore
+                interaction.set_input(chain_input)
                 interaction.set_history(history)  # type: ignore
                 original_res = f(*args, **kwargs)
                 interaction.set_output(_get_output(args[0], original_res))
@@ -198,7 +196,7 @@ async def wrap_langchain_async(
                     )
                 interaction._set_observer(observer)  # pylint: disable=protected-access
                 chain_input, history = _get_input_and_history(args[0], inputs)
-                interaction.set_input(chain_input)  # type: ignore
+                interaction.set_input(chain_input)
                 interaction.set_history(history)  # type: ignore
                 if isasyncgenfunction(f):
                     original_res = f(*args, **kwargs)
