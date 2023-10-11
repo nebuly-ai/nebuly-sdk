@@ -22,6 +22,7 @@ from nebuly.contextmanager import (
     new_interaction,
 )
 from nebuly.entities import HistoryEntry, ModelInput, Observer, Package, SpanWatch
+from nebuly.providers.base import ProviderDataExtractor
 
 logger = logging.getLogger(__name__)
 
@@ -118,186 +119,78 @@ def _split_nebuly_kwargs(
     return nebuly_kwargs, function_kwargs
 
 
-def _extract_output(  # pylint: disable=too-many-return-statements
-    output: Any,
+def _get_provider_data_extractor(
     module: str,
-    function_name: str,
-) -> str | list[str]:
-    if module == "openai":
-        if (
-            parse_version(version(module)) < parse_version("1.0.0")
-            and parse_version(version(module)).base_version != "1.0.0"
-        ):
-            from nebuly.providers.openai_legacy import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-                extract_openai_output,
-            )
-
-            return extract_openai_output(function_name, output)
-        from nebuly.providers.openai import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-            extract_openai_output,
-        )
-
-        return extract_openai_output(function_name, output)
-    if module == "cohere":
-        from nebuly.providers.cohere import (  # pylint: disable=import-outside-toplevel
-            extract_cohere_output,
-        )
-
-        return extract_cohere_output(function_name, output)
-    if module == "anthropic":
-        from nebuly.providers.anthropic import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-            extract_anthropic_output,
-        )
-
-        return extract_anthropic_output(function_name, output)
-    if module == "huggingface_hub":
-        from nebuly.providers.huggingface_hub import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-            extract_hf_hub_output,
-        )
-
-        return extract_hf_hub_output(function_name, output)
-    if module == "transformers":
-        from nebuly.providers.huggingface import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-            extract_hf_pipeline_output,
-        )
-
-        return extract_hf_pipeline_output(function_name, output)
-    if module == "google":
-        from nebuly.providers.google import (  # pylint: disable=import-outside-toplevel
-            extract_google_output,
-        )
-
-        return extract_google_output(function_name, output)
-    if module == "vertexai":
-        from nebuly.providers.vertexai import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-            extract_vertexai_output,
-        )
-
-        return extract_vertexai_output(function_name, output)
-
-    logger.warning("Module %s not supported", module)
-    return str(output)
-
-
-def _extract_output_generator(  # pylint: disable=too-many-return-statements
-    outputs: Any, module: str, function_name: str
-) -> str:
-    if module == "openai":
-        if (
-            parse_version(version(module)) < parse_version("1.0.0")
-            and parse_version(version(module)).base_version != "1.0.0"
-        ):
-            from nebuly.providers.openai_legacy import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-                extract_openai_output_generator,
-            )
-
-            return extract_openai_output_generator(function_name, outputs)
-        from nebuly.providers.openai import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-            extract_openai_output_generator,
-        )
-
-        return extract_openai_output_generator(function_name, outputs)
-    if module == "cohere":
-        from nebuly.providers.cohere import (  # pylint: disable=import-outside-toplevel
-            extract_cohere_output_generator,
-        )
-
-        return extract_cohere_output_generator(function_name, outputs)
-    if module == "anthropic":
-        from nebuly.providers.anthropic import (  # pylint: disable=import-outside-toplevel,line-too-long  # noqa: E501
-            extract_anthropic_output_generator,
-        )
-
-        return extract_anthropic_output_generator(function_name, outputs)
-    if module == "huggingface_hub":
-        from nebuly.providers.huggingface_hub import (  # pylint: disable=import-outside-toplevel,line-too-long  # noqa: E501
-            extract_hf_hub_output_generator,
-        )
-
-        return extract_hf_hub_output_generator(function_name, outputs)
-    if module == "vertexai":
-        from nebuly.providers.vertexai import (  # pylint: disable=import-outside-toplevel,line-too-long  # noqa: E501
-            extract_vertexai_output_generator,
-        )
-
-        return extract_vertexai_output_generator(function_name, outputs)
-
-    logger.warning("Module %s not supported", module)
-    return str(outputs)
-
-
-def _extract_input_and_history(  # pylint: disable=too-many-return-statements
     original_args: tuple[Any, ...],
     original_kwargs: dict[str, Any],
-    module: str,
     function_name: str,
-) -> ModelInput | list[ModelInput]:
-    """
-    Extract the input and history from the original args and kwargs.
-    Returns a list of ModelInput whenever the model is called with a batch of inputs.
-    """
+) -> ProviderDataExtractor:
+    constructor: Callable[[Any], Any] | None = None
     if module == "openai":
         if (
             parse_version(version(module)) < parse_version("1.0.0")
             and parse_version(version(module)).base_version != "1.0.0"
         ):
             from nebuly.providers.openai_legacy import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-                extract_openai_input_and_history,
+                OpenAILegacyDataExtractor,
             )
 
-            return extract_openai_input_and_history(original_kwargs, function_name)
-        from nebuly.providers.openai import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-            extract_openai_input_and_history,
-        )
+            constructor = OpenAILegacyDataExtractor  # type: ignore
+        else:
+            from nebuly.providers.openai import (  # pylint: disable=import-outside-toplevel  # noqa: E501
+                OpenAIDataExtractor,
+            )
 
-        return extract_openai_input_and_history(original_kwargs, function_name)
+            constructor = OpenAIDataExtractor  # type: ignore
     if module == "cohere":
         from nebuly.providers.cohere import (  # pylint: disable=import-outside-toplevel
-            extract_cohere_input_and_history,
+            CohereDataExtractor,
         )
 
-        return extract_cohere_input_and_history(
-            original_args, original_kwargs, function_name
-        )
+        constructor = CohereDataExtractor  # type: ignore
     if module == "anthropic":
         from nebuly.providers.anthropic import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-            extract_anthropic_input_and_history,
+            AnthropicDataExtractor,
         )
 
-        return extract_anthropic_input_and_history(original_kwargs, function_name)
-    if module == "huggingface_hub":
-        from nebuly.providers.huggingface_hub import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-            extract_hf_hub_input_and_history,
+        constructor = AnthropicDataExtractor  # type: ignore
+
+    if module == "google":
+        from nebuly.providers.google import (  # pylint: disable=import-outside-toplevel  # noqa: E501
+            GoogleDataExtractor,
         )
 
-        return extract_hf_hub_input_and_history(
-            original_args, original_kwargs, function_name
-        )
+        constructor = GoogleDataExtractor  # type: ignore
+
     if module == "transformers":
         from nebuly.providers.huggingface import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-            extract_hf_pipeline_input_and_history,
+            HuggingFaceDataExtractor,
         )
 
-        return extract_hf_pipeline_input_and_history(original_args, function_name)
-    if module == "google":
-        from nebuly.providers.google import (  # pylint: disable=import-outside-toplevel
-            extract_google_input_and_history,
+        constructor = HuggingFaceDataExtractor  # type: ignore
+
+    if module == "huggingface_hub":
+        from nebuly.providers.huggingface_hub import (  # pylint: disable=import-outside-toplevel  # noqa: E501
+            HuggingFaceHubDataExtractor,
         )
 
-        return extract_google_input_and_history(
-            original_args, original_kwargs, function_name
-        )
+        constructor = HuggingFaceHubDataExtractor  # type: ignore
+
     if module == "vertexai":
         from nebuly.providers.vertexai import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-            extract_vertexai_input_and_history,
+            VertexAIDataExtractor,
         )
 
-        return extract_vertexai_input_and_history(
-            original_args, original_kwargs, function_name
+        constructor = VertexAIDataExtractor  # type: ignore
+
+    if constructor is not None:
+        return constructor(  # type: ignore
+            original_args=original_args,
+            original_kwargs=original_kwargs,
+            function_name=function_name,
         )
 
-    logger.warning("Module %s not supported", module)
-    return ModelInput(prompt="")
+    raise ValueError(f"Unknown module: {module}")
 
 
 def _add_span_to_interaction(  # pylint: disable=too-many-arguments
@@ -338,14 +231,16 @@ def _add_interaction_span(  # pylint: disable=too-many-arguments
     nebuly_kwargs: dict[str, Any],
     stream: bool = False,
 ) -> None:
-    model_input_res = _extract_input_and_history(
-        original_args, original_kwargs, module, function_name
-    )
-    model_output_res = (
-        _extract_output(output, module, function_name)
-        if not stream
-        else _extract_output_generator(output, module, function_name)
-    )
+    try:
+        provider_data_extractor = _get_provider_data_extractor(
+            module, original_args, original_kwargs, function_name
+        )
+        model_input_res = provider_data_extractor.extract_input_and_history()
+        model_output_res = provider_data_extractor.extract_output(stream, output)
+    except ValueError:
+        logger.warning("Unknown module: %s", function_name)
+        model_input_res = ModelInput(prompt="")
+        model_output_res = ""
 
     try:
         interaction = get_nearest_open_interaction()
@@ -357,13 +252,12 @@ def _add_interaction_span(  # pylint: disable=too-many-arguments
             model_input_res = model_input_res[0]
             model_output_res = model_output_res[0]
 
-        model_output_res = cast(str, model_output_res)
         _add_span_to_interaction(
             observer=observer,
             interaction=interaction,
             user_input=model_input_res.prompt,
             history=model_input_res.history,
-            output=model_output_res,
+            output=cast(str, model_output_res),
             watched=watched,
             nebuly_kwargs=nebuly_kwargs,
         )
@@ -381,14 +275,13 @@ def _add_interaction_span(  # pylint: disable=too-many-arguments
                         nebuly_kwargs=nebuly_kwargs,
                     )
         else:
-            model_output_res = cast(str, model_output_res)
             with new_interaction() as interaction:
                 _add_span_to_interaction(
                     observer=observer,
                     interaction=interaction,
                     user_input=model_input_res.prompt,
                     history=model_input_res.history,
-                    output=model_output_res,
+                    output=cast(str, model_output_res),
                     watched=watched,
                     nebuly_kwargs=nebuly_kwargs,
                 )

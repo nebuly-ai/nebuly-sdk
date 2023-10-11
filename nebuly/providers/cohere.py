@@ -1,20 +1,33 @@
+# pylint: disable=duplicate-code
 from __future__ import annotations
 
 import copyreg
 import logging
-from typing import Any, Callable
+from dataclasses import dataclass
+from typing import Any, Callable, List, TypeAlias, cast
 
 from cohere.client import Client  # type: ignore
-from cohere.responses.chat import Chat, StreamingChat  # type: ignore
+from cohere.responses.chat import (  # type: ignore
+    Chat,
+    StreamEnd,
+    StreamingChat,
+    StreamStart,
+    StreamTextGeneration,
+)
 from cohere.responses.generation import (  # type: ignore
     Generations,
     StreamingGenerations,
+    StreamingText,
 )
 
 from nebuly.entities import HistoryEntry, ModelInput
+from nebuly.providers.base import ProviderDataExtractor
 from nebuly.providers.utils import get_argument
 
 logger = logging.getLogger(__name__)
+
+
+StreamingChatEntry: TypeAlias = StreamStart | StreamEnd | StreamTextGeneration
 
 
 def is_cohere_generator(function: Callable[[Any], Any]) -> bool:
@@ -37,67 +50,96 @@ def handle_cohere_unpickable_objects() -> None:
     copyreg.pickle(Client, _pickle_cohere_client)
 
 
-def _extract_cohere_history(
-    original_args: tuple[Any, ...],
-    original_kwargs: dict[str, Any],
-) -> list[HistoryEntry]:
-    history = get_argument(original_args, original_kwargs, "chat_history", 7)
+@dataclass(frozen=True)
+class CohereDataExtractor(ProviderDataExtractor):
+    original_args: tuple[Any, ...]
+    original_kwargs: dict[str, Any]
+    function_name: str
 
-    # Remove messages that are not from the user or the assistant
-    history = [
-        message for message in history if message["user_name"] in ["User", "Chatbot"]
-    ]
-
-    if len(history) % 2 != 0:
-        logger.warning("Odd number of chat history elements, ignoring last element")
-        history = history[:-1]
-
-    # Convert the history to [(user, assistant), ...] format
-    history = [
-        HistoryEntry(user=history[i]["message"], assistant=history[i + 1]["message"])
-        for i in range(0, len(history), 2)
-        if i < len(history) - 1
-    ]
-    return history  # type: ignore
-
-
-def extract_cohere_input_and_history(
-    original_args: tuple[Any, ...],
-    original_kwargs: dict[str, Any],
-    function_name: str,
-) -> ModelInput:
-    if function_name in ["Client.generate", "AsyncClient.generate"]:
-        prompt = get_argument(original_args, original_kwargs, "prompt", 1)
-        return ModelInput(prompt=prompt)
-    if function_name in ["Client.chat", "AsyncClient.chat"]:
-        prompt = get_argument(original_args, original_kwargs, "message", 1)
-        history = _extract_cohere_history(original_args, original_kwargs)
-        return ModelInput(prompt=prompt, history=history)
-
-    raise ValueError(f"Unknown function name: {function_name}")
-
-
-def extract_cohere_output(function_name: str, output: Generations | Chat) -> str:
-    if function_name in ["Client.generate", "AsyncClient.generate"]:
-        return output.generations[0].text  # type: ignore
-    if function_name in ["Client.chat", "AsyncClient.chat"]:
-        return output.text  # type: ignore
-
-    raise ValueError(f"Unknown function name: {function_name}")
-
-
-def extract_cohere_output_generator(
-    function_name: str, outputs: StreamingGenerations | StreamingChat
-) -> str:
-    if function_name in ["Client.generate", "AsyncClient.generate"]:
-        return "".join([output.text for output in outputs])
-    if function_name in ["Client.chat", "AsyncClient.chat"]:
-        return "".join(
-            [
-                output.text
-                for output in outputs
-                if output.event_type == "text-generation"
-            ]
+    def _extract_history(self) -> list[HistoryEntry]:
+        history = get_argument(
+            self.original_args, self.original_kwargs, "chat_history", 7
         )
 
-    raise ValueError(f"Unknown function name: {function_name}")
+        # Remove messages that are not from the user or the assistant
+        history = [
+            message
+            for message in history
+            if message["user_name"] in ["User", "Chatbot"]
+        ]
+
+        if len(history) % 2 != 0:
+            logger.warning("Odd number of chat history elements, ignoring last element")
+            history = history[:-1]
+
+        # Convert the history to [(user, assistant), ...] format
+        history = [
+            HistoryEntry(
+                user=history[i]["message"], assistant=history[i + 1]["message"]
+            )
+            for i in range(0, len(history), 2)
+            if i < len(history) - 1
+        ]
+        return history  # type: ignore
+
+    def extract_input_and_history(self) -> ModelInput:
+        if self.function_name in ["Client.generate", "AsyncClient.generate"]:
+            prompt = get_argument(self.original_args, self.original_kwargs, "prompt", 1)
+            return ModelInput(prompt=prompt)
+        if self.function_name in ["Client.chat", "AsyncClient.chat"]:
+            prompt = get_argument(
+                self.original_args, self.original_kwargs, "message", 1
+            )
+            history = self._extract_history()
+            return ModelInput(prompt=prompt, history=history)
+
+        raise ValueError(f"Unknown function name: {self.function_name}")
+
+    def extract_output(
+        self,
+        stream: bool,
+        outputs: Generations | Chat | list[StreamingText] | list[StreamingChatEntry],
+    ) -> str:
+        if stream and isinstance(outputs, list):
+            return self._extract_output_generator(outputs)
+
+        if isinstance(outputs, Generations) and self.function_name in [
+            "Client.generate",
+            "AsyncClient.generate",
+        ]:
+            return cast(str, outputs.generations[0].text)
+        if isinstance(outputs, Chat) and self.function_name in [
+            "Client.chat",
+            "AsyncClient.chat",
+        ]:
+            return cast(str, outputs.text)
+
+        raise ValueError(
+            f"Unknown function name: {self.function_name} "
+            f"or output type: {type(outputs)}"
+        )
+
+    def _extract_output_generator(
+        self, outputs: list[StreamingText] | list[StreamingChatEntry]
+    ) -> str:
+        if all(
+            isinstance(elem, StreamingText) for elem in outputs
+        ) and self.function_name in ["Client.generate", "AsyncClient.generate"]:
+            return "".join([output.text for output in outputs])
+        if all(
+            isinstance(elem, (StreamStart, StreamEnd, StreamTextGeneration))
+            for elem in outputs
+        ) and self.function_name in ["Client.chat", "AsyncClient.chat"]:
+            messages = cast(List[StreamingChatEntry], outputs)
+            return "".join(
+                [
+                    output.text
+                    for output in messages
+                    if output.event_type == "text-generation"
+                ]
+            )
+
+        raise ValueError(
+            f"Unknown function name: {self.function_name} "
+            f"or output type: {type(outputs)}"
+        )

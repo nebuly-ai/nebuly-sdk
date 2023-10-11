@@ -3,71 +3,98 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from typing import Any
 
 from openai.openai_object import OpenAIObject  # type: ignore
 
 from nebuly.entities import HistoryEntry, ModelInput
+from nebuly.providers.base import ProviderDataExtractor
 
 logger = logging.getLogger(__name__)
 
 
-def _extract_openai_history(
-    original_kwargs: dict[str, Any],
-) -> list[HistoryEntry]:
-    history = original_kwargs.get("messages", [])[:-1]
+@dataclass(frozen=True)
+class OpenAILegacyDataExtractor(ProviderDataExtractor):
+    original_args: tuple[Any, ...]
+    original_kwargs: dict[str, Any]
+    function_name: str
 
-    # Remove messages that are not from the user or the assistant
-    history = [
-        message
-        for message in history
-        if len(history) > 1 and message["role"] in ["user", "assistant"]
-    ]
+    def _extract_history(self) -> list[HistoryEntry]:
+        history = self.original_kwargs.get("messages", [])[:-1]
 
-    if len(history) % 2 != 0:
-        logger.warning("Odd number of chat history elements, ignoring last element")
-        history = history[:-1]
+        # Remove messages that are not from the user or the assistant
+        history = [
+            message
+            for message in history
+            if len(history) > 1 and message["role"] in ["user", "assistant"]
+        ]
 
-    # Convert the history to [(user, assistant), ...] format
-    history = [
-        HistoryEntry(user=history[i]["content"], assistant=history[i + 1]["content"])
-        for i in range(0, len(history), 2)
-        if i < len(history) - 1
-    ]
-    return history
+        if len(history) % 2 != 0:
+            logger.warning("Odd number of chat history elements, ignoring last element")
+            history = history[:-1]
 
+        # Convert the history to [(user, assistant), ...] format
+        history = [
+            HistoryEntry(
+                user=history[i]["content"], assistant=history[i + 1]["content"]
+            )
+            for i in range(0, len(history), 2)
+            if i < len(history) - 1
+        ]
+        return history
 
-def extract_openai_input_and_history(
-    original_kwargs: dict[str, Any],
-    function_name: str,
-) -> ModelInput:
-    if function_name in ["Completion.create", "Completion.acreate"]:
-        return ModelInput(prompt=original_kwargs.get("prompt", ""))
-    if function_name in ["ChatCompletion.create", "ChatCompletion.acreate"]:
-        prompt = original_kwargs.get("messages", [])[-1]["content"]
-        history = _extract_openai_history(original_kwargs)
-        return ModelInput(prompt=prompt, history=history)
+    def extract_input_and_history(self) -> ModelInput:
+        if self.function_name in ["Completion.create", "Completion.acreate"]:
+            return ModelInput(prompt=self.original_kwargs.get("prompt", ""))
+        if self.function_name in ["ChatCompletion.create", "ChatCompletion.acreate"]:
+            prompt = self.original_kwargs.get("messages", [])[-1]["content"]
+            history = self._extract_history()
+            return ModelInput(prompt=prompt, history=history)
 
-    raise ValueError(f"Unknown function name: {function_name}")
+        raise ValueError(f"Unknown function name: {self.function_name}")
 
+    def extract_output(
+        self,
+        stream: bool,
+        outputs: dict[str, Any]
+        | list[dict[str, Any]]
+        | OpenAIObject
+        | list[OpenAIObject],
+    ) -> str:
+        if isinstance(outputs, list) and stream:
+            return self._extract_output_generator(outputs)
+        if isinstance(outputs, (OpenAIObject, dict)) and self.function_name in [
+            "Completion.create",
+            "Completion.acreate",
+        ]:
+            return outputs["choices"][0]["text"]  # type: ignore
+        if isinstance(outputs, (OpenAIObject, dict)) and self.function_name in [
+            "ChatCompletion.create",
+            "ChatCompletion.acreate",
+        ]:
+            return outputs["choices"][0]["message"]["content"]  # type: ignore
 
-def extract_openai_output(function_name: str, output: OpenAIObject) -> str:
-    if function_name in ["Completion.create", "Completion.acreate"]:
-        return output["choices"][0]["text"]  # type: ignore
-    if function_name in ["ChatCompletion.create", "ChatCompletion.acreate"]:
-        return output["choices"][0]["message"]["content"]  # type: ignore
-
-    raise ValueError(f"Unknown function name: {function_name}")
-
-
-def extract_openai_output_generator(
-    function_name: str, outputs: list[OpenAIObject]
-) -> str:
-    if function_name in ["Completion.create", "Completion.acreate"]:
-        return "".join([output["choices"][0].get("text", "") for output in outputs])
-    if function_name in ["ChatCompletion.create", "ChatCompletion.acreate"]:
-        return "".join(
-            [output["choices"][0]["delta"].get("content", "") for output in outputs]
+        raise ValueError(
+            f"Unknown function name: {self.function_name} or "
+            f"type of outputs: {type(outputs)}"
         )
 
-    raise ValueError(f"Unknown function name: {function_name}")
+    def _extract_output_generator(
+        self, outputs: list[OpenAIObject] | list[dict[str, Any]]
+    ) -> str:
+        if all(
+            isinstance(output, (OpenAIObject, dict)) for output in outputs
+        ) and self.function_name in ["Completion.create", "Completion.acreate"]:
+            return "".join([output["choices"][0].get("text", "") for output in outputs])
+        if all(
+            isinstance(output, (OpenAIObject, dict)) for output in outputs
+        ) and self.function_name in ["ChatCompletion.create", "ChatCompletion.acreate"]:
+            return "".join(
+                [output["choices"][0]["delta"].get("content", "") for output in outputs]
+            )
+
+        raise ValueError(
+            f"Unknown function name: {self.function_name} or "
+            f"type of outputs: {type(outputs)}"
+        )

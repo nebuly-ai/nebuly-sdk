@@ -311,7 +311,8 @@ def test_langchain_chat_chain__no_context_manager(openai_chat: dict[str, Any]) -
             assert interaction_watch.input == "I need help with my computer."
             assert interaction_watch.history == [
                 HistoryEntry(
-                    user="user", assistant="Hi there! How can I assist you today?"
+                    user="Hello! I am Valerio",
+                    assistant="Hi there! How can I assist you today?",
                 ),
             ]
             assert interaction_watch.output == "Hi there! How can I assist you today?"

@@ -16,7 +16,7 @@ from nebuly.contextmanager import (
     get_nearest_open_interaction,
     new_interaction,
 )
-from nebuly.entities import HistoryEntry, Observer
+from nebuly.entities import HistoryEntry, ModelInput, Observer
 from nebuly.tracking_handlers import LangChainTrackingHandler
 
 logger = logging.getLogger(__name__)
@@ -88,9 +88,7 @@ def _process_chat_prompt_template(
     return last_prompt, history
 
 
-def _get_input_and_history(
-    chain: Chain, inputs: dict[str, Any] | Any
-) -> tuple[str, list[HistoryEntry] | None]:
+def _get_input_and_history(chain: Chain, inputs: dict[str, Any] | Any) -> ModelInput:
     chains = getattr(chain, "chains", None)
     if chains is not None:
         # If the chain is a SequentialChain, we need to get the
@@ -102,14 +100,15 @@ def _get_input_and_history(
         prompt = getattr(chain, "prompt", None)
         if prompt is None:
             if not isinstance(inputs, dict):
-                return inputs, None
-            return inputs["input"], None
+                return ModelInput(prompt=inputs)
+            return ModelInput(prompt=inputs["input"])
 
     if isinstance(prompt, PromptTemplate):
-        return _process_prompt_template(inputs, prompt), None
+        return ModelInput(prompt=_process_prompt_template(inputs, prompt))
 
     if isinstance(prompt, ChatPromptTemplate):
-        return _process_chat_prompt_template(inputs, prompt)
+        prompt, history = _process_chat_prompt_template(inputs, prompt)
+        return ModelInput(prompt=prompt, history=history)
 
     raise ValueError(f"Unknown prompt type: {prompt}")
 
@@ -154,9 +153,9 @@ def wrap_langchain(
                     handler.nebuly_user_group  # type: ignore
                 )
                 interaction._set_observer(observer)  # pylint: disable=protected-access
-                chain_input, history = _get_input_and_history(args[0], inputs)
-                interaction.set_input(chain_input)
-                interaction.set_history(history)  # type: ignore
+                model_input = _get_input_and_history(args[0], inputs)
+                interaction.set_input(model_input.prompt)
+                interaction.set_history(model_input.history)
                 original_res = f(*args, **kwargs)
                 interaction.set_output(_get_output(args[0], original_res))
                 return original_res
@@ -195,9 +194,9 @@ async def wrap_langchain_async(
                         user_group
                     )
                 interaction._set_observer(observer)  # pylint: disable=protected-access
-                chain_input, history = _get_input_and_history(args[0], inputs)
-                interaction.set_input(chain_input)
-                interaction.set_history(history)  # type: ignore
+                model_input = _get_input_and_history(args[0], inputs)
+                interaction.set_input(model_input.prompt)
+                interaction.set_history(model_input.history)
                 if isasyncgenfunction(f):
                     original_res = f(*args, **kwargs)
                 else:

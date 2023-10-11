@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copyreg
 import logging
+from dataclasses import dataclass
 from typing import Any, Callable, cast
 
 import openai
@@ -18,94 +19,9 @@ from openai.types.completion_choice import (  # type: ignore  # noqa: E501
 )
 
 from nebuly.entities import HistoryEntry, ModelInput
+from nebuly.providers.base import ProviderDataExtractor
 
 logger = logging.getLogger(__name__)
-
-
-def _extract_openai_history(
-    original_kwargs: dict[str, Any],
-) -> list[HistoryEntry]:
-    history = original_kwargs.get("messages", [])[:-1]
-
-    # Remove messages that are not from the user or the assistant
-    history = [
-        message
-        for message in history
-        if len(history) > 1 and message["role"] in ["user", "assistant"]
-    ]
-
-    if len(history) % 2 != 0:
-        logger.warning("Odd number of chat history elements, ignoring last element")
-        history = history[:-1]
-
-    # Convert the history to [(user, assistant), ...] format
-    history = [
-        HistoryEntry(user=history[i]["content"], assistant=history[i + 1]["content"])
-        for i in range(0, len(history), 2)
-        if i < len(history) - 1
-    ]
-    return history
-
-
-def extract_openai_input_and_history(
-    original_kwargs: dict[str, Any],
-    function_name: str,
-) -> ModelInput:
-    if function_name in [
-        "resources.completions.Completions.create",
-        "resources.completions.AsyncCompletions.create",
-    ]:
-        return ModelInput(prompt=original_kwargs.get("prompt", ""))
-    if function_name in [
-        "resources.chat.completions.Completions.create",
-        "resources.chat.completions.AsyncCompletions.create",
-    ]:
-        prompt = original_kwargs.get("messages", [])[-1]["content"]
-        history = _extract_openai_history(original_kwargs)
-        return ModelInput(prompt=prompt, history=history)
-
-    raise ValueError(f"Unknown function name: {function_name}")
-
-
-def extract_openai_output(
-    function_name: str, output: ChatCompletion | Completion
-) -> str:
-    if function_name in [
-        "resources.completions.Completions.create",
-        "resources.completions.AsyncCompletions.create",
-    ]:
-        return cast(CompletionChoice, output.choices[0]).text
-    if function_name in [
-        "resources.chat.completions.Completions.create",
-        "resources.chat.completions.AsyncCompletions.create",
-    ]:
-        return cast(str, cast(Choice, output.choices[0]).message.content)
-
-    raise ValueError(f"Unknown function name: {function_name}")
-
-
-def extract_openai_output_generator(
-    function_name: str, outputs: list[Completion | ChatCompletion]
-) -> str:
-    if function_name in [
-        "resources.completions.Completions.create",
-        "resources.completions.AsyncCompletions.create",
-    ]:
-        return "".join(
-            [getattr(output.choices[0], "text", "") or "" for output in outputs]
-        )
-    if function_name in [
-        "resources.chat.completions.Completions.create",
-        "resources.chat.completions.AsyncCompletions.create",
-    ]:
-        return "".join(
-            [
-                getattr(output.choices[0].delta, "content", "") or ""  # type: ignore
-                for output in outputs
-            ]
-        )
-
-    raise ValueError(f"Unknown function name: {function_name}")
 
 
 def handle_openai_unpickable_objects() -> None:
@@ -137,3 +53,104 @@ def is_openai_generator(obj: Any) -> bool:
     return isinstance(
         obj, (openai.Stream, openai.AsyncStream)  # pylint: disable=no-member
     )
+
+
+@dataclass(frozen=True)
+class OpenAIDataExtractor(ProviderDataExtractor):
+    original_args: tuple[Any, ...]
+    original_kwargs: dict[str, Any]
+    function_name: str
+
+    def _extract_history(self) -> list[HistoryEntry]:
+        history = self.original_kwargs.get("messages", [])[:-1]
+
+        # Remove messages that are not from the user or the assistant
+        history = [
+            message
+            for message in history
+            if len(history) > 1 and message["role"] in ["user", "assistant"]
+        ]
+
+        if len(history) % 2 != 0:
+            logger.warning("Odd number of chat history elements, ignoring last element")
+            history = history[:-1]
+
+        # Convert the history to [(user, assistant), ...] format
+        history = [
+            HistoryEntry(
+                user=history[i]["content"], assistant=history[i + 1]["content"]
+            )
+            for i in range(0, len(history), 2)
+            if i < len(history) - 1
+        ]
+        return history
+
+    def extract_input_and_history(self) -> ModelInput:
+        if self.function_name in [
+            "resources.completions.Completions.create",
+            "resources.completions.AsyncCompletions.create",
+        ]:
+            return ModelInput(prompt=self.original_kwargs.get("prompt", ""))
+        if self.function_name in [
+            "resources.chat.completions.Completions.create",
+            "resources.chat.completions.AsyncCompletions.create",
+        ]:
+            prompt = self.original_kwargs.get("messages", [])[-1]["content"]
+            history = self._extract_history()
+            return ModelInput(prompt=prompt, history=history)
+
+        raise ValueError(f"Unknown function name: {self.function_name}")
+
+    def extract_output(
+        self,
+        stream: bool,
+        outputs: ChatCompletion | Completion | list[ChatCompletion] | list[Completion],
+    ) -> str:
+        if isinstance(outputs, list) and stream:
+            return self._extract_output_generator(outputs)
+
+        if isinstance(outputs, Completion) and self.function_name in [
+            "resources.completions.Completions.create",
+            "resources.completions.AsyncCompletions.create",
+        ]:
+            return cast(CompletionChoice, outputs.choices[0]).text
+        if isinstance(outputs, ChatCompletion) and self.function_name in [
+            "resources.chat.completions.Completions.create",
+            "resources.chat.completions.AsyncCompletions.create",
+        ]:
+            return cast(str, cast(Choice, outputs.choices[0]).message.content)
+
+        raise ValueError(
+            f"Unknown function name: {self.function_name} or "
+            f"output type: {type(outputs)}"
+        )
+
+    def _extract_output_generator(
+        self, outputs: list[Completion | ChatCompletion]
+    ) -> str:
+        if all(
+            isinstance(output, Completion) for output in outputs
+        ) and self.function_name in [
+            "resources.completions.Completions.create",
+            "resources.completions.AsyncCompletions.create",
+        ]:
+            return "".join(
+                [getattr(output.choices[0], "text", "") or "" for output in outputs]
+            )
+        if all(
+            isinstance(output, ChatCompletion) for output in outputs
+        ) and self.function_name in [
+            "resources.chat.completions.Completions.create",
+            "resources.chat.completions.AsyncCompletions.create",
+        ]:
+            return "".join(
+                [
+                    getattr(output.choices[0].delta, "content", "") or ""
+                    for output in outputs
+                ]
+            )
+
+        raise ValueError(
+            f"Unknown function name: {self.function_name} "
+            f"or output type: {type(outputs)}"
+        )
