@@ -174,6 +174,14 @@ class InteractionMustBeLocalVariable(InteractionContextError):
     pass
 
 
+class UserNotFoundError(Exception):
+    pass
+
+
+class UserGroupProfileNotFoundError(Exception):
+    pass
+
+
 class InteractionContext:  # pylint: disable=too-many-instance-attributes
     def __init__(  # pylint: disable=too-many-arguments
         self,
@@ -274,9 +282,11 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
         if self.hierarchy is None:
             raise ValueError("Interaction has no hierarchy.")
         if self.user is None:
-            raise ValueError("Interaction has no user.")
+            raise UserNotFoundError("Interaction has no user.")
         if self.user_group_profile is None:
-            raise ValueError("Interaction has no user group profile.")
+            raise UserGroupProfileNotFoundError(
+                "Interaction has no user group profile."
+            )
 
     def _as_interaction_watch(self) -> InteractionWatch:
         self._validate_interaction()

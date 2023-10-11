@@ -217,9 +217,9 @@ def test_cohere_chat__with_context_manager(cohere_chat: Chat) -> None:
                 result = co.chat(
                     message="How are you?",
                     chat_history=[
-                        {"user_name": "User", "message": "Hi!"},
+                        {"role": "USER", "message": "Hi!"},
                         {
-                            "user_name": "Chatbot",
+                            "role": "CHATBOT",
                             "message": "How can I help you today?",
                         },
                     ],

@@ -28,7 +28,7 @@ class OpenAILegacyDataExtractor(ProviderDataExtractor):
         history = [
             message
             for message in history
-            if len(history) > 1 and message["role"] in ["user", "assistant"]
+            if len(history) > 1 and message["role"].lower() in ["user", "assistant"]
         ]
 
         if len(history) % 2 != 0:

@@ -65,7 +65,7 @@ class VertexAIDataExtractor(ProviderDataExtractor):
         message_history = [
             message
             for message in message_history
-            if len(message_history) > 1 and message.author in ["user", "bot"]
+            if len(message_history) > 1 and message.author.lower() in ["user", "bot"]
         ]
 
         if len(message_history) % 2 != 0:
