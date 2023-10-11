@@ -4,7 +4,7 @@ from __future__ import annotations
 import copyreg
 import logging
 from dataclasses import dataclass
-from typing import Any, Callable, List, TypeAlias, cast
+from typing import Any, Callable, List, cast
 
 from cohere.client import Client  # type: ignore
 from cohere.responses.chat import (  # type: ignore
@@ -19,6 +19,7 @@ from cohere.responses.generation import (  # type: ignore
     StreamingGenerations,
     StreamingText,
 )
+from typing_extensions import TypeAlias
 
 from nebuly.entities import HistoryEntry, ModelInput
 from nebuly.providers.base import ProviderDataExtractor

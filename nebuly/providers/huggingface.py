@@ -3,13 +3,14 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any, List, TypeAlias, cast
+from typing import Any, cast
 
 from transformers.pipelines import (  # type: ignore
     Conversation,
     ConversationalPipeline,
     TextGenerationPipeline,
 )
+from typing_extensions import TypeAlias
 
 from nebuly.entities import HistoryEntry, ModelInput
 from nebuly.providers.base import ProviderDataExtractor
@@ -92,16 +93,15 @@ class HuggingFaceDataExtractor(ProviderDataExtractor):
             return cast(str, outputs.generated_responses[-1])
         if isinstance(outputs, list):
             if all(isinstance(output, Conversation) for output in outputs):
-                result = cast(List[Conversation], outputs)
-                return [out.generated_responses[-1] for out in result]
+                return [out.generated_responses[-1] for out in outputs]  # type: ignore
             if all(isinstance(output, dict) for output in outputs):  # TextGeneration
-                result = cast(TextGeneration, outputs)
-                return result[0]["generated_text"]
-            if all(isinstance(output, list) for output in outputs) and all(
+                return outputs[0]["generated_text"]  # type: ignore
+            if all(  # list[TextGeneration]
+                isinstance(output, list) for output in outputs
+            ) and all(
                 isinstance(output[0], dict) for output in outputs  # type: ignore
             ):
-                result = cast(List[TextGeneration], outputs)
-                return [out[0]["generated_text"] for out in result]
+                return [out[0]["generated_text"] for out in outputs]  # type: ignore
 
         raise ValueError(
             f"Unknown function name: {self.function_name} "
