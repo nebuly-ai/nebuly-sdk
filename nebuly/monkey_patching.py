@@ -174,10 +174,14 @@ def _extract_output(  # pylint: disable=too-many-return-statements
         )
 
         return extract_vertexai_output(function_name, output)
+
+    logger.warning("Module %s not supported", module)
     return str(output)
 
 
-def _extract_output_generator(outputs: Any, module: str, function_name: str) -> str:
+def _extract_output_generator(  # pylint: disable=too-many-return-statements
+    outputs: Any, module: str, function_name: str
+) -> str:
     if module == "openai":
         if (
             parse_version(version(module)) < parse_version("1.0.0")
@@ -218,7 +222,8 @@ def _extract_output_generator(outputs: Any, module: str, function_name: str) -> 
 
         return extract_vertexai_output_generator(function_name, outputs)
 
-    raise ValueError(f"Module {module} not supported")
+    logger.warning("Module %s not supported", module)
+    return str(outputs)
 
 
 def _extract_input_and_history(  # pylint: disable=too-many-return-statements
@@ -291,7 +296,8 @@ def _extract_input_and_history(  # pylint: disable=too-many-return-statements
             original_args, original_kwargs, function_name
         )
 
-    raise ValueError(f"Module {module} not supported")
+    logger.warning("Module %s not supported", module)
+    return ModelInput(prompt="")
 
 
 def _add_span_to_interaction(  # pylint: disable=too-many-arguments
