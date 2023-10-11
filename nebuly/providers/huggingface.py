@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any, cast
+from typing import Any, Dict, List, cast
 
 from transformers.pipelines import (  # type: ignore
     Conversation,
@@ -18,7 +18,7 @@ from nebuly.providers.base import ProviderDataExtractor
 logger = logging.getLogger(__name__)
 
 
-TextGeneration: TypeAlias = list[dict[str, str]]
+TextGeneration: TypeAlias = List[Dict[str, str]]
 
 
 @dataclass(frozen=True)

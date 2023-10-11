@@ -4,7 +4,7 @@ from __future__ import annotations
 import copyreg
 import logging
 from dataclasses import dataclass
-from typing import Any, Callable, List, cast
+from typing import Any, Callable, List, Union, cast
 
 from cohere.client import Client  # type: ignore
 from cohere.responses.chat import (  # type: ignore
@@ -28,7 +28,7 @@ from nebuly.providers.utils import get_argument
 logger = logging.getLogger(__name__)
 
 
-StreamingChatEntry: TypeAlias = StreamStart | StreamEnd | StreamTextGeneration
+StreamingChatEntry: TypeAlias = Union[StreamStart, StreamEnd, StreamTextGeneration]
 
 
 def is_cohere_generator(function: Callable[[Any], Any]) -> bool:
