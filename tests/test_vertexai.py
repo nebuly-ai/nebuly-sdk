@@ -15,7 +15,7 @@ from vertexai.language_models import (  # type: ignore
 )
 
 from nebuly.contextmanager import new_interaction
-from nebuly.entities import InteractionWatch, SpanWatch
+from nebuly.entities import HistoryEntry, InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver
 from nebuly.requests import CustomJSONEncoder
 from tests.common import nebuly_init
@@ -425,10 +425,10 @@ def test_vertexai_chat__no_context_manager__with_history(
                 == "How many planets are there in the solar system?"
             )
             assert interaction_watch.history == [
-                (
-                    "How many moons does Mars have?",
-                    "The planet Mars has two moons, Phobos and Deimos.",
-                ),
+                HistoryEntry(
+                    user="How many moons does Mars have?",
+                    assistant="The planet Mars has two moons, Phobos and Deimos.",
+                )
             ]
             assert interaction_watch.output == palm_completion.text
             assert len(interaction_watch.spans) == 1

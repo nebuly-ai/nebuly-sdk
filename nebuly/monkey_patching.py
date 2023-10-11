@@ -10,17 +10,18 @@ from functools import wraps
 from importlib.metadata import version
 from inspect import isasyncgenfunction, iscoroutinefunction
 from types import ModuleType
-from typing import Any, AsyncGenerator, Callable, Generator, Iterable
+from typing import Any, AsyncGenerator, Callable, Generator, Iterable, cast
 
 from packaging.version import parse as parse_version
 
 from nebuly.config import NEBULY_KWARGS
 from nebuly.contextmanager import (
+    InteractionContext,
     NotInInteractionContext,
     get_nearest_open_interaction,
     new_interaction,
 )
-from nebuly.entities import Observer, Package, SpanWatch
+from nebuly.entities import HistoryEntry, ModelInput, Observer, Package, SpanWatch
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +122,7 @@ def _extract_output(  # pylint: disable=too-many-return-statements
     output: Any,
     module: str,
     function_name: str,
-) -> str:
+) -> str | list[str]:
     if module == "openai":
         if (
             parse_version(version(module)) < parse_version("1.0.0")
@@ -220,60 +221,16 @@ def _extract_output_generator(outputs: Any, module: str, function_name: str) -> 
     raise ValueError(f"Module {module} not supported")
 
 
-def _add_interaction_span(  # pylint: disable=too-many-arguments
-    original_args: tuple[Any, ...],
-    original_kwargs: dict[str, Any],
-    module: str,
-    function_name: str,
-    output: Any,
-    observer: Observer,
-    watched: SpanWatch,
-    nebuly_kwargs: dict[str, Any],
-    stream: bool = False,
-) -> None:
-    try:
-        user_input, history = _extract_input_and_history(
-            original_args, original_kwargs, module, function_name
-        )
-    except Exception:  # pylint: disable=broad-except
-        user_input, history = "", []
-    output = (
-        _extract_output(output, module, function_name)
-        if not stream
-        else _extract_output_generator(output, module, function_name)
-    )
-
-    try:
-        interaction = get_nearest_open_interaction()
-        interaction._set_observer(observer)  # pylint: disable=protected-access
-        interaction._add_span(watched)  # pylint: disable=protected-access
-        if interaction.input is None:
-            interaction.set_input(user_input)
-        if interaction.history is None:
-            interaction.set_history(history)
-        if interaction.output is None:
-            interaction.set_output(output)
-    except NotInInteractionContext:
-        with new_interaction() as interaction:
-            interaction.set_input(user_input)
-            interaction.set_history(history)
-            interaction._set_observer(observer)  # pylint: disable=protected-access
-            interaction._add_span(watched)  # pylint: disable=protected-access
-            interaction._set_user(  # pylint: disable=protected-access
-                nebuly_kwargs.get("user_id")  # type: ignore
-            )
-            interaction._set_user_group_profile(  # pylint: disable=protected-access
-                nebuly_kwargs.get("user_group_profile")  # type: ignore
-            )
-            interaction.set_output(output)
-
-
 def _extract_input_and_history(  # pylint: disable=too-many-return-statements
     original_args: tuple[Any, ...],
     original_kwargs: dict[str, Any],
     module: str,
     function_name: str,
-) -> tuple[str, list[tuple[str, Any]]]:
+) -> ModelInput | list[ModelInput]:
+    """
+    Extract the input and history from the original args and kwargs.
+    Returns a list of ModelInput whenever the model is called with a batch of inputs.
+    """
     if module == "openai":
         if (
             parse_version(version(module)) < parse_version("1.0.0")
@@ -335,6 +292,100 @@ def _extract_input_and_history(  # pylint: disable=too-many-return-statements
         )
 
     raise ValueError(f"Module {module} not supported")
+
+
+def _add_span_to_interaction(  # pylint: disable=too-many-arguments
+    observer: Observer,
+    interaction: InteractionContext,
+    user_input: str,
+    history: list[HistoryEntry],
+    output: str,
+    watched: SpanWatch,
+    nebuly_kwargs: dict[str, Any],
+) -> None:
+    interaction._set_observer(observer)  # pylint: disable=protected-access
+    interaction._add_span(watched)  # pylint: disable=protected-access
+    if interaction.input is None:
+        interaction.set_input(user_input)
+    if interaction.history is None:
+        interaction.set_history(history)
+    if interaction.output is None:
+        interaction.set_output(output)
+    user: str | None = nebuly_kwargs.get("user_id")
+    if interaction.user is None and user is not None:
+        interaction._set_user(user)  # pylint: disable=protected-access
+    user_group_profile: str | None = nebuly_kwargs.get("user_group_profile")
+    if interaction.user_group_profile is None and user_group_profile is not None:
+        interaction._set_user_group_profile(  # pylint: disable=protected-access
+            user_group_profile
+        )
+
+
+def _add_interaction_span(  # pylint: disable=too-many-arguments
+    original_args: tuple[Any, ...],
+    original_kwargs: dict[str, Any],
+    module: str,
+    function_name: str,
+    output: Any,
+    observer: Observer,
+    watched: SpanWatch,
+    nebuly_kwargs: dict[str, Any],
+    stream: bool = False,
+) -> None:
+    model_input_res = _extract_input_and_history(
+        original_args, original_kwargs, module, function_name
+    )
+    model_output_res = (
+        _extract_output(output, module, function_name)
+        if not stream
+        else _extract_output_generator(output, module, function_name)
+    )
+
+    try:
+        interaction = get_nearest_open_interaction()
+        if isinstance(model_input_res, list):
+            logger.warning(
+                "Batch prediction found inside a user defined interaction, only the "
+                "first element will be used"
+            )
+            model_input_res = model_input_res[0]
+            model_output_res = model_output_res[0]
+
+        model_output_res = cast(str, model_output_res)
+        _add_span_to_interaction(
+            observer=observer,
+            interaction=interaction,
+            user_input=model_input_res.prompt,
+            history=model_input_res.history,
+            output=model_output_res,
+            watched=watched,
+            nebuly_kwargs=nebuly_kwargs,
+        )
+    except NotInInteractionContext:
+        if isinstance(model_input_res, list):
+            for model_input, model_output in zip(model_input_res, model_output_res):
+                with new_interaction() as interaction:
+                    _add_span_to_interaction(
+                        observer=observer,
+                        interaction=interaction,
+                        user_input=model_input.prompt,
+                        history=model_input.history,
+                        output=model_output,
+                        watched=watched,
+                        nebuly_kwargs=nebuly_kwargs,
+                    )
+        else:
+            model_output_res = cast(str, model_output_res)
+            with new_interaction() as interaction:
+                _add_span_to_interaction(
+                    observer=observer,
+                    interaction=interaction,
+                    user_input=model_input_res.prompt,
+                    history=model_input_res.history,
+                    output=model_output_res,
+                    watched=watched,
+                    nebuly_kwargs=nebuly_kwargs,
+                )
 
 
 def watch_from_generator(  # pylint: disable=too-many-arguments

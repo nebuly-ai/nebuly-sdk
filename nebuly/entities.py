@@ -36,6 +36,28 @@ class Package:
     to_patch: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class HistoryEntry:
+    """
+    HistoryEntry represents a user/assistant interaction in a chat history.
+    """
+
+    user: str
+    assistant: str
+
+    def to_dict(self) -> list[str]:
+        """
+        to_dict returns a dictionary representation of the HistoryEntry instance.
+        """
+        return [self.user, self.assistant]
+
+
+@dataclass(frozen=True)
+class ModelInput:
+    prompt: str
+    history: list[HistoryEntry] = field(default_factory=list)
+
+
 @dataclass
 class SpanWatch:  # pylint: disable=too-many-instance-attributes
     """
@@ -88,7 +110,7 @@ class InteractionWatch:  # pylint: disable=too-many-instance-attributes
     time_end: datetime
     time_start: datetime
     spans: list[SpanWatch]
-    history: list[tuple[str, str]]
+    history: list[HistoryEntry]
     hierarchy: dict[uuid.UUID, uuid.UUID | None]
     end_user: str
     end_user_group_profile: str

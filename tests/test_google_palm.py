@@ -24,7 +24,7 @@ from google.generativeai.types.safety_types import (  # type: ignore
 )
 
 from nebuly.contextmanager import new_interaction
-from nebuly.entities import InteractionWatch, SpanWatch
+from nebuly.entities import HistoryEntry, InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver
 from nebuly.requests import CustomJSONEncoder
 from tests.common import nebuly_init
@@ -298,7 +298,10 @@ def test_google_palm_chat__with_history__no_context_manager(
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == "What can you do?"
             assert interaction_watch.history == [
-                ("Hello.", "Hello! How can I help you today?"),
+                HistoryEntry(
+                    user="Hello.",
+                    assistant="Hello! How can I help you today?",
+                )
             ]
             assert (
                 interaction_watch.output
@@ -328,8 +331,10 @@ def test_google_palm_chat__with_history__with_context_manager(
                 interaction.set_input("Another input")
                 interaction.set_history(
                     [
-                        ("user", "Hello."),
-                        ("assistant", "Hello! How can I help you today?"),
+                        HistoryEntry(
+                            user="Hello.",
+                            assistant="Hello! How can I help you today?",
+                        )
                     ]
                 )
                 result = palm.chat(
@@ -350,8 +355,10 @@ def test_google_palm_chat__with_history__with_context_manager(
             assert interaction.user == "test_user"
             assert interaction.user_group_profile == "test_group"
             assert interaction_watch.history == [
-                ("user", "Hello."),
-                ("assistant", "Hello! How can I help you today?"),
+                HistoryEntry(
+                    user="Hello.",
+                    assistant="Hello! How can I help you today?",
+                )
             ]
             assert len(interaction_watch.spans) == 1
             span: SpanWatch = interaction_watch.spans[0]
@@ -383,7 +390,10 @@ def test_google_palm_chat__reply__no_context_manager(
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == "What can you do?"
             assert interaction_watch.history == [
-                ("Hello.", "Hello! How can I help you today?"),
+                HistoryEntry(
+                    user="Hello.",
+                    assistant="Hello! How can I help you today?",
+                )
             ]
             assert (
                 interaction_watch.output

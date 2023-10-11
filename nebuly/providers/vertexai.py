@@ -12,6 +12,7 @@ from vertexai.language_models import (  # type: ignore
     TextGenerationResponse,
 )
 
+from nebuly.entities import HistoryEntry, ModelInput
 from nebuly.providers.utils import get_argument
 
 logger = logging.getLogger(__name__)
@@ -48,7 +49,7 @@ def handle_vertexai_unpickable_objects() -> None:
 
 def _extract_vertexai_history(
     original_args: tuple[Any, ...],
-) -> list[tuple[str, str]]:
+) -> list[HistoryEntry]:
     message_history: list[ChatMessage] = getattr(
         original_args[0], "message_history", []
     )
@@ -65,8 +66,10 @@ def _extract_vertexai_history(
         message_history = message_history[:-1]
 
     # Convert the history to [(user, assistant), ...] format
-    history: list[tuple[str, str]] = [
-        (message_history[i].content, message_history[i + 1].content)
+    history: list[HistoryEntry] = [
+        HistoryEntry(
+            user=message_history[i].content, assistant=message_history[i + 1].content
+        )
         for i in range(0, len(message_history), 2)
         if i < len(message_history) - 1
     ]
@@ -78,7 +81,7 @@ def extract_vertexai_input_and_history(
     original_args: tuple[Any, ...],
     original_kwargs: dict[str, Any],
     function_name: str,
-) -> tuple[str, list[tuple[str, Any]]]:
+) -> ModelInput:
     if function_name in [
         "language_models.ChatSession.send_message",
         "language_models.ChatSession.send_message_async",
@@ -94,7 +97,7 @@ def extract_vertexai_input_and_history(
             arg_idx=1,
         )
         history = _extract_vertexai_history(original_args)
-        return prompt, history
+        return ModelInput(prompt=prompt, history=history)
 
     raise ValueError(f"Unknown function name: {function_name}")
 

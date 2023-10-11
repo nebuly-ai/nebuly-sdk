@@ -19,7 +19,7 @@ from huggingface_hub.inference._text_generation import (  # type: ignore
 from huggingface_hub.inference._types import ConversationalOutput  # type: ignore
 
 from nebuly.contextmanager import new_interaction
-from nebuly.entities import InteractionWatch, SpanWatch
+from nebuly.entities import HistoryEntry, InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver
 from nebuly.requests import CustomJSONEncoder
 from tests.common import nebuly_init
@@ -384,11 +384,11 @@ def test_hf_hub_conversational__no_context_manager__with_history(
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == "Wow, that's scary!"
             assert interaction_watch.history == [
-                (
-                    "Hello, who are you?",
-                    " My name is samantha, and I am a student at "
+                HistoryEntry(
+                    user="Hello, who are you?",
+                    assistant=" My name is samantha, and I am a student at "
                     "the University of Pittsburgh.",
-                ),
+                )
             ]
             assert (
                 interaction_watch.output
@@ -482,12 +482,11 @@ def test_hf_hub_conversational__with_context_manager__with_history(
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == "Wow, that's scary!"
             assert interaction_watch.history == [
-                ("user", "Hello, who are you?"),
-                (
-                    "assistant",
-                    " My name is samantha, and I am a student at "
+                HistoryEntry(
+                    user="Hello, who are you?",
+                    assistant=" My name is samantha, and I am a student at "
                     "the University of Pittsburgh.",
-                ),
+                )
             ]
             assert (
                 interaction_watch.output

@@ -4,10 +4,16 @@ import inspect
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, Generator, Tuple, cast
+from typing import Any, Dict, Generator, List, Tuple, cast
 from uuid import UUID
 
-from nebuly.entities import EventType, InteractionWatch, Observer, SpanWatch
+from nebuly.entities import (
+    EventType,
+    HistoryEntry,
+    InteractionWatch,
+    Observer,
+    SpanWatch,
+)
 
 
 @dataclass
@@ -175,7 +181,7 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
         user_group_profile: str | None = None,
         initial_input: str | None = None,
         final_output: str | None = None,
-        history: list[tuple[str, str]] | None = None,
+        history: list[HistoryEntry] | None = None,
         hierarchy: dict[UUID, UUID | None] | None = None,
         spans: list[SpanWatch] | None = None,
         do_not_call_directly: bool = False,
@@ -201,8 +207,26 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
     def set_input(self, value: str) -> None:
         self.input = value
 
-    def set_history(self, value: list[tuple[str, str]]) -> None:
-        self.history = value
+    def set_history(self, value: list[tuple[str, str]] | list[HistoryEntry]) -> None:
+        if len(value) == 0:
+            self.history = []
+        elif isinstance(value[0], tuple):
+            value = cast(List[Tuple[str, str]], value)
+            history = [
+                message for message in value if message[0] in ["user", "assistant"]
+            ]
+            if len(history) % 2 != 0:
+                raise ValueError(
+                    "Odd number of chat history elements, please provide "
+                    "a valid history."
+                )
+            self.history = [
+                HistoryEntry(user=history[i][1], assistant=history[i + 1][1])
+                for i in range(len(history) - 1)
+            ]
+        else:
+            value = cast(List[HistoryEntry], value)
+            self.history = value
 
     def set_output(self, value: str) -> None:
         self.output = value

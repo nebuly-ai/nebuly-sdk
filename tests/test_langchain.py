@@ -26,7 +26,13 @@ from langchain.prompts.chat import ChatPromptTemplate
 from langchain.schema import SystemMessage
 
 from nebuly.contextmanager import new_interaction
-from nebuly.entities import EventType, InteractionWatch, Observer, SpanWatch
+from nebuly.entities import (
+    EventType,
+    HistoryEntry,
+    InteractionWatch,
+    Observer,
+    SpanWatch,
+)
 from nebuly.observers import NebulyObserver
 from nebuly.requests import CustomJSONEncoder
 from tests import common
@@ -304,7 +310,9 @@ def test_langchain_chat_chain__no_context_manager(openai_chat: dict[str, Any]) -
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == "I need help with my computer."
             assert interaction_watch.history == [
-                ("Hello! I am Valerio", "Hi there! How can I assist you today?"),
+                HistoryEntry(
+                    user="user", assistant="Hi there! How can I assist you today?"
+                ),
             ]
             assert interaction_watch.output == "Hi there! How can I assist you today?"
             assert len(interaction_watch.spans) == 3

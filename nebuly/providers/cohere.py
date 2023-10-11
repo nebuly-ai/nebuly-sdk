@@ -11,6 +11,7 @@ from cohere.responses.generation import (  # type: ignore
     StreamingGenerations,
 )
 
+from nebuly.entities import HistoryEntry, ModelInput
 from nebuly.providers.utils import get_argument
 
 logger = logging.getLogger(__name__)
@@ -39,7 +40,7 @@ def handle_cohere_unpickable_objects() -> None:
 def _extract_cohere_history(
     original_args: tuple[Any, ...],
     original_kwargs: dict[str, Any],
-) -> list[tuple[str, str]]:
+) -> list[HistoryEntry]:
     history = get_argument(original_args, original_kwargs, "chat_history", 7)
 
     # Remove messages that are not from the user or the assistant
@@ -53,7 +54,7 @@ def _extract_cohere_history(
 
     # Convert the history to [(user, assistant), ...] format
     history = [
-        (history[i]["message"], history[i + 1]["message"])
+        HistoryEntry(user=history[i]["message"], assistant=history[i + 1]["message"])
         for i in range(0, len(history), 2)
         if i < len(history) - 1
     ]
@@ -64,14 +65,14 @@ def extract_cohere_input_and_history(
     original_args: tuple[Any, ...],
     original_kwargs: dict[str, Any],
     function_name: str,
-) -> tuple[str, list[tuple[str, Any]]]:
+) -> ModelInput:
     if function_name in ["Client.generate", "AsyncClient.generate"]:
         prompt = get_argument(original_args, original_kwargs, "prompt", 1)
-        return prompt, []
+        return ModelInput(prompt=prompt)
     if function_name in ["Client.chat", "AsyncClient.chat"]:
         prompt = get_argument(original_args, original_kwargs, "message", 1)
         history = _extract_cohere_history(original_args, original_kwargs)
-        return prompt, history
+        return ModelInput(prompt=prompt, history=history)
 
     raise ValueError(f"Unknown function name: {function_name}")
 

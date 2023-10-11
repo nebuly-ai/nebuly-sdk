@@ -6,6 +6,8 @@ from typing import Any, Callable
 from anthropic import Anthropic, AsyncAnthropic, AsyncStream, Stream
 from anthropic.types import Completion
 
+from nebuly.entities import ModelInput
+
 
 def is_anthropic_generator(function: Callable[[Any], Any]) -> bool:
     return isinstance(function, (Stream, AsyncStream))
@@ -51,12 +53,12 @@ def handle_anthropic_unpickable_objects() -> None:
 def extract_anthropic_input_and_history(
     original_kwargs: dict[str, Any],
     function_name: str,
-) -> tuple[str, list[tuple[str, Any]]]:
+) -> ModelInput:
     if function_name in [
         "resources.Completions.create",
         "resources.AsyncCompletions.create",
     ]:
-        return original_kwargs["prompt"], []
+        return ModelInput(prompt=original_kwargs["prompt"])
 
     raise ValueError(f"Unknown function name: {function_name}")
 

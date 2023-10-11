@@ -7,7 +7,7 @@ from uuid import uuid4
 import pytest
 from transformers import Conversation, pipeline  # type: ignore
 
-from nebuly.entities import InteractionWatch, SpanWatch
+from nebuly.entities import HistoryEntry, InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver
 from nebuly.requests import CustomJSONEncoder
 from tests.common import nebuly_init
@@ -62,9 +62,9 @@ def test_hf_conversational_pipelines__single_prompt__with_history(
                 == "Going to the movies also tomorrow - any suggestions?"
             )
             assert interaction_watch.history == [
-                (
-                    "Going to the movies tonight - any suggestions?",
-                    "The Big Lebowski",
+                HistoryEntry(
+                    user="Going to the movies tonight - any suggestions?",
+                    assistant="The Big Lebowski",
                 )
             ]
             assert interaction_watch.output == "The Big Lebowski"
@@ -112,13 +112,29 @@ def test_hf_conversational_pipelines__prompt_list(
             )
 
             assert result is not None
-            assert mock_observer.call_count == 1
-            interaction_watch = mock_observer.call_args[0][0]
+            assert mock_observer.call_count == 2
+
+            interaction_watch = mock_observer.call_args_list[0][0][0]
             assert isinstance(interaction_watch, InteractionWatch)
             assert (
                 interaction_watch.input
                 == "Going to the movies tonight - any suggestions?"
             )
+            assert interaction_watch.history == []
+            assert interaction_watch.output == "The Big Lebowski"
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_group"
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+            interaction_watch = mock_observer.call_args_list[1][0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "What's the last book you have read?"
             assert interaction_watch.history == []
             assert interaction_watch.output == "The Big Lebowski"
             assert interaction_watch.end_user == "test_user"
@@ -217,7 +233,7 @@ def test_hf_text_generation_pipelines__single_prompt__multiple_return_sequences(
 def fixture_hf_text_generation_pipelines_batch() -> list[list[dict[str, str]]]:
     return [
         [{"generated_text": "The Big Lebowski"}],
-        [{"generated_text": "The Big Lebowski"}],
+        [{"generated_text": "The Big Lebowski 2"}],
     ]
 
 
@@ -240,12 +256,27 @@ def test_hf_text_generation_pipelines__batch_prompt(
             )
 
             assert result is not None
-            assert mock_observer.call_count == 1
-            interaction_watch = mock_observer.call_args[0][0]
+            assert mock_observer.call_count == 2
+            interaction_watch = mock_observer.call_args_list[0][0][0]
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == user_input
             assert interaction_watch.history == []
             assert interaction_watch.output == "The Big Lebowski"
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_group"
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+            interaction_watch = mock_observer.call_args_list[1][0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == user_input
+            assert interaction_watch.history == []
+            assert interaction_watch.output == "The Big Lebowski 2"
             assert interaction_watch.end_user == "test_user"
             assert interaction_watch.end_user_group_profile == "test_group"
             assert len(interaction_watch.spans) == 1

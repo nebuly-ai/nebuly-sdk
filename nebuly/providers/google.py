@@ -9,6 +9,7 @@ from google.generativeai.discuss import ChatResponse  # type: ignore
 from google.generativeai.text import Completion  # type: ignore
 from google.generativeai.types import discuss_types, text_types  # type: ignore
 
+from nebuly.entities import HistoryEntry, ModelInput
 from nebuly.providers.utils import get_argument
 
 logger = logging.getLogger(__name__)
@@ -47,7 +48,7 @@ def _extract_google_history(
     original_args: tuple[Any, ...],
     original_kwargs: dict[str, Any],
     function_name: str,
-) -> list[tuple[str, str]]:
+) -> list[HistoryEntry]:
     if function_name == "generativeai.discuss.ChatResponse.reply":
         history = getattr(original_args[0], "messages", [])
         history = [message["content"] for message in history]
@@ -60,7 +61,7 @@ def _extract_google_history(
 
     # Convert the history to [(user, assistant), ...] format
     history = [
-        (history[i], history[i + 1])
+        HistoryEntry(user=history[i], assistant=history[i + 1])
         for i in range(0, len(history), 2)
         if i < len(history) - 1
     ]
@@ -72,17 +73,17 @@ def extract_google_input_and_history(
     original_args: tuple[Any, ...],
     original_kwargs: dict[str, Any],
     function_name: str,
-) -> tuple[str, list[tuple[str, Any]]]:
+) -> ModelInput:
     if function_name == "generativeai.generate_text":
-        return original_kwargs.get("prompt", ""), []
+        return ModelInput(prompt=original_kwargs.get("prompt", ""))
     if function_name in ["generativeai.chat", "generativeai.chat_async"]:
         prompt = original_kwargs.get("messages", [])[-1]
         history = _extract_google_history(original_args, original_kwargs, function_name)
-        return prompt, history
+        return ModelInput(prompt=prompt, history=history)
     if function_name == "generativeai.discuss.ChatResponse.reply":
         prompt = get_argument(original_args, original_kwargs, "message", 1)
         history = _extract_google_history(original_args, original_kwargs, function_name)
-        return prompt, history
+        return ModelInput(prompt=prompt, history=history)
 
     raise ValueError(f"Unknown function name: {function_name}")
 

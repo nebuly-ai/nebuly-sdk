@@ -14,7 +14,7 @@ if not version("openai").startswith("0."):
     pytest.skip("Legacy tests only when openai version is 0.X", allow_module_level=True)
 
 from nebuly.contextmanager import new_interaction
-from nebuly.entities import InteractionWatch, SpanWatch
+from nebuly.entities import HistoryEntry, InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver
 from nebuly.requests import CustomJSONEncoder
 from tests.common import nebuly_init
@@ -325,9 +325,7 @@ def test_openai_chat__with_context_manager(openai_chat: dict[str, Any]) -> None:
             interaction_watch: InteractionWatch = mock_observer.call_args[0][0]
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == "Hello!"
-            assert interaction_watch.history == [
-                ("system", "You are a helpful assistant."),
-            ]
+            assert interaction_watch.history == []
             assert interaction_watch.output == "Another output"
             assert interaction.user == "test_user"
             assert interaction.user_group_profile == "test_group"
@@ -374,9 +372,7 @@ def test_openai_chat__multiple_spans_in_interaction(
             interaction_watch: InteractionWatch = mock_observer.call_args[0][0]
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == "Hello!"
-            assert interaction_watch.history == [
-                ("system", "You are a helpful assistant."),
-            ]
+            assert interaction_watch.history == []
             assert interaction_watch.output == "Another output"
             assert interaction.user == "test_user"
             assert interaction.user_group_profile == "test_group"
@@ -433,9 +429,7 @@ def test_openai_chat__multiple_interactions(openai_chat: dict[str, Any]) -> None
             ]
             assert isinstance(interaction_watch_0, InteractionWatch)
             assert interaction_watch_0.input == "Hello!"
-            assert interaction_watch_0.history == [
-                ("system", "You are a helpful assistant."),
-            ]
+            assert interaction_watch_0.history == []
             assert interaction_watch_0.output == "Another output"
             assert interaction_watch_0.end_user == "test_user"
             assert interaction_watch_0.end_user_group_profile == "test_group"
@@ -452,9 +446,7 @@ def test_openai_chat__multiple_interactions(openai_chat: dict[str, Any]) -> None
             ]
             assert isinstance(interaction_watch_1, InteractionWatch)
             assert interaction_watch_1.input == "Hello!"
-            assert interaction_watch_1.history == [
-                ("system", "You are a helpful assistant."),
-            ]
+            assert interaction_watch_1.history == []
             assert interaction_watch_1.output == "Another output"
             assert interaction_watch_1.end_user == "test_user"
             assert interaction_watch_1.end_user_group_profile == "test_group"
@@ -490,7 +482,7 @@ async def test_openai_chat__async(openai_chat: dict[str, Any]) -> None:
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == "Hello!"
             assert interaction_watch.history == [
-                ("Hello!", "Hello!"),
+                HistoryEntry(user="Hello!", assistant="Hello!")
             ]
             assert interaction_watch.output == "Hi there! How can I assist you today?"
             assert len(interaction_watch.spans) == 1

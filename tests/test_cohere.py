@@ -15,7 +15,7 @@ from cohere.responses.chat import (  # type: ignore
 from cohere.responses.generation import StreamingText  # type: ignore
 
 from nebuly.contextmanager import new_interaction
-from nebuly.entities import InteractionWatch, SpanWatch
+from nebuly.entities import HistoryEntry, InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver
 from nebuly.requests import CustomJSONEncoder
 from tests.common import nebuly_init
@@ -182,7 +182,10 @@ def test_cohere_chat__no_context_manager(cohere_chat: Chat) -> None:
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == "How are you?"
             assert interaction_watch.history == [
-                ("Hi!", "How can I help you today?"),
+                HistoryEntry(
+                    user="Hi!",
+                    assistant="How can I help you today?",
+                )
             ]
             assert interaction_watch.output == "I'm doing well, thanks for asking!"
             assert len(interaction_watch.spans) == 1
@@ -207,8 +210,8 @@ def test_cohere_chat__with_context_manager(cohere_chat: Chat) -> None:
                 interaction.set_input("Sample input 1")
                 interaction.set_history(
                     [
-                        ("User", "Hi!"),
-                        ("Chatbot", "How can I help you today?"),
+                        ("user", "Hi!"),
+                        ("assistant", "How can I help you today?"),
                     ]
                 )
                 result = co.chat(
@@ -228,8 +231,10 @@ def test_cohere_chat__with_context_manager(cohere_chat: Chat) -> None:
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == "Sample input 1"
             assert interaction_watch.history == [
-                ("User", "Hi!"),
-                ("Chatbot", "How can I help you today?"),
+                HistoryEntry(
+                    user="Hi!",
+                    assistant="How can I help you today?",
+                )
             ]
             assert interaction_watch.output == "Sample output 1"
             assert interaction_watch.end_user == "test_user"
@@ -266,7 +271,10 @@ async def test_cohere_chat__async(cohere_chat: Chat) -> None:
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == "How are you?"
             assert interaction_watch.history == [
-                ("Hi!", "How can I help you today?"),
+                HistoryEntry(
+                    user="Hi!",
+                    assistant="How can I help you today?",
+                )
             ]
             assert interaction_watch.output == "I'm doing well, thanks for asking!"
             assert len(interaction_watch.spans) == 1
@@ -388,7 +396,10 @@ def test_cohere_chat_gen(
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == "How are you?"
             assert interaction_watch.history == [
-                ("Hi!", "How can I help you today?"),
+                HistoryEntry(
+                    user="Hi!",
+                    assistant="How can I help you today?",
+                )
             ]
             assert interaction_watch.output == "Hi there"
             assert len(interaction_watch.spans) == 1

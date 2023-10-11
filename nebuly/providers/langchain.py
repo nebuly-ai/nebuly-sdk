@@ -16,7 +16,7 @@ from nebuly.contextmanager import (
     get_nearest_open_interaction,
     new_interaction,
 )
-from nebuly.entities import Observer
+from nebuly.entities import HistoryEntry, Observer
 from nebuly.tracking_handlers import LangChainTrackingHandler
 
 logger = logging.getLogger(__name__)
@@ -62,7 +62,7 @@ def _process_prompt_template(
 
 def _process_chat_prompt_template(
     inputs: dict[str, Any] | Any, prompt: ChatPromptTemplate
-) -> tuple[str, list[tuple[str, Any]]]:
+) -> tuple[str, list[HistoryEntry]]:
     messages = []
     for message in prompt.messages:
         if isinstance(inputs, dict):
@@ -80,7 +80,7 @@ def _process_chat_prompt_template(
 
     # Convert the history to [(user, assistant), ...] format
     history = [
-        (message_history[i], message_history[i + 1])
+        HistoryEntry(user=message_history[i], assistant=message_history[i + 1])
         for i in range(0, len(message_history), 2)
         if i < len(message_history) - 1
     ]
@@ -90,7 +90,7 @@ def _process_chat_prompt_template(
 
 def _get_input_and_history(
     chain: Chain, inputs: dict[str, Any] | Any
-) -> tuple[str, list[tuple[str, Any]] | None]:
+) -> tuple[str, list[HistoryEntry] | None]:
     chains = getattr(chain, "chains", None)
     if chains is not None:
         # If the chain is a SequentialChain, we need to get the

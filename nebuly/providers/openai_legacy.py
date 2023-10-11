@@ -7,12 +7,14 @@ from typing import Any
 
 from openai.openai_object import OpenAIObject  # type: ignore
 
+from nebuly.entities import HistoryEntry, ModelInput
+
 logger = logging.getLogger(__name__)
 
 
 def _extract_openai_history(
     original_kwargs: dict[str, Any],
-) -> list[tuple[str, str]]:
+) -> list[HistoryEntry]:
     history = original_kwargs.get("messages", [])[:-1]
 
     # Remove messages that are not from the user or the assistant
@@ -28,7 +30,7 @@ def _extract_openai_history(
 
     # Convert the history to [(user, assistant), ...] format
     history = [
-        (history[i]["content"], history[i + 1]["content"])
+        HistoryEntry(user=history[i]["content"], assistant=history[i + 1]["content"])
         for i in range(0, len(history), 2)
         if i < len(history) - 1
     ]
@@ -38,13 +40,13 @@ def _extract_openai_history(
 def extract_openai_input_and_history(
     original_kwargs: dict[str, Any],
     function_name: str,
-) -> tuple[str, list[tuple[str, Any]]]:
+) -> ModelInput:
     if function_name in ["Completion.create", "Completion.acreate"]:
-        return original_kwargs.get("prompt", ""), []
+        return ModelInput(prompt=original_kwargs.get("prompt", ""))
     if function_name in ["ChatCompletion.create", "ChatCompletion.acreate"]:
         prompt = original_kwargs.get("messages", [])[-1]["content"]
         history = _extract_openai_history(original_kwargs)
-        return prompt, history
+        return ModelInput(prompt=prompt, history=history)
 
     raise ValueError(f"Unknown function name: {function_name}")
 

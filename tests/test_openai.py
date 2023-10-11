@@ -26,7 +26,7 @@ from openai.types.chat import (
 from openai.types.chat.chat_completion import Choice
 
 from nebuly.contextmanager import new_interaction
-from nebuly.entities import InteractionWatch, SpanWatch
+from nebuly.entities import HistoryEntry, InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver
 from nebuly.requests import CustomJSONEncoder
 from tests.common import nebuly_init
@@ -456,7 +456,7 @@ def test_openai_chat__no_context_manager(
             assert interaction_watch.input == "Say again this is a test"
             assert interaction_watch.output == "\n\nThis is a test."
             assert interaction_watch.history == [
-                ("Say this is a test", "This is a test"),
+                HistoryEntry(user="Say this is a test", assistant="This is a test")
             ]
             assert interaction_watch.end_user == "test_user"
             assert interaction_watch.end_user_group_profile == "test_group"
