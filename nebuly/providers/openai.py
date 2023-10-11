@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copyreg
+import json
 import logging
 from dataclasses import dataclass
 from typing import Any, Callable, cast
@@ -12,6 +13,9 @@ from openai import AsyncOpenAI, OpenAI, _ModuleClient  # type: ignore  # noqa: E
 from openai.types.chat.chat_completion import (  # type: ignore  # noqa: E501
     ChatCompletion,
     Choice,
+)
+from openai.types.chat.chat_completion_chunk import (  # type: ignore  # noqa: E501
+    ChatCompletionChunk,
 )
 from openai.types.completion import Completion  # type: ignore  # noqa: E501
 from openai.types.completion_choice import (  # type: ignore  # noqa: E501
@@ -104,7 +108,10 @@ class OpenAIDataExtractor(ProviderDataExtractor):
     def extract_output(
         self,
         stream: bool,
-        outputs: ChatCompletion | Completion | list[ChatCompletion] | list[Completion],
+        outputs: ChatCompletion
+        | Completion
+        | list[ChatCompletionChunk]
+        | list[Completion],
     ) -> str:
         if isinstance(outputs, list) and stream:
             return self._extract_output_generator(outputs)
@@ -118,7 +125,20 @@ class OpenAIDataExtractor(ProviderDataExtractor):
             "resources.chat.completions.Completions.create",
             "resources.chat.completions.AsyncCompletions.create",
         ]:
-            return cast(str, cast(Choice, outputs.choices[0]).message.content)
+            if cast(Choice, outputs.choices[0]).message.content is not None:
+                # Normal chat completion
+                return cast(str, cast(Choice, outputs.choices[0]).message.content)
+            # Chat completion with function call
+            return json.dumps(
+                {
+                    "function_name": cast(
+                        Choice, outputs.choices[0]
+                    ).message.function_call.name,
+                    "arguments": cast(
+                        Choice, outputs.choices[0]
+                    ).message.function_call.arguments,
+                }
+            )
 
         raise ValueError(
             f"Unknown function name: {self.function_name} or "
@@ -126,7 +146,7 @@ class OpenAIDataExtractor(ProviderDataExtractor):
         )
 
     def _extract_output_generator(
-        self, outputs: list[Completion | ChatCompletion]
+        self, outputs: list[Completion] | list[ChatCompletionChunk]
     ) -> str:
         if all(
             isinstance(output, Completion) for output in outputs
@@ -138,16 +158,35 @@ class OpenAIDataExtractor(ProviderDataExtractor):
                 [getattr(output.choices[0], "text", "") or "" for output in outputs]
             )
         if all(
-            isinstance(output, ChatCompletion) for output in outputs
+            isinstance(output, ChatCompletionChunk) for output in outputs
         ) and self.function_name in [
             "resources.chat.completions.Completions.create",
             "resources.chat.completions.AsyncCompletions.create",
         ]:
-            return "".join(
-                [
-                    getattr(output.choices[0].delta, "content", "") or ""
-                    for output in outputs
-                ]
+            if not all(
+                getattr(output.choices[0].delta, "content") is None
+                for output in outputs
+            ):
+                # Normal chat completion
+                return "".join(
+                    [
+                        getattr(output.choices[0].delta, "content", "") or ""
+                        for output in outputs
+                    ]
+                )
+            # Chat completion with function call
+            return json.dumps(
+                {
+                    "function_name": "".join(
+                        getattr(output.choices[0].delta.function_call, "name", "") or ""
+                        for output in outputs
+                    ),
+                    "arguments": "".join(
+                        getattr(output.choices[0].delta.function_call, "arguments", "")
+                        or ""
+                        for output in outputs
+                    ),
+                }
             )
 
         raise ValueError(

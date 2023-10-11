@@ -1,4 +1,4 @@
-# pylint: disable=duplicate-code, import-error, no-name-in-module, wrong-import-position, wrong-import-order  # noqa: E501
+# pylint: disable=duplicate-code, import-error, no-name-in-module, wrong-import-position, wrong-import-order, too-many-lines  # noqa: E501
 # mypy: ignore-errors
 from __future__ import annotations
 
@@ -24,6 +24,7 @@ from openai.types.chat import (
     chat_completion_chunk,
 )
 from openai.types.chat.chat_completion import Choice
+from openai.types.chat.chat_completion_message import FunctionCall
 
 from nebuly.contextmanager import new_interaction
 from nebuly.entities import HistoryEntry, InteractionWatch, SpanWatch
@@ -357,6 +358,99 @@ async def test_openai_completion__stream_async(
             )
 
 
+@pytest.fixture(name="openai_chat_completion_function_call")
+def fixture_openai_chat_completion_function_call() -> ChatCompletion:
+    return ChatCompletion(
+        id="chatcmpl-88VfyByOf2FT704n7rdk6lxa8p6XV",
+        choices=[
+            Choice(
+                finish_reason="function_call",
+                index=0,
+                message=ChatCompletionMessage(
+                    content=None,
+                    role="assistant",
+                    function_call=FunctionCall(
+                        arguments='{\n  "location": "Boston"\n}',
+                        name="get_current_weather",
+                    ),
+                ),
+            )
+        ],
+        created=1697039078,
+        model="gpt-3.5-turbo-0613",
+        object="chat.completion",
+        usage=CompletionUsage(completion_tokens=16, prompt_tokens=83, total_tokens=99),
+    )
+
+
+def test_openai_chat__function_call(
+    openai_chat_completion_function_call: ChatCompletion,
+) -> None:
+    with patch(
+        "openai.resources.chat.completions.Completions.create"
+    ) as mock_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_create.return_value = openai_chat_completion_function_call
+            nebuly_init(observer=mock_observer)
+
+            client = OpenAI(
+                api_key="ciao",
+            )
+            functions = [
+                {
+                    "name": "get_current_weather",
+                    "description": "Get the current weather in a given location",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "location": {
+                                "type": "string",
+                                "description": "The city and state, e.g. "
+                                "San Francisco, CA",
+                            },
+                            "unit": {
+                                "type": "string",
+                                "enum": ["celsius", "fahrenheit"],
+                            },
+                        },
+                        "required": ["location"],
+                    },
+                }
+            ]
+            messages = [
+                {"role": "user", "content": "What's the weather like in Boston today?"}
+            ]
+
+            result = client.chat.completions.create(  # type: ignore
+                model="gpt-3.5-turbo",
+                messages=messages,
+                functions=functions,
+                function_call="auto",
+                user_id="test_user",
+                user_group_profile="test_group",
+            )
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "What's the weather like in Boston today?"
+            assert interaction_watch.output == json.dumps(
+                {
+                    "function_name": "get_current_weather",
+                    "arguments": '{\n  "location": "Boston"\n}',
+                }
+            )
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_group"
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
 @pytest.fixture(name="openai_chat_completion")
 def fixture_openai_chat_completion() -> ChatCompletion:
     return ChatCompletion(
@@ -540,6 +634,328 @@ async def test_openai_chat__async(openai_chat_completion: ChatCompletion) -> Non
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == "Say this is a test"
             assert interaction_watch.output == "\n\nThis is a test."
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_group"
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+@pytest.fixture(name="openai_chat_completion_stream_function_call")
+def fixture_openai_chat_completion_stream_function_call() -> list[ChatCompletionChunk]:
+    return [
+        ChatCompletionChunk(
+            id="chatcmpl-88VsZy9x6lx55LPte3y8o65XBCMxL",
+            choices=[
+                chat_completion_chunk.Choice(
+                    delta=chat_completion_chunk.ChoiceDelta(
+                        content=None,
+                        function_call=chat_completion_chunk.ChoiceDeltaFunctionCall(
+                            arguments="", name="get_current_weather"
+                        ),
+                        role="assistant",
+                    ),
+                    finish_reason=None,
+                    index=0,
+                )
+            ],
+            created=1697039859,
+            model="gpt-3.5-turbo-0613",
+            object="chat.completion.chunk",
+        ),
+        ChatCompletionChunk(
+            id="chatcmpl-88VsZy9x6lx55LPte3y8o65XBCMxL",
+            choices=[
+                chat_completion_chunk.Choice(
+                    delta=chat_completion_chunk.ChoiceDelta(
+                        content=None,
+                        function_call=chat_completion_chunk.ChoiceDeltaFunctionCall(
+                            arguments="{\n", name=None
+                        ),
+                        role=None,
+                    ),
+                    finish_reason=None,
+                    index=0,
+                )
+            ],
+            created=1697039859,
+            model="gpt-3.5-turbo-0613",
+            object="chat.completion.chunk",
+        ),
+        ChatCompletionChunk(
+            id="chatcmpl-88VsZy9x6lx55LPte3y8o65XBCMxL",
+            choices=[
+                chat_completion_chunk.Choice(
+                    delta=chat_completion_chunk.ChoiceDelta(
+                        content=None,
+                        function_call=chat_completion_chunk.ChoiceDeltaFunctionCall(
+                            arguments=" ", name=None
+                        ),
+                        role=None,
+                    ),
+                    finish_reason=None,
+                    index=0,
+                )
+            ],
+            created=1697039859,
+            model="gpt-3.5-turbo-0613",
+            object="chat.completion.chunk",
+        ),
+        ChatCompletionChunk(
+            id="chatcmpl-88VsZy9x6lx55LPte3y8o65XBCMxL",
+            choices=[
+                chat_completion_chunk.Choice(
+                    delta=chat_completion_chunk.ChoiceDelta(
+                        content=None,
+                        function_call=chat_completion_chunk.ChoiceDeltaFunctionCall(
+                            arguments=' "', name=None
+                        ),
+                        role=None,
+                    ),
+                    finish_reason=None,
+                    index=0,
+                )
+            ],
+            created=1697039859,
+            model="gpt-3.5-turbo-0613",
+            object="chat.completion.chunk",
+        ),
+        ChatCompletionChunk(
+            id="chatcmpl-88VsZy9x6lx55LPte3y8o65XBCMxL",
+            choices=[
+                chat_completion_chunk.Choice(
+                    delta=chat_completion_chunk.ChoiceDelta(
+                        content=None,
+                        function_call=chat_completion_chunk.ChoiceDeltaFunctionCall(
+                            arguments="location", name=None
+                        ),
+                        role=None,
+                    ),
+                    finish_reason=None,
+                    index=0,
+                )
+            ],
+            created=1697039859,
+            model="gpt-3.5-turbo-0613",
+            object="chat.completion.chunk",
+        ),
+        ChatCompletionChunk(
+            id="chatcmpl-88VsZy9x6lx55LPte3y8o65XBCMxL",
+            choices=[
+                chat_completion_chunk.Choice(
+                    delta=chat_completion_chunk.ChoiceDelta(
+                        content=None,
+                        function_call=chat_completion_chunk.ChoiceDeltaFunctionCall(
+                            arguments='":', name=None
+                        ),
+                        role=None,
+                    ),
+                    finish_reason=None,
+                    index=0,
+                )
+            ],
+            created=1697039859,
+            model="gpt-3.5-turbo-0613",
+            object="chat.completion.chunk",
+        ),
+        ChatCompletionChunk(
+            id="chatcmpl-88VsZy9x6lx55LPte3y8o65XBCMxL",
+            choices=[
+                chat_completion_chunk.Choice(
+                    delta=chat_completion_chunk.ChoiceDelta(
+                        content=None,
+                        function_call=chat_completion_chunk.ChoiceDeltaFunctionCall(
+                            arguments=' "', name=None
+                        ),
+                        role=None,
+                    ),
+                    finish_reason=None,
+                    index=0,
+                )
+            ],
+            created=1697039859,
+            model="gpt-3.5-turbo-0613",
+            object="chat.completion.chunk",
+        ),
+        ChatCompletionChunk(
+            id="chatcmpl-88VsZy9x6lx55LPte3y8o65XBCMxL",
+            choices=[
+                chat_completion_chunk.Choice(
+                    delta=chat_completion_chunk.ChoiceDelta(
+                        content=None,
+                        function_call=chat_completion_chunk.ChoiceDeltaFunctionCall(
+                            arguments="Boston", name=None
+                        ),
+                        role=None,
+                    ),
+                    finish_reason=None,
+                    index=0,
+                )
+            ],
+            created=1697039859,
+            model="gpt-3.5-turbo-0613",
+            object="chat.completion.chunk",
+        ),
+        ChatCompletionChunk(
+            id="chatcmpl-88VsZy9x6lx55LPte3y8o65XBCMxL",
+            choices=[
+                chat_completion_chunk.Choice(
+                    delta=chat_completion_chunk.ChoiceDelta(
+                        content=None,
+                        function_call=chat_completion_chunk.ChoiceDeltaFunctionCall(
+                            arguments=",", name=None
+                        ),
+                        role=None,
+                    ),
+                    finish_reason=None,
+                    index=0,
+                )
+            ],
+            created=1697039859,
+            model="gpt-3.5-turbo-0613",
+            object="chat.completion.chunk",
+        ),
+        ChatCompletionChunk(
+            id="chatcmpl-88VsZy9x6lx55LPte3y8o65XBCMxL",
+            choices=[
+                chat_completion_chunk.Choice(
+                    delta=chat_completion_chunk.ChoiceDelta(
+                        content=None,
+                        function_call=chat_completion_chunk.ChoiceDeltaFunctionCall(
+                            arguments=" MA", name=None
+                        ),
+                        role=None,
+                    ),
+                    finish_reason=None,
+                    index=0,
+                )
+            ],
+            created=1697039859,
+            model="gpt-3.5-turbo-0613",
+            object="chat.completion.chunk",
+        ),
+        ChatCompletionChunk(
+            id="chatcmpl-88VsZy9x6lx55LPte3y8o65XBCMxL",
+            choices=[
+                chat_completion_chunk.Choice(
+                    delta=chat_completion_chunk.ChoiceDelta(
+                        content=None,
+                        function_call=chat_completion_chunk.ChoiceDeltaFunctionCall(
+                            arguments='"\n', name=None
+                        ),
+                        role=None,
+                    ),
+                    finish_reason=None,
+                    index=0,
+                )
+            ],
+            created=1697039859,
+            model="gpt-3.5-turbo-0613",
+            object="chat.completion.chunk",
+        ),
+        ChatCompletionChunk(
+            id="chatcmpl-88VsZy9x6lx55LPte3y8o65XBCMxL",
+            choices=[
+                chat_completion_chunk.Choice(
+                    delta=chat_completion_chunk.ChoiceDelta(
+                        content=None,
+                        function_call=chat_completion_chunk.ChoiceDeltaFunctionCall(
+                            arguments="}", name=None
+                        ),
+                        role=None,
+                    ),
+                    finish_reason=None,
+                    index=0,
+                )
+            ],
+            created=1697039859,
+            model="gpt-3.5-turbo-0613",
+            object="chat.completion.chunk",
+        ),
+        ChatCompletionChunk(
+            id="chatcmpl-88VsZy9x6lx55LPte3y8o65XBCMxL",
+            choices=[
+                chat_completion_chunk.Choice(
+                    delta=chat_completion_chunk.ChoiceDelta(
+                        content=None, function_call=None, role=None
+                    ),
+                    finish_reason="function_call",
+                    index=0,
+                )
+            ],
+            created=1697039859,
+            model="gpt-3.5-turbo-0613",
+            object="chat.completion.chunk",
+        ),
+    ]
+
+
+def test_openai_chat__stream_function_call(
+    openai_chat_completion_stream_function_call: list[ChatCompletionChunk],
+) -> None:
+    with patch(
+        "openai.resources.chat.completions.Completions.create"
+    ) as mock_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_create.return_value = (
+                el for el in openai_chat_completion_stream_function_call
+            )
+            nebuly_init(observer=mock_observer)
+
+            client = OpenAI(
+                api_key="ciao",
+            )
+
+            functions = [
+                {
+                    "name": "get_current_weather",
+                    "description": "Get the current weather in a given location",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "location": {
+                                "type": "string",
+                                "description": "The city and state, e.g. "
+                                "San Francisco, CA",
+                            },
+                            "unit": {
+                                "type": "string",
+                                "enum": ["celsius", "fahrenheit"],
+                            },
+                        },
+                        "required": ["location"],
+                    },
+                }
+            ]
+            messages = [
+                {"role": "user", "content": "What's the weather like in Boston today?"}
+            ]
+
+            for _ in client.chat.completions.create(  # type: ignore  # pylint: disable=not-an-iterable  # noqa: E501
+                model="gpt-3.5-turbo",
+                messages=messages,
+                functions=functions,
+                function_call="auto",
+                stream=True,
+                user_id="test_user",
+                user_group_profile="test_group",
+            ):
+                ...
+
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "What's the weather like in Boston today?"
+            assert interaction_watch.output == json.dumps(
+                {
+                    "function_name": "get_current_weather",
+                    "arguments": '{\n  "location": "Boston, MA"\n}',
+                }
+            )
             assert interaction_watch.end_user == "test_user"
             assert interaction_watch.end_user_group_profile == "test_group"
             assert len(interaction_watch.spans) == 1

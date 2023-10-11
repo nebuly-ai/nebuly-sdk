@@ -250,6 +250,90 @@ async def test_openai_completion__async(openai_completion: dict[str, Any]) -> No
             )
 
 
+@pytest.fixture(name="openai_chat_function_call")
+def fixture_openai_chat_function_call() -> dict[str, Any]:
+    return {
+        "id": "chatcmpl-81Kl80GyhDVsOiEBQLQ6vG8svCUPe",
+        "object": "chat.completion",
+        "created": 1695328818,
+        "model": "gpt-3.5-turbo-0613",
+        "choices": [
+            {
+                "index": 0,
+                "message": {
+                    "role": "assistant",
+                    "content": None,
+                    "function_call": {
+                        "name": "get_current_weather",
+                        "arguments": '{\n"location": "Boston, MA"\n}',
+                    },
+                },
+                "finish_reason": "function_call",
+            }
+        ],
+        "usage": {"prompt_tokens": 19, "completion_tokens": 10, "total_tokens": 29},
+    }
+
+
+def test_openai_chat__function_call(openai_chat_function_call: dict[str, Any]) -> None:
+    with patch("openai.ChatCompletion.create") as mock_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_create.return_value = openai_chat_function_call
+            nebuly_init(observer=mock_observer)
+            functions = [
+                {
+                    "name": "get_current_weather",
+                    "description": "Get the current weather in a given location",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "location": {
+                                "type": "string",
+                                "description": "The city and state, e.g. "
+                                "San Francisco, CA",
+                            },
+                            "unit": {
+                                "type": "string",
+                                "enum": ["celsius", "fahrenheit"],
+                            },
+                        },
+                        "required": ["location"],
+                    },
+                }
+            ]
+            messages = [
+                {"role": "user", "content": "What's the weather like in Boston today?"}
+            ]
+
+            result = openai.ChatCompletion.create(  # type: ignore
+                model="gpt-3.5-turbo",
+                messages=messages,
+                functions=functions,
+                function_call="auto",
+                user_id="test_user",
+                user_group_profile="test_group",
+            )
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "What's the weather like in Boston today?"
+            assert interaction_watch.history == []
+            assert interaction_watch.output == json.dumps(
+                {
+                    "function_name": "get_current_weather",
+                    "arguments": '{\n"location": "Boston, MA"\n}',
+                }
+            )
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
 @pytest.fixture(name="openai_chat")
 def fixture_openai_chat() -> dict[str, Any]:
     return {
@@ -626,6 +710,118 @@ async def test_openai_completion_gen_async(
             assert isinstance(interaction_watch, InteractionWatch)
             assert interaction_watch.input == "Say this is a test"
             assert interaction_watch.output == "\n\nThis is a test."
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+@pytest.fixture(name="openai_chat_gen_function_call")
+def fixture_openai_chat_gen_function_call() -> list[dict[str, Any]]:
+    return [
+        {
+            "id": "chatcmpl-123",
+            "object": "chat.completion.chunk",
+            "created": 1677652288,
+            "model": "gpt-3.5-turbo",
+            "choices": [
+                {
+                    "index": 0,
+                    "delta": {
+                        "role": "assistant",
+                        "content": None,
+                        "function_call": {
+                            "name": "get_current_weather",
+                            "arguments": "",
+                        },
+                    },
+                    "finish_reason": None,
+                }
+            ],
+        },
+        {
+            "id": "chatcmpl-123",
+            "object": "chat.completion.chunk",
+            "created": 1677652288,
+            "model": "gpt-3.5-turbo",
+            "choices": [
+                {
+                    "index": 0,
+                    "delta": {
+                        "function_call": {"arguments": '{\n"location": "Boston, MA"\n}'}
+                    },
+                    "finish_reason": None,
+                }
+            ],
+        },
+        {
+            "id": "chatcmpl-123",
+            "object": "chat.completion.chunk",
+            "created": 1677652288,
+            "model": "gpt-3.5-turbo",
+            "choices": [{"index": 0, "delta": {}, "finish_reason": "function_call"}],
+        },
+    ]
+
+
+def test_openai_chat_gen_function_call(
+    openai_chat_gen_function_call: list[dict[str, Any]]
+) -> None:
+    with patch("openai.ChatCompletion.create") as mock_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_create.return_value = (
+                el for el in openai_chat_gen_function_call
+            )
+            nebuly_init(observer=mock_observer)
+            functions = [
+                {
+                    "name": "get_current_weather",
+                    "description": "Get the current weather in a given location",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "location": {
+                                "type": "string",
+                                "description": "The city and state, e.g. "
+                                "San Francisco, CA",
+                            },
+                            "unit": {
+                                "type": "string",
+                                "enum": ["celsius", "fahrenheit"],
+                            },
+                        },
+                        "required": ["location"],
+                    },
+                }
+            ]
+            messages = [
+                {"role": "user", "content": "What's the weather like in Boston today?"}
+            ]
+            for _ in openai.ChatCompletion.create(  # type: ignore
+                model="gpt-3.5-turbo",
+                messages=messages,
+                functions=functions,
+                function_call="auto",
+                stream=True,
+                user_id="test_user",
+                user_group_profile="test_group",
+            ):
+                ...
+
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "What's the weather like in Boston today?"
+            assert interaction_watch.history == []
+            assert interaction_watch.output == json.dumps(
+                {
+                    "function_name": "get_current_weather",
+                    "arguments": '{\n"location": "Boston, MA"\n}',
+                }
+            )
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)

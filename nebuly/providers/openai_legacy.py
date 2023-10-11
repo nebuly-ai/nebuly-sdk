@@ -2,6 +2,7 @@
 # mypy: ignore-errors
 from __future__ import annotations
 
+import json
 import logging
 from dataclasses import dataclass
 from typing import Any
@@ -73,7 +74,20 @@ class OpenAILegacyDataExtractor(ProviderDataExtractor):
             "ChatCompletion.create",
             "ChatCompletion.acreate",
         ]:
-            return outputs["choices"][0]["message"]["content"]  # type: ignore
+            if outputs["choices"][0]["message"].get("content") is not None:
+                # Normal chat completion
+                return outputs["choices"][0]["message"]["content"]  # type: ignore
+            # Function call
+            return json.dumps(
+                {
+                    "function_name": outputs["choices"][0]["message"]["function_call"][
+                        "name"
+                    ],
+                    "arguments": outputs["choices"][0]["message"]["function_call"][
+                        "arguments"
+                    ],
+                }
+            )
 
         raise ValueError(
             f"Unknown function name: {self.function_name} or "
@@ -90,8 +104,33 @@ class OpenAILegacyDataExtractor(ProviderDataExtractor):
         if all(
             isinstance(output, (OpenAIObject, dict)) for output in outputs
         ) and self.function_name in ["ChatCompletion.create", "ChatCompletion.acreate"]:
-            return "".join(
-                [output["choices"][0]["delta"].get("content", "") for output in outputs]
+            if not all(
+                output["choices"][0]["delta"].get("content") is None
+                for output in outputs
+            ):
+                # Normal chat completion
+                return "".join(
+                    [
+                        output["choices"][0]["delta"].get("content", "")
+                        for output in outputs
+                    ]
+                )
+            # Function call
+            return json.dumps(
+                {
+                    "function_name": "".join(
+                        output["choices"][0]["delta"]
+                        .get("function_call", {})
+                        .get("name", "")
+                        for output in outputs
+                    ),
+                    "arguments": "".join(
+                        output["choices"][0]["delta"]
+                        .get("function_call", {})
+                        .get("arguments", "")
+                        for output in outputs
+                    ),
+                }
             )
 
         raise ValueError(
