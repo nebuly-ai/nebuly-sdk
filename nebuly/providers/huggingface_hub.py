@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, cast
+from typing import Any, List, cast
 
 from huggingface_hub.inference._text_generation import (  # type: ignore
     TextGenerationResponse,
@@ -95,12 +95,12 @@ class HuggingFaceHubDataExtractor(ProviderDataExtractor):
             "AsyncInferenceClient.text_generation",
         ]:
             if all(isinstance(output, str) for output in outputs):
-                result = cast(list[str], outputs)
+                result = cast(List[str], outputs)
                 return "".join(result)
             if all(
                 isinstance(output, TextGenerationStreamResponse) for output in outputs
             ):
-                result = cast(list[TextGenerationStreamResponse], outputs)
+                result = cast(List[TextGenerationStreamResponse], outputs)
                 return "".join(
                     [
                         output.generated_text  # type: ignore
