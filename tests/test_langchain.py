@@ -20,7 +20,7 @@ import langchain
 from langchain.agents import AgentExecutor, OpenAIFunctionsAgent, tool
 from langchain.chains import LLMChain, SequentialChain
 from langchain.chat_models import ChatOpenAI
-from langchain.llms import OpenAI
+from langchain.llms.openai import OpenAI
 from langchain.prompts import PromptTemplate
 from langchain.prompts.chat import ChatPromptTemplate
 from langchain.schema import SystemMessage

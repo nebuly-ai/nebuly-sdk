@@ -1,10 +1,9 @@
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-import copyreg
 import logging
 from dataclasses import dataclass
-from typing import Any, cast
+from typing import Any, Callable, cast
 
 from vertexai.language_models import (  # type: ignore
     ChatMessage,
@@ -15,39 +14,60 @@ from vertexai.language_models import (  # type: ignore
 )
 
 from nebuly.entities import HistoryEntry, ModelInput
-from nebuly.providers.base import ProviderDataExtractor
+from nebuly.providers.base import PicklerHandler, ProviderDataExtractor
 from nebuly.providers.utils import get_argument
 
 logger = logging.getLogger(__name__)
 
 
+class VertexAIPicklerHandler(PicklerHandler):
+    @property
+    def _object_key_attribute_mapping(
+        self,
+    ) -> dict[Callable[[Any], Any], dict[str, list[str]]]:
+        return {
+            TextGenerationModel: {
+                "key_names": ["model_id", "endpoint_name"],
+                "attribute_names": ["_model_id", "_endpoint_name"],
+            },
+            ChatModel: {
+                "key_names": ["model_id", "endpoint_name"],
+                "attribute_names": ["_model_id", "_endpoint_name"],
+            },
+            ChatSession: {
+                "key_names": [
+                    "model",
+                    "context",
+                    "examples",
+                    "max_output_tokens",
+                    "temperature",
+                    "top_k",
+                    "top_p",
+                    "message_history",
+                    "stop_sequences",
+                ],
+                "attribute_names": [
+                    "_model._model_id",
+                    "_context",
+                    "_examples",
+                    "_max_output_tokens",
+                    "_temperature",
+                    "_top_k",
+                    "_top_p",
+                    "_message_history",
+                    "_stop_sequences",
+                ],
+            },
+        }
+
+
 def handle_vertexai_unpickable_objects() -> None:
-    def _pickle_text_generation_model(
-        c: TextGenerationModel,
-    ) -> tuple[type[TextGenerationModel], tuple[Any, ...]]:
-        return TextGenerationModel, (
-            c._model_id,  # pylint: disable=protected-access
-            c._endpoint_name,  # pylint: disable=protected-access
-        )
+    pickler_handler = VertexAIPicklerHandler()
 
-    def _pickle_chat_session(
-        c: ChatSession,
-    ) -> tuple[type[ChatSession], tuple[Any, ...]]:
-        return ChatSession, (
-            c._model._model_id,  # pylint: disable=protected-access
-            c._context,  # pylint: disable=protected-access
-            c._examples,  # pylint: disable=protected-access
-            c._max_output_tokens,  # pylint: disable=protected-access
-            c._temperature,  # pylint: disable=protected-access
-            c._top_k,  # pylint: disable=protected-access
-            c._top_p,  # pylint: disable=protected-access
-            c._message_history,  # pylint: disable=protected-access
-            c._stop_sequences,  # pylint: disable=protected-access
+    for obj in [TextGenerationModel, ChatModel, ChatSession]:
+        pickler_handler.handle_unpickable_object(
+            obj=obj,
         )
-
-    copyreg.pickle(TextGenerationModel, _pickle_text_generation_model)
-    copyreg.pickle(ChatModel, _pickle_text_generation_model)
-    copyreg.pickle(ChatSession, _pickle_chat_session)
 
 
 @dataclass(frozen=True)

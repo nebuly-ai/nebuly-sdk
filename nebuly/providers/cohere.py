@@ -1,7 +1,6 @@
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-import copyreg
 import logging
 from dataclasses import dataclass
 from typing import Any, Callable, List, Union, cast
@@ -22,7 +21,7 @@ from cohere.responses.generation import (  # type: ignore
 from typing_extensions import TypeAlias
 
 from nebuly.entities import HistoryEntry, ModelInput
-from nebuly.providers.base import ProviderDataExtractor
+from nebuly.providers.base import PicklerHandler, ProviderDataExtractor
 from nebuly.providers.utils import get_argument
 
 logger = logging.getLogger(__name__)
@@ -35,20 +34,30 @@ def is_cohere_generator(function: Callable[[Any], Any]) -> bool:
     return isinstance(function, (StreamingGenerations, StreamingChat))
 
 
-def handle_cohere_unpickable_objects() -> None:
-    def _pickle_cohere_client(c: Client) -> tuple[type[Client], tuple[Any, ...]]:
-        return Client, (
-            c.api_key,
-            c.num_workers,
-            c.request_dict,
-            True,
-            None,
-            c.max_retries,
-            c.timeout,
-            c.api_url,
-        )
+class CoherePicklerHandler(PicklerHandler):
+    @property
+    def _object_key_attribute_mapping(
+        self,
+    ) -> dict[Callable[[Any], Any], dict[str, list[str]]]:
+        names = [
+            "api_key",
+            "num_workers",
+            "request_dict",
+            "max_retries",
+            "timeout",
+            "api_url",
+        ]
+        return {
+            Client: {
+                "key_names": names,
+                "attribute_names": names,
+            },
+        }
 
-    copyreg.pickle(Client, _pickle_cohere_client)
+
+def handle_cohere_unpickable_objects() -> None:
+    pickler_handler = CoherePicklerHandler()
+    pickler_handler.handle_unpickable_object(obj=Client)
 
 
 @dataclass(frozen=True)

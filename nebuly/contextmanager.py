@@ -221,7 +221,9 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
         elif isinstance(value[0], tuple):
             value = cast(List[Tuple[str, str]], value)
             history = [
-                message for message in value if message[0] in ["user", "assistant"]
+                message
+                for message in value
+                if message[0].lower() in ["user", "assistant"]
             ]
             if len(history) % 2 != 0:
                 raise ValueError(

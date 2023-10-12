@@ -1,49 +1,58 @@
 # pylint: disable=duplicate-code, wrong-import-position, import-error, no-name-in-module
 from __future__ import annotations
 
-import copyreg
 import logging
 from dataclasses import dataclass
-from typing import Any, cast
+from typing import Any, Callable, cast
 
 from google.generativeai.discuss import ChatResponse  # type: ignore
 from google.generativeai.text import Completion  # type: ignore
 from google.generativeai.types import discuss_types, text_types  # type: ignore
 
 from nebuly.entities import HistoryEntry, ModelInput
-from nebuly.providers.base import ProviderDataExtractor
+from nebuly.providers.base import PicklerHandler, ProviderDataExtractor
 from nebuly.providers.utils import get_argument
 
 logger = logging.getLogger(__name__)
 
 
-class EditedCompletion(Completion):  # type: ignore
-    """The Completion class must be overridden to be pickled."""
+class GooglePicklerHandler(PicklerHandler):
+    @property
+    def _object_key_attribute_mapping(
+        self,
+    ) -> dict[Callable[[Any], Any], dict[str, list[str]]]:
+        completion_names = ["candidates", "result", "filters", "safety_feedback"]
+        chat_names = [
+            "model",
+            "context",
+            "examples",
+            "messages",
+            "temperature",
+            "candidate_count",
+            "candidates",
+            "filters",
+            "top_p",
+            "top_k",
+        ]
 
-    def __init__(self, **kwargs: Any):  # pylint: disable=super-init-not-called
-        for key, value in kwargs.items():
-            setattr(self, key, value)
-
-        self.result = None
-        if hasattr(self, "candidates") and self.candidates:
-            self.result = self.candidates[0]["output"]
+        return {
+            Completion: {
+                "key_names": completion_names,
+                "attribute_names": completion_names,
+            },
+            ChatResponse: {
+                "key_names": chat_names,
+                "attribute_names": chat_names,
+            },
+        }
 
 
 def handle_google_unpickable_objects() -> None:
-    def _pickle_google_completion(
-        obj: Completion,
-    ) -> tuple[type[EditedCompletion], tuple[Any, ...], dict[str, Any]]:
-        state = {key: value for key, value in obj.__dict__.items() if key != "_client"}
-        return EditedCompletion, (), state
-
-    def _pickle_google_chat(
-        obj: ChatResponse,
-    ) -> tuple[type[ChatResponse], tuple[Any, ...], dict[str, Any]]:
-        state = {key: value for key, value in obj.__dict__.items() if key != "_client"}
-        return ChatResponse, (), state
-
-    copyreg.pickle(Completion, _pickle_google_completion)
-    copyreg.pickle(ChatResponse, _pickle_google_chat)
+    pickler_handler = GooglePicklerHandler()
+    for obj in [Completion, ChatResponse]:
+        pickler_handler.handle_unpickable_object(
+            obj=obj,
+        )
 
 
 @dataclass(frozen=True)

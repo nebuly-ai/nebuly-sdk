@@ -2,7 +2,6 @@
 # mypy: ignore-errors
 from __future__ import annotations
 
-import copyreg
 import json
 import logging
 from dataclasses import dataclass
@@ -23,34 +22,32 @@ from openai.types.completion_choice import (  # type: ignore  # noqa: E501
 )
 
 from nebuly.entities import HistoryEntry, ModelInput
-from nebuly.providers.base import ProviderDataExtractor
+from nebuly.providers.base import PicklerHandler, ProviderDataExtractor
 
 logger = logging.getLogger(__name__)
 
 
+class OpenAIPicklerHandler(PicklerHandler):
+    @property
+    def _object_key_attribute_mapping(
+        self,
+    ) -> dict[Callable[[Any], Any], dict[str, list[str]]]:
+        names = ["api_key", "organization"]
+        return {
+            key: {
+                "key_names": names,
+                "attribute_names": names,
+            }
+            for key in [OpenAI, AsyncOpenAI, _ModuleClient]
+        }
+
+
 def handle_openai_unpickable_objects() -> None:
-    def _unpickle_openai_client(
-        constructor: Callable[[Any], Any], kwargs: dict[str, Any]
-    ) -> Any:
-        return constructor(**kwargs)  # type: ignore
-
-    def _pickle_openai_client(
-        c: _ModuleClient | OpenAI | AsyncOpenAI,
-    ) -> Any:
-        if isinstance(c, AsyncOpenAI):
-            class_constructor = AsyncOpenAI
-        elif isinstance(c, OpenAI):
-            class_constructor = OpenAI  # type: ignore
-        else:
-            class_constructor = _ModuleClient
-        return _unpickle_openai_client, (
-            class_constructor,
-            {"api_key": c.api_key, "organization": c.organization},
+    pickler_handler = OpenAIPicklerHandler()
+    for obj in [OpenAI, AsyncOpenAI, _ModuleClient]:
+        pickler_handler.handle_unpickable_object(
+            obj=obj,
         )
-
-    copyreg.pickle(_ModuleClient, _pickle_openai_client)
-    copyreg.pickle(OpenAI, _pickle_openai_client)
-    copyreg.pickle(AsyncOpenAI, _pickle_openai_client)
 
 
 def is_openai_generator(obj: Any) -> bool:
