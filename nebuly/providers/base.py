@@ -26,12 +26,13 @@ class PicklerHandler(abc.ABC):
         raise NotImplementedError("This method should be implemented by subclasses")
 
     def _get_attribute(self, obj: Any, attribute: str) -> Any:
-        if "." in attribute:
-            attributes = attribute.split(".")
-            return self._get_attribute(
-                getattr(obj, attributes[0]), ".".join(attributes[1:])
-            )
-        return getattr(obj, attribute)
+        if "." not in attribute:
+            return getattr(obj, attribute)
+
+        attributes = attribute.split(".")
+        return self._get_attribute(
+            getattr(obj, attributes[0]), ".".join(attributes[1:])
+        )
 
     @staticmethod
     def _unpickle_object(
