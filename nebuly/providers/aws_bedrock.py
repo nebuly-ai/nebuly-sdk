@@ -17,6 +17,10 @@ from nebuly.providers.base import PicklerHandler, ProviderDataExtractor
 logger = logging.getLogger(__name__)
 
 
+def is_aws_bedrock_generator(obj: Any) -> bool:
+    return isinstance(obj["body"], EventStream)
+
+
 def is_model_supported(model_id: str) -> bool:
     if model_id.startswith("stability"):
         return False
@@ -49,16 +53,7 @@ def handle_aws_bedrock_unpickable_objects(obj: Any) -> None:
         obj.read = new_read
         return lambda x: x, (data,)
 
-    def extract_aws_event_stream_body(obj: EventStream) -> Any:  # type: ignore
-        def new_read():
-            return obj._raw_stream.data  # pylint: disable=protected-access
-
-        data = obj._raw_stream.data  # pylint: disable=protected-access
-        obj.read = new_read
-        return lambda x: x, (data,)
-
     copyreg.pickle(StreamingBody, extract_aws_streaming_body)
-    copyreg.pickle(EventStream, extract_aws_event_stream_body)
 
 
 @dataclass(frozen=True)
@@ -80,7 +75,9 @@ class AWSBedrockDataExtractor(ProviderDataExtractor):
 
         raise ValueError(f"Unknown function name: {self.function_name}")
 
-    def extract_output(self, stream: bool, outputs: dict[str, Any]) -> str:
+    def extract_output(
+        self, stream: bool, outputs: dict[str, Any] | list[dict[str, Any]]
+    ) -> str:
         if isinstance(outputs, list) and stream:
             return self._extract_output_generator(outputs)
 
@@ -103,5 +100,17 @@ class AWSBedrockDataExtractor(ProviderDataExtractor):
             f"output type: {type(outputs)}"
         )
 
-    def _extract_output_generator(self, outputs: Any) -> str:
-        raise NotImplementedError("Not implemented yet")
+    @staticmethod
+    def _extract_output_generator(outputs: list[dict[str, Any]]) -> str:
+        result = ""
+        for output in outputs:
+            chunk = json.loads(output["chunk"]["bytes"].decode("utf-8"))
+            if "results" in chunk:  # Amazon
+                result += chunk["results"][0]["outputText"]
+            if "generations" in chunk:  # Cohere
+                result += chunk["generations"][0]["text"]
+            if "completion" in chunk:  # Anthropic
+                result += chunk["completion"]
+            if "completions" in chunk:
+                result += chunk["completions"][0]["data"]["text"]
+        return result

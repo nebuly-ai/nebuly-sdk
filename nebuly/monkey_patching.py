@@ -537,6 +537,16 @@ def _is_generator(obj: Any) -> bool:
     except ImportError:
         pass
 
+    try:
+        from nebuly.providers.aws_bedrock import (  # pylint: disable=import-outside-toplevel  # noqa: E501
+            is_aws_bedrock_generator,
+        )
+
+        if is_aws_bedrock_generator(obj):
+            return True
+    except ImportError:
+        pass
+
     return False
 
 
@@ -676,6 +686,20 @@ def function_wrapper(
 
         if _is_generator(result):
             logger.debug("Result is a generator")
+            if module == "botocore":
+                # AWS case must be handled separatly because has a different return type
+                result["body"] = watch_from_generator(
+                    generator=result["body"],
+                    observer=observer,
+                    module=module,
+                    package_version=package_version,
+                    function_name=function_name,
+                    called_start=called_start,
+                    original_args=original_args,
+                    original_kwargs=original_kwargs,
+                    nebuly_kwargs=nebuly_kwargs,
+                )
+                return result
             return watch_from_generator(
                 generator=result,
                 observer=observer,
