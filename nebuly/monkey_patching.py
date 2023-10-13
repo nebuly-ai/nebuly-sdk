@@ -234,7 +234,7 @@ def _add_span_to_interaction(  # pylint: disable=too-many-arguments
         )
 
 
-def _add_interaction_span(  # pylint: disable=too-many-arguments
+def _add_interaction_span(  # pylint: disable=too-many-arguments, too-many-locals
     original_args: tuple[Any, ...],
     original_kwargs: dict[str, Any],
     module: str,
@@ -243,6 +243,7 @@ def _add_interaction_span(  # pylint: disable=too-many-arguments
     observer: Observer,
     watched: SpanWatch,
     nebuly_kwargs: dict[str, Any],
+    start_time: datetime,
     stream: bool = False,
 ) -> None:
     try:
@@ -279,6 +280,7 @@ def _add_interaction_span(  # pylint: disable=too-many-arguments
         if isinstance(model_input_res, list):
             for model_input, model_output in zip(model_input_res, model_output_res):
                 with new_interaction() as interaction:
+                    interaction.time_start = start_time
                     _add_span_to_interaction(
                         observer=observer,
                         interaction=interaction,
@@ -290,6 +292,7 @@ def _add_interaction_span(  # pylint: disable=too-many-arguments
                     )
         else:
             with new_interaction() as interaction:
+                interaction.time_start = start_time
                 _add_span_to_interaction(
                     observer=observer,
                     interaction=interaction,
@@ -357,6 +360,7 @@ def watch_from_generator(  # pylint: disable=too-many-arguments
         watched=watched,
         nebuly_kwargs=nebuly_kwargs,
         stream=True,
+        start_time=called_start,
     )
 
 
@@ -415,6 +419,7 @@ async def watch_from_generator_async(  # pylint: disable=too-many-arguments
         watched=watched,
         nebuly_kwargs=nebuly_kwargs,
         stream=True,
+        start_time=called_start,
     )
 
 
@@ -617,6 +622,7 @@ def coroutine_wrapper(
             observer=observer,
             watched=watched,
             nebuly_kwargs=nebuly_kwargs,
+            start_time=called_start,
         )
         return result
 
@@ -708,6 +714,7 @@ def function_wrapper(
             observer=observer,
             watched=watched,
             nebuly_kwargs=nebuly_kwargs,
+            start_time=called_start,
         )
         return result
 
