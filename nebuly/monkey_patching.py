@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import importlib
+import json
 import logging
 import sys
 from copy import deepcopy
@@ -102,6 +103,31 @@ def _monkey_patch_attribute(
     )
 
 
+def _extract_nebuly_kwargs_from_arg(arg: Any, nebuly_kwargs: dict[str, Any]) -> Any:
+    if not isinstance(arg, (dict, str)):
+        return arg
+
+    needs_json_conversion = False
+    if isinstance(arg, str):
+        try:
+            arg = json.loads(arg)
+            needs_json_conversion = True
+        except json.JSONDecodeError:
+            return arg
+
+    for key in NEBULY_KWARGS:
+        if key in arg:
+            nebuly_kwargs[key] = arg.pop(key)
+
+    for key, value in arg.items():
+        arg[key] = _extract_nebuly_kwargs_from_arg(value, nebuly_kwargs)
+
+    if needs_json_conversion:
+        arg = json.dumps(arg)
+
+    return arg
+
+
 def _split_nebuly_kwargs(
     args: tuple[Any, ...], kwargs: dict[str, Any]
 ) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -119,10 +145,7 @@ def _split_nebuly_kwargs(
                 function_kwargs[key] = kwargs[key]
     else:
         for arg in args:
-            if isinstance(arg, dict):
-                for key in NEBULY_KWARGS:
-                    if key in arg:
-                        nebuly_kwargs[key] = arg.pop(key)
+            arg = _extract_nebuly_kwargs_from_arg(arg, nebuly_kwargs)
     return nebuly_kwargs, function_kwargs
 
 

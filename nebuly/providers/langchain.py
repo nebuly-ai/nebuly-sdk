@@ -37,7 +37,7 @@ def _get_tracking_info_for_provider_call(**kwargs: Any) -> dict[str, Any]:
     # Get the parent_run_id from the CallbackManager
     callback_manager = callbacks
     parent_run_id = cast(UUID, callback_manager.parent_run_id)
-    additional_kwargs = {"parent_run_id": parent_run_id}
+    additional_kwargs = {"parent_run_id": str(parent_run_id)}
 
     # Get the root_run_id from the LangChainTrackingHandler
     for handler in callback_manager.handlers:
@@ -46,7 +46,7 @@ def _get_tracking_info_for_provider_call(**kwargs: Any) -> dict[str, Any]:
             root_run_id = interaction._events_storage.get_root_id(  # pylint: disable=protected-access  # noqa: E501
                 parent_run_id
             )
-            additional_kwargs["root_run_id"] = root_run_id
+            additional_kwargs["root_run_id"] = str(root_run_id)
             break
 
     return additional_kwargs
