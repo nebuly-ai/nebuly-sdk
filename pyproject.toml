@@ -31,6 +31,7 @@ langchain = { version = "^0.0.306", python=">=3.8.1,<4.0"}
 google-generativeai = { version = "^0.2", python=">=3.9,<4.0"}
 transformers = "^4.34.0"
 torch = "^1.13.1"
+boto3 = "^1.28.63"
 
 [build-system]
 requires = ["poetry-core"]
