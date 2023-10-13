@@ -526,7 +526,7 @@ def _setup_args_kwargs(
     return original_args, original_kwargs, function_kwargs, nebuly_kwargs
 
 
-def _is_generator(obj: Any) -> bool:
+def _is_generator(obj: Any, module: str) -> bool:
     if isinstance(obj, (Generator, AsyncGenerator)):
         return True
 
@@ -560,15 +560,16 @@ def _is_generator(obj: Any) -> bool:
     except ImportError:
         pass
 
-    try:
-        from nebuly.providers.aws_bedrock import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-            is_aws_bedrock_generator,
-        )
+    if module == "botocore":
+        try:
+            from nebuly.providers.aws_bedrock import (  # pylint: disable=import-outside-toplevel  # noqa: E501
+                is_aws_bedrock_generator,
+            )
 
-        if is_aws_bedrock_generator(obj):
-            return True
-    except ImportError:
-        pass
+            if is_aws_bedrock_generator(obj):
+                return True
+        except ImportError:
+            pass
 
     return False
 
@@ -615,7 +616,7 @@ def coroutine_wrapper(
         else:
             result = await f(*args, **function_kwargs)
 
-        if _is_generator(result):
+        if _is_generator(result, module):
             logger.debug("Result is a generator")
             return watch_from_generator_async(
                 generator=result,
@@ -707,7 +708,7 @@ def function_wrapper(
         called_start = datetime.now(timezone.utc)
         result = f(*args, **function_kwargs)
 
-        if _is_generator(result):
+        if _is_generator(result, module):
             logger.debug("Result is a generator")
             if module == "botocore":
                 # AWS case must be handled separatly because has a different return type
