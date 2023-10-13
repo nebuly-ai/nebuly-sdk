@@ -103,7 +103,7 @@ def _monkey_patch_attribute(
 
 
 def _split_nebuly_kwargs(
-    kwargs: dict[str, Any]
+    args: tuple[Any, ...], kwargs: dict[str, Any]
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """
     Split nebuly kwargs from function kwargs
@@ -111,11 +111,18 @@ def _split_nebuly_kwargs(
 
     nebuly_kwargs = {}
     function_kwargs = {}
-    for key in kwargs:
-        if key in NEBULY_KWARGS:
-            nebuly_kwargs[key] = kwargs[key]
-        else:
-            function_kwargs[key] = kwargs[key]
+    if len(kwargs) > 0:
+        for key in kwargs:
+            if key in NEBULY_KWARGS:
+                nebuly_kwargs[key] = kwargs[key]
+            else:
+                function_kwargs[key] = kwargs[key]
+    else:
+        for arg in args:
+            if isinstance(arg, dict):
+                for key in NEBULY_KWARGS:
+                    if key in arg:
+                        nebuly_kwargs[key] = arg.pop(key)
     return nebuly_kwargs, function_kwargs
 
 
@@ -182,6 +189,13 @@ def _get_provider_data_extractor(
         )
 
         constructor = VertexAIDataExtractor  # type: ignore
+
+    if module == "botocore":
+        from nebuly.providers.aws_bedrock import (  # pylint: disable=import-outside-toplevel  # noqa: E501
+            AWSBedrockDataExtractor,
+        )
+
+        constructor = AWSBedrockDataExtractor  # type: ignore
 
     if constructor is not None:
         return constructor(  # type: ignore
@@ -404,7 +418,7 @@ async def watch_from_generator_async(  # pylint: disable=too-many-arguments
     )
 
 
-def _handle_unpickleable_objects() -> None:
+def _handle_unpickleable_objects(module: str, args: Any) -> None:
     """
     Make unpickleable objects pickleable to avoid errors when
     using the deepcopy function
@@ -452,10 +466,19 @@ def _handle_unpickleable_objects() -> None:
         handle_vertexai_unpickable_objects()
     except ImportError:
         pass
+    if module == "botocore":
+        try:
+            from nebuly.providers.aws_bedrock import (  # pylint: disable=import-outside-toplevel  # noqa: E501
+                handle_aws_bedrock_unpickable_objects,
+            )
+
+            handle_aws_bedrock_unpickable_objects(args[0])
+        except ImportError:
+            pass
 
 
 def _setup_args_kwargs(
-    *args: tuple[Any, ...], **kwargs: dict[str, Any]
+    *args: Any, **kwargs: Any
 ) -> tuple[tuple[Any, ...], dict[str, Any], dict[str, Any], dict[str, Any]]:
     """
     Split nebuly kwargs from function kwargs
@@ -467,9 +490,7 @@ def _setup_args_kwargs(
         function_kwargs: kwargs passed to the function that are not nebuly kwargs
         nebuly_kwargs: kwargs passed to the function that are nebuly kwargs
     """
-    nebuly_kwargs, function_kwargs = _split_nebuly_kwargs(kwargs)
-
-    _handle_unpickleable_objects()
+    nebuly_kwargs, function_kwargs = _split_nebuly_kwargs(args, kwargs)
     original_args = deepcopy(args)
     nebuly_kwargs = deepcopy(nebuly_kwargs)
     original_kwargs = deepcopy(function_kwargs)
@@ -537,6 +558,8 @@ def coroutine_wrapper(
                 args=args,
                 kwargs=kwargs,
             )
+
+        _handle_unpickleable_objects(module, args)
 
         (
             original_args,
@@ -623,6 +646,15 @@ def function_wrapper(
                 args=args,
                 kwargs=kwargs,
             )
+        if module == "botocore":
+            from nebuly.providers.aws_bedrock import (  # pylint: disable=import-outside-toplevel  # noqa: E501
+                is_model_supported,
+            )
+
+            if not is_model_supported(args[2]["modelId"]):
+                return f(*args, **kwargs)
+
+        _handle_unpickleable_objects(module, args)
 
         (
             original_args,

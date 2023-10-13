@@ -109,7 +109,7 @@ def test_split_nebuly_kwargs() -> None:
         "user_group_profile": "group_profile",
         "arg2": "arg2",
     }
-    nebuly_kwargs, function_kwargs = _split_nebuly_kwargs(original_dict)
+    nebuly_kwargs, function_kwargs = _split_nebuly_kwargs((), original_dict)
     assert nebuly_kwargs == {
         "user_id": "user",
         "user_group_profile": "group_profile",

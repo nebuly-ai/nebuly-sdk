@@ -86,7 +86,8 @@ class CohereDataExtractor(ProviderDataExtractor):
         # Convert the history to [(user, assistant), ...] format
         history = [
             HistoryEntry(
-                user=history[i]["message"], assistant=history[i + 1]["message"]
+                user=history[i].get("message", history[i].get("text", "")),
+                assistant=history[i + 1].get("message", history[i + 1].get("text", "")),
             )
             for i in range(0, len(history), 2)
             if i < len(history) - 1

@@ -100,4 +100,9 @@ PACKAGES = (
             "language_models.ChatSession.send_message_streaming",
         ),
     ),
+    Package(
+        "botocore",
+        SupportedVersion("1.30.0"),
+        ("client.BaseClient._make_api_call",),
+    ),
 )
