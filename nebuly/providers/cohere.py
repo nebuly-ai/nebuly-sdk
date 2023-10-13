@@ -76,7 +76,7 @@ class CohereDataExtractor(ProviderDataExtractor):
             message
             for message in history
             if message.get("role", message.get("user_name", "")).lower()
-            in ["user", "chatbot"]
+            in ["user", "chatbot", "assistant"]
         ]
 
         if len(history) % 2 != 0:
