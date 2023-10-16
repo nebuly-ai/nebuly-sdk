@@ -111,6 +111,11 @@ def _extract_nebuly_kwargs_from_arg(arg: Any, nebuly_kwargs: dict[str, Any]) -> 
     if isinstance(arg, str):
         try:
             arg = json.loads(arg)
+            if not isinstance(arg, dict):
+                # Need this to handle the case when the arg is a string containing
+                # for example an int
+                return json.dumps(arg)
+
             needs_json_conversion = True
         except json.JSONDecodeError:
             return arg
