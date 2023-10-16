@@ -22,7 +22,7 @@ def is_aws_bedrock_generator(obj: Any) -> bool:
 
 
 def is_model_supported(model_id: str) -> bool:
-    if model_id.startswith("stability"):
+    if model_id.startswith("stability") or "-embed-" in model_id:
         return False
     return True
 
@@ -92,7 +92,7 @@ class AWSBedrockDataExtractor(ProviderDataExtractor):
                 return response_body["generations"][0]["text"]
             if "completion" in response_body:  # Anthropic
                 return response_body["completion"]
-            if "completions" in response_body:
+            if "completions" in response_body:  # AI21
                 return response_body["completions"][0]["data"]["text"]
 
         raise ValueError(
@@ -105,12 +105,12 @@ class AWSBedrockDataExtractor(ProviderDataExtractor):
         result = ""
         for output in outputs:
             chunk = json.loads(output["chunk"]["bytes"].decode("utf-8"))
-            if "results" in chunk:  # Amazon
-                result += chunk["results"][0]["outputText"]
-            if "generations" in chunk:  # Cohere
-                result += chunk["generations"][0]["text"]
-            if "completion" in chunk:  # Anthropic
+            if "outputText" in chunk:  # Amazon
+                result += chunk["outputText"]
+            elif "text" in chunk:  # Cohere
+                result += chunk["text"]
+            elif "completion" in chunk:  # Anthropic
                 result += chunk["completion"]
-            if "completions" in chunk:
-                result += chunk["completions"][0]["data"]["text"]
+            else:
+                raise ValueError(f"Unknown output dict: {chunk}")
         return result

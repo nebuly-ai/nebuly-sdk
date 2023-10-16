@@ -47,6 +47,8 @@ class CustomJSONEncoder(json.JSONEncoder):
         return has_correct_type or is_valid_class
 
     def default(self, o: Any) -> Any:
+        if isinstance(o, bytes):
+            return o.decode("utf-8")
         if hasattr(o, "to_dict"):
             return o.to_dict()
         try:
