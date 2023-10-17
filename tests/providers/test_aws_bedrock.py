@@ -14,7 +14,7 @@ from botocore.response import StreamingBody  # type: ignore
 from nebuly.entities import InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver
 from nebuly.requests import CustomJSONEncoder
-from tests.common import nebuly_init
+from tests.providers.common import nebuly_init
 
 
 @pytest.fixture(name="a2i_completion")

@@ -18,7 +18,7 @@ from nebuly.contextmanager import new_interaction
 from nebuly.entities import HistoryEntry, InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver
 from nebuly.requests import CustomJSONEncoder
-from tests.common import nebuly_init
+from tests.providers.common import nebuly_init
 
 
 @pytest.fixture(name="palm_completion")

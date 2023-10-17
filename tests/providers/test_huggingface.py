@@ -11,7 +11,7 @@ from transformers import Conversation, pipeline  # type: ignore
 from nebuly.entities import HistoryEntry, InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver
 from nebuly.requests import CustomJSONEncoder
-from tests.common import nebuly_init
+from tests.providers.common import nebuly_init
 
 
 @pytest.fixture(name="hf_conversational_pipelines")

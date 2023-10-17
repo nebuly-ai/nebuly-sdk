@@ -89,8 +89,13 @@ make lint-fix
     - Azure OpenAI
     - Cohere
     - Anthropic
-    - HuggingFace
+    - HuggingFace pipelines
+    - HuggingFace HUB
     - LangChain
+    - Amazon Bedrock
+    - Amazon SageMaker
+    - Google PALM API
+    - Google VertexAI
 
 ## Usage
 

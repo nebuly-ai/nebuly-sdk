@@ -35,7 +35,7 @@ from nebuly.entities import (
 )
 from nebuly.observers import NebulyObserver
 from nebuly.requests import CustomJSONEncoder
-from tests import common
+from tests.providers import common
 
 # Cache original functions
 orig_func_llm_gen = langchain.llms.base.BaseLLM.generate
