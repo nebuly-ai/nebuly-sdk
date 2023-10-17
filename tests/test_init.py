@@ -5,15 +5,14 @@ import os
 import pytest
 
 from nebuly import init
-from nebuly.entities import DevelopmentPhase
 from nebuly.exceptions import APIKeyNotProvidedError, NebulyAlreadyInitializedError
 from nebuly.init import _get_api_key
 
 
 def test_cannot_init_twice() -> None:
-    init(api_key="fake_key", project="", phase=DevelopmentPhase.EXPERIMENTATION)
+    init(api_key="fake_key")
     with pytest.raises(NebulyAlreadyInitializedError):
-        init(api_key="fake_key", project="", phase=DevelopmentPhase.EXPERIMENTATION)
+        init(api_key="fake_key")
 
 
 def test_get_api_key_not_provided() -> None:
