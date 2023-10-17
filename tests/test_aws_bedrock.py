@@ -2,14 +2,13 @@
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import Any, Generator
 from unittest.mock import MagicMock, patch
 
 import boto3  # type: ignore
 import pytest
 import urllib3
-
-# from botocore.eventstream import EventStream
+from botocore.eventstream import EventStream  # type: ignore
 from botocore.response import StreamingBody  # type: ignore
 
 from nebuly.entities import InteractionWatch, SpanWatch
@@ -53,7 +52,9 @@ def test_aws_bedrock_a2i_invoke_model__anthropic(
             mock_completion.return_value = a2i_completion
             nebuly_init(observer=mock_observer)
 
-            bedrock = boto3.client(service_name="bedrock-runtime")
+            bedrock = boto3.client(
+                service_name="bedrock-runtime", region_name="us-east-1"
+            )
             body = json.dumps(
                 {
                     "prompt": "Say 'HI'",
@@ -100,63 +101,174 @@ def test_aws_bedrock_a2i_invoke_model__anthropic(
             )
 
 
-# @pytest.fixture(name="anthropic_completion_stream")
-# def fixture_aws_bedrock_a2i_invoke_model_stream() -> dict[str, Any]:
-#     raw_stream = MagicMock(
-#         spec=urllib3.response.HTTPResponse,
-#         data=b'\x00\x00\x00\xe7\x00\x00\x00a\xc5c\x95h\x0f:exception-type\x07\x00\x13validationException\r:content-type\x07\x00\x10application/json\r:message-type\x07\x00\texception{"message":"Invalid prompt: prompt must start with \\"\\n\\nHuman:\\" turn, prompt must end with \\"\\n\\nAssistant:\\" turn"}\x93\xf3\x99W'  # pylint: disable=line-too-long  # noqa: E501
-#     )
-#     return {
-#         "ResponseMetadata": {
-#             "RequestId": "830dfcc1-33f5-4b3e-bf84-7c519715ff30",
-#             "HTTPStatusCode": 200,
-#             "HTTPHeaders": {
-#                 "date": "Mon, 16 Oct 2023 14:58:21 GMT",
-#                 "content-type": "application/json",
-#                 "content-length": "10132",
-#                 "connection": "keep-alive",
-#                 "x-amzn-requestid": "830dfcc1-33f5-4b3e-bf84-7c519715ff30",
-#             },
-#             "RetryAttempts": 0,
-#         },
-#         "contentType": "application/json",
-#         "body": EventStream(
-#             raw_stream=raw_stream,
-#             output_shape=None,
-#             parser=None,
-#             operation_name="InvokeModelWithResponseStream"
-#         ),
-#     }
-#
-#
-# def test_aws_bedrock_a2i_invoke_model_stream__anthropic(
-#     anthropic_completion_stream: dict[str, Any]
-# ) -> None:
-#     with patch("botocore.client.BaseClient._make_api_call") as mock_completion:
-#         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
-#             mock_completion.return_value = anthropic_completion_stream
-#             nebuly_init(observer=mock_observer)
-#
-#             bedrock = boto3.client(service_name='bedrock-runtime')
-#
-#             body = json.dumps({
-#                 'prompt': "Say 'HI'",
-#                 'max_tokens_to_sample': 100
-#             })
-#
-#             result = bedrock.invoke_model_with_response_stream(
-#                 modelId='anthropic.claude-v2',
-#                 body=body,
-#                 user_id="test_user",
-#                 user_group_profile="test_user_group_profile",
-#             )
-#
-#             assert list(result.get('body')) is not None
-#             assert mock_observer.call_count == 1
-#
-#             interaction_watch = mock_observer.call_args[0][0]
-#             assert isinstance(interaction_watch, InteractionWatch)
-#             assert interaction_watch.end_user == "test_user"
-#             assert interaction_watch.end_user_group_profile == "test_user_group_profile"  # pylint: disable=line-too-long  # noqa: E501
-#             assert interaction_watch.input == "Say 'HI'"
-#             assert interaction_watch.output == "\nHi!"
+@pytest.fixture(name="anthropic_completion")
+def fixture_aws_bedrock_invoke_model_anthropic() -> dict[str, Any]:
+    raw_stream = MagicMock(
+        spec=urllib3.response.HTTPResponse,
+        data=b'{"completion":" Hello!","stop_reason":"stop_sequence"}',
+    )
+    return {
+        "ResponseMetadata": {
+            "RequestId": "830dfcc1-33f5-4b3e-bf84-7c519715ff30",
+            "HTTPStatusCode": 200,
+            "HTTPHeaders": {
+                "date": "Mon, 16 Oct 2023 14:58:21 GMT",
+                "content-type": "application/json",
+                "content-length": "10132",
+                "connection": "keep-alive",
+                "x-amzn-requestid": "830dfcc1-33f5-4b3e-bf84-7c519715ff30",
+            },
+            "RetryAttempts": 0,
+        },
+        "contentType": "application/json",
+        "body": StreamingBody(
+            raw_stream=raw_stream,
+            content_length=1280,
+        ),
+    }
+
+
+def test_aws_bedrock_invoke_model__anthropic(
+    anthropic_completion: dict[str, Any],
+) -> None:
+    with patch("botocore.client.BaseClient._make_api_call") as mock_completion:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion.return_value = anthropic_completion
+            nebuly_init(observer=mock_observer)
+
+            bedrock = boto3.client(
+                service_name="bedrock-runtime", region_name="us-east-1"
+            )
+            body = json.dumps(
+                {
+                    "prompt": "\n\nHuman:say hi\n\nAssistant:",
+                    "max_tokens_to_sample": 300,
+                }
+            )
+
+            modelId = "anthropic.claude-v2"
+            accept = "application/json"
+            contentType = "application/json"
+
+            response = bedrock.invoke_model(
+                body=body,
+                modelId=modelId,
+                accept=accept,
+                contentType=contentType,
+                user_id="test_user",
+                user_group_profile="test_user_group_profile",
+            )
+
+            assert response is not None
+            assert (
+                response.get("body").read()
+                == anthropic_completion[  # pylint: disable=protected-access
+                    "body"
+                ]._raw_stream.data
+            )
+            assert mock_observer.call_count == 1
+
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_user_group_profile"
+            assert interaction_watch.input == "say hi"
+            assert interaction_watch.output == " Hello!"
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+@pytest.fixture(name="anthropic_completion_stream")
+def fixture_aws_bedrock_invoke_model_stream_anthropic() -> (
+    Generator[dict[str, Any], None, None]
+):  # pylint: disable=line-too-long  # noqa: E501
+    event_stream = EventStream(
+        raw_stream=MagicMock(spec=urllib3.response.HTTPResponse),
+        output_shape=None,
+        parser=None,
+        operation_name="InvokeModelWithResponseStream",
+    )
+
+    with patch.object(EventStream, "__iter__") as mock_iter:
+        mock_iter.return_value = iter(
+            (
+                {"chunk": {"bytes": b'{"completion":" Hello","stop_reason":null}'}},
+                {
+                    "chunk": {
+                        "bytes": b'{"completion":"!","stop_reason":"stop_sequence"}'
+                    }
+                },
+                {
+                    "chunk": {
+                        "bytes": b'{"completion":"!","stop_reason":"stop_sequence"}'
+                    }
+                },
+            )
+        )
+        yield {
+            "ResponseMetadata": {
+                "RequestId": "830dfcc1-33f5-4b3e-bf84-7c519715ff30",
+                "HTTPStatusCode": 200,
+                "HTTPHeaders": {
+                    "date": "Mon, 16 Oct 2023 14:58:21 GMT",
+                    "content-type": "application/json",
+                    "content-length": "10132",
+                    "connection": "keep-alive",
+                    "x-amzn-requestid": "830dfcc1-33f5-4b3e-bf84-7c519715ff30",
+                },
+                "RetryAttempts": 0,
+            },
+            "contentType": "application/json",
+            "body": event_stream,
+        }
+
+
+def test_aws_bedrock_invoke_model_stream__anthropic(
+    anthropic_completion_stream: dict[str, Any]
+) -> None:
+    with patch("botocore.client.BaseClient._make_api_call") as mock_completion:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion.return_value = anthropic_completion_stream
+            nebuly_init(observer=mock_observer)
+
+            bedrock = boto3.client(
+                service_name="bedrock-runtime", region_name="us-east-1"
+            )
+
+            body = json.dumps(
+                {
+                    "prompt": "\n\nHuman:Say hi\n\nAssistant:",
+                    "max_tokens_to_sample": 100,
+                }
+            )
+
+            result = bedrock.invoke_model_with_response_stream(
+                modelId="anthropic.claude-v2",
+                body=body,
+                user_id="test_user",
+                user_group_profile="test_user_group_profile",
+            )
+
+            assert list(result.get("body")) is not None
+            assert mock_observer.call_count == 1
+
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.end_user == "test_user"
+            assert (
+                interaction_watch.end_user_group_profile == "test_user_group_profile"
+            )  # pylint: disable=line-too-long  # noqa: E501
+            assert interaction_watch.input == "Say hi"
+            assert interaction_watch.output == " Hello!!"
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )

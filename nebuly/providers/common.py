@@ -11,16 +11,16 @@ logger = logging.getLogger(__name__)
 def extract_anthropic_input_and_history(prompt: str) -> tuple[str, list[HistoryEntry]]:
     try:
         # Extract human and assistant interactions using regular expression
-        interactions = re.findall(r"Human:(.+)\n*Assistant:(.+)\n*", prompt)
+        pattern = re.compile(r"Human:(.*?)\n*Assistant:(.*?)(?=\n*Human:|$)", re.DOTALL)
+        interactions = pattern.findall(prompt)
 
-        # Extract the last user input
-        user_inputs = re.findall(r"Human:(.+)\n*Assistant:", prompt)
-        last_user_input = user_inputs[-1].strip()
+        # Extracting the last user input
+        last_user_input = interactions[-1][0].strip()
 
         # Create a list of tuples for the history
         history = [
             HistoryEntry(human.strip(), assistant.strip())
-            for human, assistant in interactions
+            for human, assistant in interactions[:-1]
         ]
 
         return last_user_input, history
