@@ -173,7 +173,7 @@ def test_aws_bedrock_invoke_model__anthropic(
             assert interaction_watch.end_user == "test_user"
             assert interaction_watch.end_user_group_profile == "test_user_group_profile"
             assert interaction_watch.input == "say hi"
-            assert interaction_watch.output == " Hello!"
+            assert interaction_watch.output == "Hello!"
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
@@ -347,7 +347,7 @@ def test_aws_bedrock_invoke_model_stream__anthropic(
                 interaction_watch.end_user_group_profile == "test_user_group_profile"
             )  # pylint: disable=line-too-long  # noqa: E501
             assert interaction_watch.input == "Say hi"
-            assert interaction_watch.output == " Hello!!"
+            assert interaction_watch.output == "Hello!!"
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
@@ -371,7 +371,7 @@ def fixture_aws_bedrock_invoke_model_stream_cohere() -> (
     with patch.object(EventStream, "__iter__") as mock_iter:
         mock_iter.return_value = iter(
             (
-                {"chunk": {"bytes": b'{"is_finished":false,"text":" Hi"}'}},
+                {"chunk": {"bytes": b'{"is_finished":false,"text":"Hi"}'}},
                 {"chunk": {"bytes": b'{"is_finished":false,"text":" there"}'}},
                 {"chunk": {"bytes": b'{"is_finished":false,"text":"!"}'}},
                 {"chunk": {"bytes": b'{"is_finished":false,"text":" How"}'}},
@@ -443,7 +443,7 @@ def test_aws_bedrock_invoke_model_stream__cohere(
                 interaction_watch.end_user_group_profile == "test_user_group_profile"
             )  # pylint: disable=line-too-long  # noqa: E501
             assert interaction_watch.input == "Say hi"
-            assert interaction_watch.output == " Hi there! How can I assist you today?"
+            assert interaction_watch.output == "Hi there! How can I assist you today?"
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)

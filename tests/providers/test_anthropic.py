@@ -57,7 +57,7 @@ def test_anthropic_completion__no_context_manager(
                     assistant="hi",
                 )
             ]
-            assert interaction_watch.output == " Hello! My name is Claude."
+            assert interaction_watch.output == "Hello! My name is Claude."
             assert interaction_watch.end_user == "test_user"
             assert interaction_watch.end_user_group_profile == "test_group"
             assert len(interaction_watch.spans) == 1
@@ -140,7 +140,7 @@ async def test_anthropic_completion__async(anthropic_completion: Completion) -> 
                 interaction_watch.input
                 == "how does a court case get to the Supreme Court?"
             )
-            assert interaction_watch.output == " Hello! My name is Claude."
+            assert interaction_watch.output == "Hello! My name is Claude."
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
@@ -196,7 +196,7 @@ def test_anthropic_completion_gen(anthropic_completion_gen: list[Completion]) ->
                 interaction_watch.input
                 == "how does a court case get to the Supreme Court?"
             )
-            assert interaction_watch.output == " Hello!"
+            assert interaction_watch.output == "Hello!"
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
@@ -258,7 +258,7 @@ async def test_anthropic_completion_async_gen(
                 interaction_watch.input
                 == "how does a court case get to the Supreme Court?"
             )
-            assert interaction_watch.output == " Hello!"
+            assert interaction_watch.output == "Hello!"
             assert interaction_watch.end_user == "test_user"
             assert interaction_watch.end_user_group_profile == "test_group"
             assert len(interaction_watch.spans) == 1

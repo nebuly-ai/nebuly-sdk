@@ -102,7 +102,7 @@ class AWSBedrockDataExtractor(ProviderDataExtractor):
             if self.provider == "cohere":
                 return response_body["generations"][0]["text"]
             if self.provider == "anthropic":
-                return response_body["completion"]
+                return response_body["completion"].strip()
             if self.provider == "ai21":
                 return response_body["completions"][0]["data"]["text"]
 
@@ -126,4 +126,6 @@ class AWSBedrockDataExtractor(ProviderDataExtractor):
                 result += chunk["completion"]
             else:
                 raise ValueError(f"Provider {self.provider} not supported for stream")
+        if self.provider == "anthropic":
+            result = result.strip()
         return result

@@ -74,7 +74,7 @@ class AnthropicDataExtractor(ProviderDataExtractor):
             "resources.Completions.create",
             "resources.AsyncCompletions.create",
         ]:
-            return outputs.completion
+            return outputs.completion.strip()
 
         raise ValueError(
             f"Unknown function name: {self.function_name} or "
@@ -88,7 +88,7 @@ class AnthropicDataExtractor(ProviderDataExtractor):
             "resources.Completions.create",
             "resources.AsyncCompletions.create",
         ]:
-            return "".join([output.completion for output in outputs])
+            return "".join([output.completion for output in outputs]).strip()
 
         raise ValueError(
             f"Unknown function name: {self.function_name} or "
