@@ -5,7 +5,6 @@ from __future__ import annotations
 import copyreg
 import json
 import logging
-from dataclasses import dataclass
 from typing import Any, Callable
 
 from botocore.eventstream import EventStream
@@ -57,20 +56,25 @@ def handle_aws_bedrock_unpickable_objects(obj: Any) -> None:
     copyreg.pickle(StreamingBody, extract_aws_streaming_body)
 
 
-@dataclass(frozen=True)
 class AWSBedrockDataExtractor(ProviderDataExtractor):
-    original_args: tuple[Any, ...]
-    original_kwargs: dict[str, Any]
-    function_name: str
+    def __init__(
+        self,
+        function_name: str,
+        original_args: tuple[Any, ...],
+        original_kwargs: dict[str, Any],
+    ):
+        self.function_name = function_name
+        self.original_args = original_args
+        self.original_kwargs = original_kwargs
+        self.provider = original_args[2]["modelId"].split(".")[0]
 
     def extract_input_and_history(self) -> ModelInput:
         if self.function_name == "client.BaseClient._make_api_call":
-            model_id = self.original_args[2]["modelId"]
-            if model_id.startswith("amazon"):  # Amazon
+            if self.provider == "amazon":  # Amazon
                 return ModelInput(
                     prompt=json.loads(self.original_args[2]["body"])["inputText"]
                 )
-            if model_id.startswith("anthropic"):  # Anthropic
+            if self.provider == "anthropic":  # Anthropic
                 last_user_input, history = extract_anthropic_input_and_history(
                     json.loads(self.original_args[2]["body"])["prompt"]
                 )
@@ -93,13 +97,13 @@ class AWSBedrockDataExtractor(ProviderDataExtractor):
             and self.function_name == "client.BaseClient._make_api_call"
         ):
             response_body = json.loads(outputs["body"].decode("utf-8"))
-            if "results" in response_body:  # Amazon
+            if self.provider == "amazon":
                 return response_body["results"][0]["outputText"]
-            if "generations" in response_body:  # Cohere
+            if self.provider == "cohere":
                 return response_body["generations"][0]["text"]
-            if "completion" in response_body:  # Anthropic
+            if self.provider == "anthropic":
                 return response_body["completion"]
-            if "completions" in response_body:  # AI21
+            if self.provider == "ai21":
                 return response_body["completions"][0]["data"]["text"]
 
         raise ValueError(
@@ -107,17 +111,19 @@ class AWSBedrockDataExtractor(ProviderDataExtractor):
             f"output type: {type(outputs)}"
         )
 
-    @staticmethod
-    def _extract_output_generator(outputs: list[dict[str, Any]]) -> str:
+    def _extract_output_generator(self, outputs: list[dict[str, Any]]) -> str:
         result = ""
         for output in outputs:
             chunk = json.loads(output["chunk"]["bytes"].decode("utf-8"))
-            if "outputText" in chunk:  # Amazon
+            # AI21 does not support streaming
+            if self.provider == "amazon":
                 result += chunk["outputText"]
-            elif "text" in chunk:  # Cohere
-                result += chunk["text"]
-            elif "completion" in chunk:  # Anthropic
+            elif self.provider == "cohere":
+                # Must check for "text" because it isn't present in the last chunks
+                if "text" in chunk and chunk["text"] != "<EOS_TOKEN>":
+                    result += chunk["text"]
+            elif self.provider == "anthropic":
                 result += chunk["completion"]
             else:
-                raise ValueError(f"Unknown output dict: {chunk}")
+                raise ValueError(f"Provider {self.provider} not supported for stream")
         return result

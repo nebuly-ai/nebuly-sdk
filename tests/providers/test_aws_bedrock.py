@@ -355,3 +355,99 @@ def test_aws_bedrock_invoke_model_stream__anthropic(
                 json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
                 is not None
             )
+
+
+@pytest.fixture(name="cohere_completion_stream")
+def fixture_aws_bedrock_invoke_model_stream_cohere() -> (
+    Generator[dict[str, Any], None, None]
+):  # pylint: disable=line-too-long  # noqa: E501
+    event_stream = EventStream(
+        raw_stream=MagicMock(spec=urllib3.response.HTTPResponse),
+        output_shape=None,
+        parser=None,
+        operation_name="InvokeModelWithResponseStream",
+    )
+
+    with patch.object(EventStream, "__iter__") as mock_iter:
+        mock_iter.return_value = iter(
+            (
+                {"chunk": {"bytes": b'{"is_finished":false,"text":" Hi"}'}},
+                {"chunk": {"bytes": b'{"is_finished":false,"text":" there"}'}},
+                {"chunk": {"bytes": b'{"is_finished":false,"text":"!"}'}},
+                {"chunk": {"bytes": b'{"is_finished":false,"text":" How"}'}},
+                {"chunk": {"bytes": b'{"is_finished":false,"text":" can"}'}},
+                {"chunk": {"bytes": b'{"is_finished":false,"text":" I"}'}},
+                {"chunk": {"bytes": b'{"is_finished":false,"text":" assist"}'}},
+                {"chunk": {"bytes": b'{"is_finished":false,"text":" you"}'}},
+                {"chunk": {"bytes": b'{"is_finished":false,"text":" today"}'}},
+                {"chunk": {"bytes": b'{"is_finished":false,"text":"?"}'}},
+                {"chunk": {"bytes": b'{"is_finished":false,"text":"<EOS_TOKEN>"}'}},
+                {
+                    "chunk": {
+                        "bytes": b'{"finish_reason":"COMPLETE","is_finished":true}'
+                    }
+                },
+            )
+        )
+        yield {
+            "ResponseMetadata": {
+                "RequestId": "830dfcc1-33f5-4b3e-bf84-7c519715ff30",
+                "HTTPStatusCode": 200,
+                "HTTPHeaders": {
+                    "date": "Mon, 16 Oct 2023 14:58:21 GMT",
+                    "content-type": "application/json",
+                    "content-length": "10132",
+                    "connection": "keep-alive",
+                    "x-amzn-requestid": "830dfcc1-33f5-4b3e-bf84-7c519715ff30",
+                },
+                "RetryAttempts": 0,
+            },
+            "contentType": "application/json",
+            "body": event_stream,
+        }
+
+
+def test_aws_bedrock_invoke_model_stream__cohere(
+    cohere_completion_stream: dict[str, Any]
+) -> None:
+    with patch("botocore.client.BaseClient._make_api_call") as mock_completion:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion.return_value = cohere_completion_stream
+            nebuly_init(observer=mock_observer)
+
+            bedrock = boto3.client(
+                service_name="bedrock-runtime", region_name="us-east-1"
+            )
+
+            body = json.dumps(
+                {
+                    "prompt": "Say hi",
+                    "stream": True,
+                }
+            )
+
+            result = bedrock.invoke_model_with_response_stream(
+                modelId="cohere.command-text-v14",
+                body=body,
+                user_id="test_user",
+                user_group_profile="test_user_group_profile",
+            )
+
+            assert list(result.get("body")) is not None
+            assert mock_observer.call_count == 1
+
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.end_user == "test_user"
+            assert (
+                interaction_watch.end_user_group_profile == "test_user_group_profile"
+            )  # pylint: disable=line-too-long  # noqa: E501
+            assert interaction_watch.input == "Say hi"
+            assert interaction_watch.output == " Hi there! How can I assist you today?"
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
