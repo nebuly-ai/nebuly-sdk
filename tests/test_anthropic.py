@@ -10,7 +10,7 @@ from anthropic import AI_PROMPT, HUMAN_PROMPT, Anthropic, AsyncAnthropic
 from anthropic.types import Completion
 
 from nebuly.contextmanager import new_interaction
-from nebuly.entities import InteractionWatch, SpanWatch
+from nebuly.entities import HistoryEntry, InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver
 from nebuly.requests import CustomJSONEncoder
 from tests.common import nebuly_init
@@ -41,8 +41,8 @@ def test_anthropic_completion__no_context_manager(
             result = client.completions.create(  # type: ignore
                 model="claude-2",
                 max_tokens_to_sample=300,
-                prompt=f"{HUMAN_PROMPT} how does a court case get to the "
-                f"Supreme Court?{AI_PROMPT}",
+                prompt=f"{HUMAN_PROMPT} say hi{AI_PROMPT} hi {HUMAN_PROMPT} "
+                f"say hello{AI_PROMPT}",
                 user_id="test_user",
                 user_group_profile="test_group",
             )
@@ -50,11 +50,13 @@ def test_anthropic_completion__no_context_manager(
             assert mock_observer.call_count == 1
             interaction_watch = mock_observer.call_args[0][0]
             assert isinstance(interaction_watch, InteractionWatch)
-            assert (
-                interaction_watch.input
-                == f"{HUMAN_PROMPT} how does a court case get to the "
-                f"Supreme Court?{AI_PROMPT}"
-            )
+            assert interaction_watch.input == "say hello"
+            assert interaction_watch.history == [
+                HistoryEntry(
+                    user="say hi",
+                    assistant="hi",
+                )
+            ]
             assert interaction_watch.output == " Hello! My name is Claude."
             assert interaction_watch.end_user == "test_user"
             assert interaction_watch.end_user_group_profile == "test_group"
@@ -136,8 +138,7 @@ async def test_anthropic_completion__async(anthropic_completion: Completion) -> 
             assert isinstance(interaction_watch, InteractionWatch)
             assert (
                 interaction_watch.input
-                == f"{HUMAN_PROMPT} how does a court case get to the "
-                f"Supreme Court?{AI_PROMPT}"
+                == "how does a court case get to the Supreme Court?"
             )
             assert interaction_watch.output == " Hello! My name is Claude."
             assert len(interaction_watch.spans) == 1
@@ -193,8 +194,7 @@ def test_anthropic_completion_gen(anthropic_completion_gen: list[Completion]) ->
             assert isinstance(interaction_watch, InteractionWatch)
             assert (
                 interaction_watch.input
-                == f"{HUMAN_PROMPT} how does a court case get to the "
-                f"Supreme Court?{AI_PROMPT}"
+                == "how does a court case get to the Supreme Court?"
             )
             assert interaction_watch.output == " Hello!"
             assert len(interaction_watch.spans) == 1
@@ -256,8 +256,7 @@ async def test_anthropic_completion_async_gen(
             assert isinstance(interaction_watch, InteractionWatch)
             assert (
                 interaction_watch.input
-                == f"{HUMAN_PROMPT} how does a court case get to the "
-                f"Supreme Court?{AI_PROMPT}"
+                == "how does a court case get to the Supreme Court?"
             )
             assert interaction_watch.output == " Hello!"
             assert interaction_watch.end_user == "test_user"

@@ -8,6 +8,7 @@ from anthropic.types import Completion
 
 from nebuly.entities import ModelInput
 from nebuly.providers.base import PicklerHandler, ProviderDataExtractor
+from nebuly.providers.common import extract_anthropic_input_and_history
 
 
 def is_anthropic_generator(function: Callable[[Any], Any]) -> bool:
@@ -55,7 +56,10 @@ class AnthropicDataExtractor(ProviderDataExtractor):
             "resources.Completions.create",
             "resources.AsyncCompletions.create",
         ]:
-            return ModelInput(prompt=self.original_kwargs["prompt"])
+            last_user_input, history = extract_anthropic_input_and_history(
+                self.original_kwargs["prompt"]
+            )
+            return ModelInput(prompt=last_user_input, history=history)
 
         raise ValueError(f"Unknown function name: {self.function_name}")
 

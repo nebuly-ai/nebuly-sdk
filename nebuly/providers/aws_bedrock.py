@@ -13,6 +13,7 @@ from botocore.response import StreamingBody
 
 from nebuly.entities import ModelInput
 from nebuly.providers.base import PicklerHandler, ProviderDataExtractor
+from nebuly.providers.common import extract_anthropic_input_and_history
 
 logger = logging.getLogger(__name__)
 
@@ -64,11 +65,17 @@ class AWSBedrockDataExtractor(ProviderDataExtractor):
 
     def extract_input_and_history(self) -> ModelInput:
         if self.function_name == "client.BaseClient._make_api_call":
-            if self.original_args[2]["modelId"].startswith("amazon"):  # Amazon
+            model_id = self.original_args[2]["modelId"]
+            if model_id.startswith("amazon"):  # Amazon
                 return ModelInput(
                     prompt=json.loads(self.original_args[2]["body"])["inputText"]
                 )
-            # Cohere and Anthropic
+            if model_id.startswith("anthropic"):  # Anthropic
+                last_user_input, history = extract_anthropic_input_and_history(
+                    json.loads(self.original_args[2]["body"])["prompt"]
+                )
+                return ModelInput(prompt=last_user_input, history=history)
+            # Cohere and AI21
             return ModelInput(
                 prompt=json.loads(self.original_args[2]["body"])["prompt"]
             )
