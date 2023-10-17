@@ -44,7 +44,7 @@ def fixture_aws_bedrock_a2i_invoke_model() -> dict[str, Any]:
     }
 
 
-def test_aws_bedrock_a2i_invoke_model__anthropic(
+def test_aws_bedrock_invoke_model__a2i(
     a2i_completion: dict[str, Any],
 ) -> None:
     with patch("botocore.client.BaseClient._make_api_call") as mock_completion:
@@ -174,6 +174,89 @@ def test_aws_bedrock_invoke_model__anthropic(
             assert interaction_watch.end_user_group_profile == "test_user_group_profile"
             assert interaction_watch.input == "say hi"
             assert interaction_watch.output == " Hello!"
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+@pytest.fixture(name="cohere_completion")
+def fixture_aws_bedrock_cohere_invoke_model() -> dict[str, Any]:
+    raw_stream = MagicMock(
+        spec=urllib3.response.HTTPResponse,
+        data=b'{"generations":[{"id":"101d97be-392c-44a6-8493-fad243154941","text":"'
+        b'Hi! How can I help you today?"}],"id":"c117e48d-e39f-4e9f-b965-4ab8520'
+        b'24f91","prompt":"\\n\\nHuman:say hi\\n\\nAssistant:"}',
+    )
+    return {
+        "ResponseMetadata": {
+            "RequestId": "830dfcc1-33f5-4b3e-bf84-7c519715ff30",
+            "HTTPStatusCode": 200,
+            "HTTPHeaders": {
+                "date": "Mon, 16 Oct 2023 14:58:21 GMT",
+                "content-type": "application/json",
+                "content-length": "10132",
+                "connection": "keep-alive",
+                "x-amzn-requestid": "830dfcc1-33f5-4b3e-bf84-7c519715ff30",
+            },
+            "RetryAttempts": 0,
+        },
+        "contentType": "application/json",
+        "body": StreamingBody(
+            raw_stream=raw_stream,
+            content_length=189,
+        ),
+    }
+
+
+def test_aws_bedrock_invoke_model__cohere(
+    cohere_completion: dict[str, Any],
+) -> None:
+    with patch("botocore.client.BaseClient._make_api_call") as mock_completion:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion.return_value = cohere_completion
+            nebuly_init(observer=mock_observer)
+
+            bedrock = boto3.client(
+                service_name="bedrock-runtime", region_name="us-east-1"
+            )
+            body = json.dumps(
+                {
+                    "prompt": "Say 'HI'",
+                }
+            )
+
+            modelId = "cohere.command-text-v14"
+            accept = "application/json"
+            contentType = "application/json"
+
+            response = bedrock.invoke_model(
+                body=body,
+                modelId=modelId,
+                accept=accept,
+                contentType=contentType,
+                user_id="test_user",
+                user_group_profile="test_user_group_profile",
+            )
+
+            assert response is not None
+            assert (
+                response.get("body").read()
+                == cohere_completion[  # pylint: disable=protected-access
+                    "body"
+                ]._raw_stream.data
+            )
+            assert mock_observer.call_count == 1
+
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_user_group_profile"
+            assert interaction_watch.input == "Say 'HI'"
+            assert interaction_watch.output == "Hi! How can I help you today?"
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
