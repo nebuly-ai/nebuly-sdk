@@ -186,7 +186,7 @@ co = cohere.Client(os.getenv("COHERE_API_KEY"))
 
 with new_interaction(user_id="test_user", user_group_profile="test_group") as interaction:
     # interaction.set_input("Some custom input")
-    # interaction.set_history([("system", "You are an helpful assistant"),])
+    # interaction.set_history([{"role": "user/assistant", "content": "sample content"}}])
     completion_1 = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
