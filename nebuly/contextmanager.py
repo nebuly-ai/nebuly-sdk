@@ -215,15 +215,15 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
     def set_input(self, value: str) -> None:
         self.input = value
 
-    def set_history(self, value: list[tuple[str, str]] | list[HistoryEntry]) -> None:
+    def set_history(self, value: list[dict[str, str]] | list[HistoryEntry]) -> None:
         if len(value) == 0:
             self.history = []
-        elif isinstance(value[0], tuple):
-            value = cast(List[Tuple[str, str]], value)
+        elif isinstance(value[0], dict):
+            value = cast(List[Dict[str, str]], value)
             history = [
                 message
                 for message in value
-                if message[0].lower() in ["user", "assistant"]
+                if message["role"].lower() in ["user", "assistant"]
             ]
             if len(history) % 2 != 0:
                 raise ValueError(
@@ -231,7 +231,9 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
                     "a valid history."
                 )
             self.history = [
-                HistoryEntry(user=history[i][1], assistant=history[i + 1][1])
+                HistoryEntry(
+                    user=history[i]["content"], assistant=history[i + 1]["content"]
+                )
                 for i in range(len(history) - 1)
             ]
         else:

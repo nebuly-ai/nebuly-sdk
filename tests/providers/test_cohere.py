@@ -210,8 +210,8 @@ def test_cohere_chat__with_context_manager(cohere_chat: Chat) -> None:
                 interaction.set_input("Sample input 1")
                 interaction.set_history(
                     [
-                        ("user", "Hi!"),
-                        ("assistant", "How can I help you today?"),
+                        {"role": "user", "content": "Hi!"},
+                        {"role": "assistant", "content": "How can I help you today?"},
                     ]
                 )
                 result = co.chat(
@@ -220,7 +220,7 @@ def test_cohere_chat__with_context_manager(cohere_chat: Chat) -> None:
                         {"role": "USER", "message": "Hi!"},
                         {
                             "role": "CHATBOT",
-                            "message": "How can I help you today?",
+                            "content": "How can I help you today?",
                         },
                     ],
                 )

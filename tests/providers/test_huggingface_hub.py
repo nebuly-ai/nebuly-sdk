@@ -455,12 +455,12 @@ def test_hf_hub_conversational__with_context_manager__with_history(
                 interaction.set_input("Wow, that's scary!")
                 interaction.set_history(
                     [
-                        ("user", "Hello, who are you?"),
-                        (
-                            "assistant",
-                            " My name is samantha, and I am a student at "
+                        {"role": "user", "content": "Hello, who are you?"},
+                        {
+                            "role": "assistant",
+                            "content": " My name is samantha, and I am a student at "
                             "the University of Pittsburgh.",
-                        ),
+                        },
                     ]
                 )
                 result = client.conversational(

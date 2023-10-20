@@ -394,7 +394,9 @@ def test_openai_chat__with_context_manager(openai_chat: dict[str, Any]) -> None:
                 user_id="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Hello!")
-                interaction.set_history([("system", "You are a helpful assistant.")])
+                interaction.set_history(
+                    [{"role": "system", "content": "You are a helpful assistant."}]
+                )
                 result = openai.ChatCompletion.create(  # type: ignore
                     model="gpt-3.5-turbo",
                     messages=[
@@ -433,7 +435,9 @@ def test_openai_chat__multiple_spans_in_interaction(
                 user_id="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Hello!")
-                interaction.set_history([("system", "You are a helpful assistant.")])
+                interaction.set_history(
+                    [{"role": "system", "content": "You are a helpful assistant."}]
+                )
                 result = openai.ChatCompletion.create(  # type: ignore
                     model="gpt-3.5-turbo",
                     messages=[
@@ -481,7 +485,9 @@ def test_openai_chat__multiple_interactions(openai_chat: dict[str, Any]) -> None
                 user_id="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Hello!")
-                interaction.set_history([("system", "You are a helpful assistant.")])
+                interaction.set_history(
+                    [{"role": "system", "content": "You are a helpful assistant."}]
+                )
                 result = openai.ChatCompletion.create(  # type: ignore
                     model="gpt-3.5-turbo",
                     messages=[
@@ -496,7 +502,9 @@ def test_openai_chat__multiple_interactions(openai_chat: dict[str, Any]) -> None
                 user_id="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Hello!")
-                interaction.set_history([("system", "You are a helpful assistant.")])
+                interaction.set_history(
+                    [{"role": "system", "content": "You are a helpful assistant."}]
+                )
                 result = openai.ChatCompletion.create(  # type: ignore
                     model="gpt-3.5-turbo",
                     messages=[
