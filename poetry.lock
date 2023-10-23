@@ -1285,7 +1285,6 @@ files = [
     {file = "greenlet-3.0.0-cp39-cp39-win32.whl", hash = "sha256:0d3f83ffb18dc57243e0151331e3c383b05e5b6c5029ac29f754745c800f8ed9"},
     {file = "greenlet-3.0.0-cp39-cp39-win_amd64.whl", hash = "sha256:831d6f35037cf18ca5e80a737a27d822d87cd922521d18ed3dbc8a6967be50ce"},
     {file = "greenlet-3.0.0-cp39-universal2-macosx_11_0_x86_64.whl", hash = "sha256:a048293392d4e058298710a54dfaefcefdf49d287cd33fb1f7d63d55426e4355"},
-    {file = "greenlet-3.0.0.tar.gz", hash = "sha256:19834e3f91f485442adc1ee440171ec5d9a4840a1f7bd5ed97833544719ce10b"},
 ]
 
 [package.extras]
@@ -3944,4 +3943,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<4.0"
-content-hash = "ece137a2b8a30bfa53620537175628a675756abcafe160d94e77071794a51b6b"
+content-hash = "7139ac256e5d8c64c9e9e8eabe7a6bef3792aa5bd4981a8def4e26414282ef63"
