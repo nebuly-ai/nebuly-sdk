@@ -11,12 +11,9 @@ from langchain.chains.base import Chain
 from langchain.prompts import ChatPromptTemplate, PromptTemplate
 from langchain.prompts.chat import AIMessagePromptTemplate, HumanMessagePromptTemplate
 
-from nebuly.contextmanager import (
-    NotInInteractionContext,
-    get_nearest_open_interaction,
-    new_interaction,
-)
+from nebuly.contextmanager import get_nearest_open_interaction, new_interaction
 from nebuly.entities import HistoryEntry, ModelInput, Observer
+from nebuly.exceptions import NotInInteractionContext
 from nebuly.tracking_handlers import LangChainTrackingHandler
 
 logger = logging.getLogger(__name__)

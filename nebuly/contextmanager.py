@@ -14,6 +14,13 @@ from nebuly.entities import (
     Observer,
     SpanWatch,
 )
+from nebuly.exceptions import (
+    AlreadyInInteractionContext,
+    InteractionContextInitiationError,
+    InteractionMustBeLocalVariable,
+    MissingRequiredNebulyFieldError,
+    NotInInteractionContext,
+)
 
 
 @dataclass
@@ -152,30 +159,6 @@ class EventsStorage:
 
     def get_spans(self) -> list[SpanWatch]:
         return [event.as_span_watch() for event in self.events.values()]
-
-
-class InteractionContextError(Exception):
-    pass
-
-
-class InteractionContextInitiationError(InteractionContextError):
-    pass
-
-
-class AlreadyInInteractionContext(InteractionContextError):
-    pass
-
-
-class NotInInteractionContext(InteractionContextError):
-    pass
-
-
-class InteractionMustBeLocalVariable(InteractionContextError):
-    pass
-
-
-class MissingRequiredNebulyFieldError(Exception):
-    pass
 
 
 class InteractionContext:  # pylint: disable=too-many-instance-attributes

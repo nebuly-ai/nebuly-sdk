@@ -18,11 +18,11 @@ from packaging.version import parse as parse_version
 from nebuly.config import NEBULY_KWARGS
 from nebuly.contextmanager import (
     InteractionContext,
-    NotInInteractionContext,
     get_nearest_open_interaction,
     new_interaction,
 )
 from nebuly.entities import HistoryEntry, ModelInput, Observer, Package, SpanWatch
+from nebuly.exceptions import NotInInteractionContext
 from nebuly.providers.base import ProviderDataExtractor
 
 logger = logging.getLogger(__name__)

@@ -9,12 +9,14 @@ from time import sleep
 import pytest
 
 from nebuly.contextmanager import (
-    AlreadyInInteractionContext,
     InteractionContext,
-    InteractionContextInitiationError,
-    InteractionMustBeLocalVariable,
     get_nearest_open_interaction,
     new_interaction,
+)
+from nebuly.exceptions import (
+    AlreadyInInteractionContext,
+    InteractionContextInitiationError,
+    InteractionMustBeLocalVariable,
 )
 
 
