@@ -3,7 +3,9 @@ from __future__ import annotations
 import json
 import logging
 import os
+import traceback
 import urllib.request
+from time import sleep
 from typing import Any
 from unittest.mock import Mock
 
@@ -74,6 +76,10 @@ def post_message(watched: InteractionWatch, api_key: str) -> None:
     post_json_data(url, message, api_key)
 
 
+class InvalidNebulyKeyError(Exception):
+    pass
+
+
 def post_json_data(url: str, json_data: str, api_key: str) -> Any:
     request = urllib.request.Request(
         url,
@@ -84,8 +90,31 @@ def post_json_data(url: str, json_data: str, api_key: str) -> Any:
         },
     )
 
-    with urllib.request.urlopen(request, timeout=3) as response:  # nosec
-        response_body = response.read().decode("utf-8")
-        logger.debug("response_body: %s", response_body)
+    while True:
+        try:
+            with urllib.request.urlopen(request, timeout=3) as response:  # nosec
+                response_body = response.read().decode("utf-8")
+                logger.debug("response_body: %s", response_body)
+                break
+        except urllib.error.HTTPError as e:
+            if e.code == 401:
+                raise InvalidNebulyKeyError(
+                    "Invalid Nebuly API key, please provide a valid one and try again."
+                )
+            logger.error(
+                "HTTPError when publishing the interaction: %s, "
+                "retrying in 3 seconds...",
+                e,
+            )
+            traceback.print_exc()
+            sleep(3)
+        except Exception as e:
+            logger.error(
+                "Error when publishing the interaction: %s, "
+                "retrying in 3 seconds...",
+                e,
+            )
+            traceback.print_exc()
+            sleep(3)
 
     return response_body
