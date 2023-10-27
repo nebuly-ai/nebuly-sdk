@@ -113,7 +113,7 @@ class InteractionWatch:  # pylint: disable=too-many-instance-attributes
     history: list[HistoryEntry]
     hierarchy: dict[uuid.UUID, uuid.UUID | None]
     end_user: str
-    end_user_group_profile: str
+    end_user_group_profile: str | None
 
     def to_dict(self) -> dict[str, Any]:
         """

@@ -11,12 +11,9 @@ from langchain.chains.base import Chain
 from langchain.prompts import ChatPromptTemplate, PromptTemplate
 from langchain.prompts.chat import AIMessagePromptTemplate, HumanMessagePromptTemplate
 
-from nebuly.contextmanager import (
-    NotInInteractionContext,
-    get_nearest_open_interaction,
-    new_interaction,
-)
+from nebuly.contextmanager import get_nearest_open_interaction, new_interaction
 from nebuly.entities import HistoryEntry, ModelInput, Observer
+from nebuly.exceptions import NotInInteractionContext
 from nebuly.tracking_handlers import LangChainTrackingHandler
 
 logger = logging.getLogger(__name__)
@@ -150,7 +147,7 @@ def wrap_langchain(
                     handler.nebuly_user  # type: ignore
                 )
                 interaction._set_user_group_profile(  # pylint: disable=protected-access
-                    handler.nebuly_user_group  # type: ignore
+                    handler.nebuly_user_group
                 )
                 interaction._set_observer(observer)  # pylint: disable=protected-access
                 model_input = _get_input_and_history(args[0], inputs)
