@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import logging
 import os
-import traceback
 import urllib.request
 from time import sleep
 from typing import Any
@@ -98,20 +97,18 @@ def post_json_data(url: str, json_data: str, api_key: str) -> Any:
                 raise InvalidNebulyKeyError(
                     "Invalid Nebuly API key, please provide a valid one and try again."
                 ) from e
-            logger.error(
+            logger.exception(
                 "HTTPError when publishing the interaction: %s, "
                 "retrying in 3 seconds...",
                 e,
             )
-            traceback.print_exc()
             sleep(3)
         except Exception as e:  # pylint: disable=broad-except
-            logger.error(
+            logger.exception(
                 "Error when publishing the interaction: %s, "
                 "retrying in 3 seconds...",
                 e,
             )
-            traceback.print_exc()
             sleep(3)
 
     return response_body
