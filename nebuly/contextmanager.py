@@ -174,11 +174,7 @@ class InteractionMustBeLocalVariable(InteractionContextError):
     pass
 
 
-class UserNotFoundError(Exception):
-    pass
-
-
-class UserGroupProfileNotFoundError(Exception):
+class MissingRequiredNebulyFieldError(Exception):
     pass
 
 
@@ -273,7 +269,7 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
     def _set_user(self, value: str) -> None:
         self.user = value
 
-    def _set_user_group_profile(self, value: str) -> None:
+    def _set_user_group_profile(self, value: str | None) -> None:
         self.user_group_profile = value
 
     def _validate_interaction(self) -> None:
@@ -286,10 +282,9 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
         if self.hierarchy is None:
             raise ValueError("Interaction has no hierarchy.")
         if self.user is None:
-            raise UserNotFoundError("Interaction has no user.")
-        if self.user_group_profile is None:
-            raise UserGroupProfileNotFoundError(
-                "Interaction has no user group profile."
+            raise MissingRequiredNebulyFieldError(
+                "Missing required nebuly field: 'user_id'. Please add it when calling"
+                "the original provider method."
             )
 
     def _as_interaction_watch(self) -> InteractionWatch:
@@ -303,7 +298,7 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
             history=self.history,  # type: ignore
             hierarchy=self.hierarchy,  # type: ignore
             end_user=self.user,  # type: ignore
-            end_user_group_profile=self.user_group_profile,  # type: ignore
+            end_user_group_profile=self.user_group_profile,
         )
 
 

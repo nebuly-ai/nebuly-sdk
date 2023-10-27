@@ -50,7 +50,6 @@ def test_cohere_generate__no_context_manager(cohere_generate: list[Generation]) 
             result = co.generate(  # pylint: disable=unexpected-keyword-arg
                 "Please explain to me how LLMs work",
                 user_id="test_user",
-                user_group_profile="test_group",
             )
             assert result is not None
             assert mock_observer.call_count == 1
@@ -63,7 +62,7 @@ def test_cohere_generate__no_context_manager(cohere_generate: list[Generation]) 
                 "intelligence that can understand and respond"
             )
             assert interaction_watch.end_user == "test_user"
-            assert interaction_watch.end_user_group_profile == "test_group"
+            assert interaction_watch.end_user_group_profile is None
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
@@ -82,9 +81,7 @@ def test_cohere_generate__with_context_manager(
             nebuly_init(observer=mock_observer)
 
             co = cohere.Client("test")
-            with new_interaction(
-                user_id="test_user", user_group_profile="test_group"
-            ) as interaction:
+            with new_interaction(user_id="test_user") as interaction:
                 interaction.set_input("Sample input 1")
                 result = co.generate(
                     prompt="Please explain to me how LLMs work",
@@ -97,7 +94,7 @@ def test_cohere_generate__with_context_manager(
             assert interaction_watch.input == "Sample input 1"
             assert interaction_watch.output == "Sample output 1"
             assert interaction_watch.end_user == "test_user"
-            assert interaction_watch.end_user_group_profile == "test_group"
+            assert interaction_watch.end_user_group_profile is None
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
@@ -118,7 +115,6 @@ async def test_cohere_generate__async(cohere_generate: list[Generation]) -> None
             result = await co.generate(
                 prompt="Please explain to me how LLMs work",
                 user_id="test_user",
-                user_group_profile="test_group",
             )
             assert result is not None
             assert mock_observer.call_count == 1
@@ -174,7 +170,6 @@ def test_cohere_chat__no_context_manager(cohere_chat: Chat) -> None:
                     {"user_name": "Chatbot", "message": "How can I help you today?"},
                 ],
                 user_id="test_user",
-                user_group_profile="test_group",
             )
             assert result is not None
             assert mock_observer.call_count == 1
