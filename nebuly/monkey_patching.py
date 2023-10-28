@@ -34,7 +34,7 @@ def check_no_packages_already_imported(packages: Iterable[Package]) -> None:
     """
     for package in packages:
         if package.name in sys.modules:
-            logger.warning("%s already imported", package.name)
+            logger.debug("%s already imported", package.name)
 
 
 def import_and_patch_packages(packages: Iterable[Package], observer: Observer) -> None:
@@ -77,7 +77,7 @@ def _monkey_patch(package: Package, observer: Observer) -> None:
         try:
             _monkey_patch_attribute(attr, module, package_version, observer)
         except (AttributeError, ImportError):
-            logger.warning("Failed to patch %s", attr)
+            logger.debug("Failed to patch %s", attr)
 
 
 def _monkey_patch_attribute(
@@ -281,7 +281,7 @@ def _add_interaction_span(  # pylint: disable=too-many-arguments, too-many-local
         model_input_res = provider_data_extractor.extract_input_and_history()
         model_output_res = provider_data_extractor.extract_output(stream, output)
     except ValueError:
-        logger.warning("Unknown module: %s", function_name)
+        logger.debug("Unknown module: %s", function_name)
         model_input_res = ModelInput(prompt="")
         model_output_res = ""
 
@@ -358,7 +358,7 @@ def watch_from_generator(  # pylint: disable=too-many-arguments
         if first_element:
             first_element = False
             generator_first_element_timestamp = datetime.now(timezone.utc)
-        logger.info("Yielding %s", element)
+        logger.debug("Yielding %s", element)
         original_result.append(deepcopy(element))
         yield element
 
@@ -418,7 +418,7 @@ async def watch_from_generator_async(  # pylint: disable=too-many-arguments
         if first_element:
             first_element = False
             generator_first_element_timestamp = datetime.now(timezone.utc)
-        logger.info("Yielding %s", element)
+        logger.debug("Yielding %s", element)
         original_result.append(deepcopy(element))
         yield element
 
