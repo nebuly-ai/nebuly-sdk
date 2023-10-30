@@ -136,10 +136,10 @@ def test_nebuly_args_are_intercepted() -> None:
 
 
 @patch("nebuly.monkey_patching.logger")
-def test_logs_warning_when_package_already_imported(logger: MagicMock) -> None:
+def test_logs_debug_when_package_already_imported(logger: MagicMock) -> None:
     package = Package("nebuly", SupportedVersion("0.1.0"), ("non_existent",))
     check_no_packages_already_imported([package])
-    logger.warning.assert_called_once_with("%s already imported", "nebuly")
+    logger.debug.assert_called_once_with("%s already imported", "nebuly")
 
 
 def test_monkey_patch() -> None:
