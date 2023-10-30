@@ -126,7 +126,10 @@ class InteractionWatch:  # pylint: disable=too-many-instance-attributes
             "time_start": self.time_start.isoformat(),
             "spans": [span.to_dict() for span in self.spans],
             "history": self.history,
-            "hierarchy": {str(k): str(v) for k, v in self.hierarchy.items()},
+            "hierarchy": {
+                str(k): str(v) if v is not None else None
+                for k, v in self.hierarchy.items()
+            },
             "end_user": self.end_user,
             "end_user_group_profile": self.end_user_group_profile,
         }
