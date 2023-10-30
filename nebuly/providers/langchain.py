@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import logging
 from inspect import isasyncgenfunction
 from typing import Any, Callable, cast
@@ -117,7 +116,7 @@ def _get_output_chain(chain: Chain, result: dict[str, Any]) -> str:
     output = {}
     for key in chain.output_keys:
         output[key] = result[key]
-    return json.dumps(output)
+    return "\n".join([f"{key}: {value}" for key, value in output.items()])
 
 
 def wrap_langchain(
