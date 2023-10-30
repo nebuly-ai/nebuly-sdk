@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import logging
 from inspect import isasyncgenfunction
 from typing import Any, Callable, cast
@@ -14,6 +13,7 @@ from langchain.prompts.chat import AIMessagePromptTemplate, HumanMessagePromptTe
 from nebuly.contextmanager import get_nearest_open_interaction, new_interaction
 from nebuly.entities import HistoryEntry, ModelInput, Observer
 from nebuly.exceptions import NotInInteractionContext
+from nebuly.providers.utils import get_argument
 from nebuly.tracking_handlers import LangChainTrackingHandler
 
 logger = logging.getLogger(__name__)
@@ -110,13 +110,13 @@ def _get_input_and_history(chain: Chain, inputs: dict[str, Any] | Any) -> ModelI
     raise ValueError(f"Unknown prompt type: {prompt}")
 
 
-def _get_output(chain: Chain, result: dict[str, Any]) -> str:
+def _get_output_chain(chain: Chain, result: dict[str, Any]) -> str:
     if len(chain.output_keys) == 1:
         return str(result[chain.output_keys[0]])
     output = {}
     for key in chain.output_keys:
         output[key] = result[key]
-    return json.dumps(output)
+    return "\n".join([f"{key}: {value}" for key, value in output.items()])
 
 
 def wrap_langchain(
@@ -154,7 +154,27 @@ def wrap_langchain(
                 interaction.set_input(model_input.prompt)
                 interaction.set_history(model_input.history)
                 original_res = f(*args, **kwargs)
-                interaction.set_output(_get_output(args[0], original_res))
+                interaction.set_output(_get_output_chain(args[0], original_res))
+                return original_res
+    if function_name.startswith("indexes.vectorstore.VectorStoreIndexWrapper"):
+        try:
+            get_nearest_open_interaction()
+            return f(*args, **kwargs)
+        except NotInInteractionContext:
+            with new_interaction() as interaction:
+                inputs = get_argument(args, kwargs, "question", 1)
+                interaction._set_user(  # pylint: disable=protected-access
+                    kwargs.pop("user_id")
+                )
+                interaction._set_user_group_profile(  # pylint: disable=protected-access
+                    kwargs.pop("user_group_profile", None)
+                )
+                interaction._set_observer(observer)  # pylint: disable=protected-access
+                model_input = _get_input_and_history(args[0], inputs)
+                interaction.set_input(model_input.prompt)
+                interaction.set_history(model_input.history)
+                original_res = f(*args, **kwargs)
+                interaction.set_output(original_res)
                 return original_res
 
     raise ValueError(f"Unknown function name: {function_name}")

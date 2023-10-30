@@ -40,6 +40,7 @@ PACKAGES = (
             "llms.base.BaseLLM.agenerate",
             "chat_models.base.BaseChatModel.generate",
             "chat_models.base.BaseChatModel.agenerate",
+            "indexes.vectorstore.VectorStoreIndexWrapper.query",
         ),
     ),
     Package(
