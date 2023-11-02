@@ -1,18 +1,22 @@
 from __future__ import annotations
 
 import logging
+from copy import deepcopy
 from inspect import isasyncgenfunction
-from typing import Any, Callable, cast
+from typing import Any, AsyncGenerator, Callable, Generator, cast
 from uuid import UUID
 
-from langchain.callbacks.manager import CallbackManager
+from langchain.callbacks.base import BaseCallbackHandler
+from langchain.callbacks.manager import AsyncCallbackManager, CallbackManager
 from langchain.chains.base import Chain
 from langchain.prompts import ChatPromptTemplate, PromptTemplate
 from langchain.prompts.chat import AIMessagePromptTemplate, HumanMessagePromptTemplate
+from langchain.schema.messages import AIMessage
+from langchain.schema.runnable.base import RunnableSequence
 
 from nebuly.contextmanager import get_nearest_open_interaction, new_interaction
 from nebuly.entities import HistoryEntry, ModelInput, Observer
-from nebuly.exceptions import NotInInteractionContext
+from nebuly.exceptions import MissingRequiredNebulyFieldError, NotInInteractionContext
 from nebuly.providers.utils import get_argument
 from nebuly.tracking_handlers import LangChainTrackingHandler
 
@@ -26,7 +30,10 @@ def _get_tracking_info_for_provider_call(**kwargs: Any) -> dict[str, Any]:
     with the belonging chain.
     """
     callbacks = kwargs.get("callbacks")
-    if not isinstance(callbacks, CallbackManager) or callbacks.parent_run_id is None:
+    if (
+        not isinstance(callbacks, (CallbackManager, AsyncCallbackManager))
+        or callbacks.parent_run_id is None
+    ):
         # If the llm/chat_model is called without a CallbackManager, it's not
         # called from a chain, so we don't need to add the run ids info
         return {}
@@ -39,11 +46,12 @@ def _get_tracking_info_for_provider_call(**kwargs: Any) -> dict[str, Any]:
     # Get the root_run_id from the LangChainTrackingHandler
     for handler in callback_manager.handlers:
         if isinstance(handler, LangChainTrackingHandler):
-            interaction = get_nearest_open_interaction()
+            interaction = handler.current_interaction
             root_run_id = interaction._events_storage.get_root_id(  # pylint: disable=protected-access  # noqa: E501
                 parent_run_id
             )
             additional_kwargs["root_run_id"] = str(root_run_id)
+            additional_kwargs["nebuly_interaction"] = interaction
             break
 
     return additional_kwargs
@@ -110,13 +118,78 @@ def _get_input_and_history(chain: Chain, inputs: dict[str, Any] | Any) -> ModelI
     raise ValueError(f"Unknown prompt type: {prompt}")
 
 
+def _get_input_and_history_runnable_seq(
+    sequence: RunnableSequence, inputs: dict[str, Any] | Any
+) -> ModelInput:
+    first = getattr(sequence, "first", None)
+
+    if isinstance(first, PromptTemplate):
+        return ModelInput(prompt=_process_prompt_template(inputs, first))
+
+    if isinstance(first, ChatPromptTemplate):
+        prompt, history = _process_chat_prompt_template(inputs, first)
+        return ModelInput(prompt=prompt, history=history)
+
+    return ModelInput(prompt="")
+
+
 def _get_output_chain(chain: Chain, result: dict[str, Any]) -> str:
     if len(chain.output_keys) == 1:
         return str(result[chain.output_keys[0]])
     output = {}
     for key in chain.output_keys:
         output[key] = result[key]
-    return "\n".join([f"{key}: {value}" for key, value in output.items()])
+    return _parse_output(output)
+
+
+def _parse_output(output: dict | str | AIMessage) -> str:
+    if isinstance(output, dict):
+        return "\n".join([f"{key}: {value}" for key, value in output.items()])
+    if isinstance(output, AIMessage):
+        return output.content
+    return output
+
+
+def _get_tracking_handler(
+    callbacks: list[BaseCallbackHandler] | CallbackManager,
+) -> LangChainTrackingHandler:
+    if isinstance(callbacks, CallbackManager):
+        handlers = callbacks.handlers
+    else:
+        handlers = callbacks
+
+    for handler in handlers:
+        if isinstance(handler, LangChainTrackingHandler):
+            return handler
+    raise ValueError("LangChainTrackingHandler not found")
+
+
+def _result_from_generator(generator: Generator, interaction) -> Generator:
+    original_result = []
+
+    for element in generator:
+        logger.debug("Yielding %s", element)
+        original_result.append(deepcopy(element.content))
+        yield element
+
+    original_result = "".join(original_result)
+    interaction.set_output(_parse_output(original_result))
+    interaction._finish()  # pylint: disable=protected-access
+
+
+async def _result_from_generator_async(
+    generator: AsyncGenerator, interaction
+) -> AsyncGenerator:
+    original_result = []
+
+    async for element in generator:
+        logger.debug("Yielding %s", element)
+        original_result.append(deepcopy(element.content))
+        yield element
+
+    original_result = "".join(original_result)
+    interaction.set_output(_parse_output(original_result))
+    interaction._finish()  # pylint: disable=protected-access
 
 
 def wrap_langchain(
@@ -136,19 +209,12 @@ def wrap_langchain(
             get_nearest_open_interaction()
             return f(*args, **kwargs)
         except NotInInteractionContext:
-            with new_interaction() as interaction:
+            handler = _get_tracking_handler(kwargs.get("callbacks", []))
+            with new_interaction(
+                user_id=handler.nebuly_user,
+                user_group_profile=handler.nebuly_user_group,
+            ) as interaction:
                 inputs = kwargs.get("inputs")
-                handler = [
-                    handler
-                    for handler in kwargs.get("callbacks", [])
-                    if isinstance(handler, LangChainTrackingHandler)
-                ][0]
-                interaction._set_user(  # pylint: disable=protected-access
-                    handler.nebuly_user  # type: ignore
-                )
-                interaction._set_user_group_profile(  # pylint: disable=protected-access
-                    handler.nebuly_user_group
-                )
                 interaction._set_observer(observer)  # pylint: disable=protected-access
                 model_input = _get_input_and_history(args[0], inputs)
                 interaction.set_input(model_input.prompt)
@@ -156,25 +222,62 @@ def wrap_langchain(
                 original_res = f(*args, **kwargs)
                 interaction.set_output(_get_output_chain(args[0], original_res))
                 return original_res
+
     if function_name.startswith("indexes.vectorstore.VectorStoreIndexWrapper"):
         try:
             get_nearest_open_interaction()
             return f(*args, **kwargs)
         except NotInInteractionContext:
-            with new_interaction() as interaction:
+            try:
+                user_id = kwargs.pop("user_id")
+            except KeyError:
+                raise MissingRequiredNebulyFieldError("user_id")
+            with new_interaction(
+                user_id=user_id,
+                user_group_profile=kwargs.pop("user_group_profile", None),
+            ) as interaction:
                 inputs = get_argument(args, kwargs, "question", 1)
-                interaction._set_user(  # pylint: disable=protected-access
-                    kwargs.pop("user_id")
-                )
-                interaction._set_user_group_profile(  # pylint: disable=protected-access
-                    kwargs.pop("user_group_profile", None)
-                )
                 interaction._set_observer(observer)  # pylint: disable=protected-access
                 model_input = _get_input_and_history(args[0], inputs)
                 interaction.set_input(model_input.prompt)
                 interaction.set_history(model_input.history)
                 original_res = f(*args, **kwargs)
-                interaction.set_output(original_res)
+                interaction.set_output(_parse_output(original_res))
+                return original_res
+
+    if function_name.startswith("schema.runnable.base"):
+        config = get_argument(args, kwargs, "config", 2)
+        handlers = config.get("callbacks", [])
+        if isinstance(handlers, CallbackManager):
+            # We are in an inner RunnableSequence, we could be in a thread so
+            # we need to get interaction from the TrackingHandler
+            handler = _get_tracking_handler(handlers)
+            interaction = handler.current_interaction
+            return f(*args, **kwargs)
+
+        # Outer RunnableSequence, we are in the main thread
+        try:
+            get_nearest_open_interaction()
+            return f(*args, **kwargs)
+        except NotInInteractionContext:
+            handler = _get_tracking_handler(handlers)
+            with new_interaction(
+                user_id=handler.nebuly_user,
+                user_group_profile=handler.nebuly_user_group,
+                auto_publish=False,
+            ) as interaction:
+                inputs = get_argument(args, kwargs, "input", 1)
+                model_input = _get_input_and_history_runnable_seq(args[0], inputs)
+                interaction._set_observer(observer)  # pylint: disable=protected-access
+                if model_input.prompt != "":
+                    interaction.set_input(model_input.prompt)
+                    interaction.set_history(model_input.history)
+                original_res = f(*args, **kwargs)
+                if isinstance(original_res, Generator):
+                    logger.debug("Result is a generator")
+                    return _result_from_generator(original_res, interaction)
+                interaction.set_output(_parse_output(original_res))
+                interaction._finish()
                 return original_res
 
     raise ValueError(f"Unknown function name: {function_name}")
@@ -220,3 +323,47 @@ async def wrap_langchain_async(
                     original_res = await f(*args, **kwargs)
                 interaction.set_output(original_res)
                 return original_res
+
+    if function_name.startswith("schema.runnable.base"):
+        config = get_argument(args, kwargs, "config", 2)
+        handlers = config.get("callbacks", [])
+        if isinstance(handlers, CallbackManager):
+            # We are in an inner RunnableSequence, we could be in a thread so
+            # we need to get interaction from the TrackingHandler
+            handler = _get_tracking_handler(handlers)
+            interaction = handler.current_interaction
+            return await f(*args, **kwargs)
+
+        # Outer RunnableSequence, we are in the main thread
+        try:
+            get_nearest_open_interaction()
+            if isasyncgenfunction(f):
+                return f(*args, **kwargs)
+            return await f(*args, **kwargs)
+        except NotInInteractionContext:
+            handler = _get_tracking_handler(handlers)
+            with new_interaction(
+                user_id=handler.nebuly_user,
+                user_group_profile=handler.nebuly_user_group,
+                auto_publish=False,
+            ) as interaction:
+                handler.set_interaction(interaction)
+                inputs = get_argument(args, kwargs, "input", 1)
+                model_input = _get_input_and_history_runnable_seq(args[0], inputs)
+                interaction._set_observer(observer)  # pylint: disable=protected-access
+                if model_input.prompt != "":
+                    interaction.set_input(model_input.prompt)
+                    interaction.set_history(model_input.history)
+                if isasyncgenfunction(f):
+                    original_res = f(*args, **kwargs)
+                else:
+                    original_res = await f(*args, **kwargs)
+
+                if isinstance(original_res, AsyncGenerator):
+                    logger.debug("Result is a generator")
+                    return _result_from_generator_async(original_res, interaction)
+                interaction.set_output(_parse_output(original_res))
+                interaction._finish()
+                return original_res
+
+    raise ValueError(f"Unknown function name: {function_name}")

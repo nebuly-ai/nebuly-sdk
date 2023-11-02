@@ -110,7 +110,7 @@ class EventsStorage:
 
     def get_root_id(self, event_id: UUID) -> UUID:
         if event_id not in self.events:
-            raise ValueError(f"Event {event_id} not found in events events storage.")
+            raise ValueError(f"Event {event_id} not found in events storage.")
         event = self.events[event_id]
         if event.hierarchy is None:
             return event_id
@@ -266,7 +266,7 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
             raise ValueError("Interaction has no hierarchy.")
         if self.user is None:
             raise MissingRequiredNebulyFieldError(
-                "Missing required nebuly field: 'user_id'. Please add it when calling"
+                "Missing required nebuly field: 'user_id'. Please add it when calling "
                 "the original provider method."
             )
 
@@ -299,7 +299,9 @@ def get_nearest_open_interaction() -> InteractionContext:
 
 @contextmanager
 def new_interaction(
-    user_id: str | None = None, user_group_profile: str | None = None
+    user_id: str | None = None,
+    user_group_profile: str | None = None,
+    auto_publish: bool = True,
 ) -> Generator[InteractionContext, None, None]:
     try:
         get_nearest_open_interaction()
@@ -310,9 +312,10 @@ def new_interaction(
     try:
         yield InteractionContext(user_id, user_group_profile, do_not_call_directly=True)
     finally:
-        try:
-            interaction = get_nearest_open_interaction()
-        except NotInInteractionContext:
-            raise InteractionMustBeLocalVariable()  # pylint: disable=raise-missing-from
-        else:
-            interaction._finish()  # pylint: disable=protected-access
+        if auto_publish:
+            try:
+                interaction = get_nearest_open_interaction()
+            except NotInInteractionContext:
+                raise InteractionMustBeLocalVariable()  # pylint: disable=raise-missing-from  # noqa: E501
+            else:
+                interaction._finish()  # pylint: disable=protected-access

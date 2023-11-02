@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import sys
 from importlib.metadata import version
-from typing import Any
+from typing import Any, AsyncGenerator
 from unittest.mock import patch
 
 import pytest
@@ -23,7 +23,7 @@ from langchain.chat_models import ChatOpenAI
 from langchain.llms.openai import OpenAI
 from langchain.prompts import PromptTemplate
 from langchain.prompts.chat import ChatPromptTemplate
-from langchain.schema import SystemMessage
+from langchain.schema import StrOutputParser, SystemMessage
 
 from nebuly.contextmanager import new_interaction
 from nebuly.entities import (
@@ -38,14 +38,38 @@ from nebuly.requests import CustomJSONEncoder
 from tests.providers import common
 
 # Cache original functions
+orig_chain_call = langchain.chains.base.Chain.__call__
+orig_chain_acall = langchain.chains.base.Chain.acall
 orig_func_llm_gen = langchain.llms.base.BaseLLM.generate
+orig_func_llm_agen = langchain.llms.base.BaseLLM.agenerate
 orig_func_chat_gen = langchain.chat_models.base.BaseChatModel.generate
+orig_func_chat_agen = langchain.chat_models.base.BaseChatModel.agenerate
+orig_invoke_seq = langchain.schema.runnable.base.RunnableSequence.invoke
+orig_stream_seq = langchain.schema.runnable.base.RunnableSequence.stream
+orig_ainvoke_seq = langchain.schema.runnable.base.RunnableSequence.ainvoke
+orig_astream_seq = langchain.schema.runnable.base.RunnableSequence.astream
+orig_invoke_par = langchain.schema.runnable.base.RunnableParallel.invoke
+orig_stream_par = langchain.schema.runnable.base.RunnableParallel.stream
+orig_ainvoke_par = langchain.schema.runnable.base.RunnableParallel.ainvoke
+orig_astream_par = langchain.schema.runnable.base.RunnableParallel.astream
 
 
 def nebuly_init(observer: Observer) -> None:
     # Reset original functions
+    langchain.chains.base.Chain.__call__ = orig_chain_call  # type: ignore
+    langchain.chains.base.Chain.acall = orig_chain_acall  # type: ignore
     langchain.llms.base.BaseLLM.generate = orig_func_llm_gen  # type: ignore
+    langchain.llms.base.BaseLLM.agenerate = orig_func_llm_agen  # type: ignore
     langchain.chat_models.base.BaseChatModel.generate = orig_func_chat_gen  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
+    langchain.chat_models.base.BaseChatModel.agenerate = orig_func_chat_agen  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
+    langchain.schema.runnable.base.RunnableSequence.invoke = orig_invoke_seq  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
+    langchain.schema.runnable.base.RunnableSequence.stream = orig_stream_seq  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
+    langchain.schema.runnable.base.RunnableParallel.invoke = orig_invoke_par  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
+    langchain.schema.runnable.base.RunnableParallel.stream = orig_stream_par  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
+    langchain.schema.runnable.base.RunnableSequence.ainvoke = orig_ainvoke_seq  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
+    langchain.schema.runnable.base.RunnableSequence.astream = orig_astream_seq  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
+    langchain.schema.runnable.base.RunnableParallel.ainvoke = orig_ainvoke_par  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
+    langchain.schema.runnable.base.RunnableParallel.astream = orig_astream_par  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
     common.nebuly_init(observer)
 
 
@@ -510,3 +534,293 @@ def test_langchain_sequential_chain_multiple_input_vars(
             assert "Victorian England" in interaction_watch.input
             assert isinstance(interaction_watch.output, str)
             assert "review" in interaction_watch.output
+
+
+def test_langchain_llm_chain__lcel__no_context_manager(
+    openai_completion: dict[str, Any]
+) -> None:
+    with patch("openai.Completion.create") as mock_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_create.return_value = openai_completion
+            nebuly_init(mock_observer)
+            prompt = PromptTemplate.from_template(
+                "What is a good name for a company that makes {product}?"
+            )
+            runnable = prompt | OpenAI() | StrOutputParser()
+            result = runnable.invoke({"product": "colorful socks"}, user_id="test_user")
+
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert (
+                interaction_watch.input
+                == "What is a good name for a company that makes colorful socks?"
+            )
+            assert interaction_watch.output == "Sample langchain response"
+            assert interaction_watch.end_user == "test_user"
+            assert len(interaction_watch.spans) == 5
+            assert len(interaction_watch.hierarchy) == 5
+            for span in interaction_watch.spans:
+                assert isinstance(span, SpanWatch)
+                assert span.provider_extras is not None
+                if span.module == "langchain":
+                    assert span.provider_extras.get("event_type") is not None
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+def test_langchain_chat_chain__lcel__no_context_manager(
+    openai_chat: dict[str, Any]
+) -> None:
+    with patch("openai.ChatCompletion.create") as mock_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_create.return_value = openai_chat
+            nebuly_init(mock_observer)
+            prompt = PromptTemplate.from_template(
+                "What is a good name for a company that makes {product}?"
+            )
+            runnable = prompt | ChatOpenAI() | StrOutputParser()
+            result = runnable.invoke({"product": "colorful socks"}, user_id="test_user")
+
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert (
+                interaction_watch.input
+                == "What is a good name for a company that makes colorful socks?"
+            )
+            assert interaction_watch.output == "Hi there! How can I assist you today?"
+            assert interaction_watch.end_user == "test_user"
+            assert len(interaction_watch.spans) == 5
+            assert len(interaction_watch.hierarchy) == 5
+            for span in interaction_watch.spans:
+                assert isinstance(span, SpanWatch)
+                assert span.provider_extras is not None
+                if span.module == "langchain":
+                    assert span.provider_extras.get("event_type") is not None
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+def test_langchain_parallel_chain__lcel__no_context_manager(
+    openai_chat: dict[str, Any]
+) -> None:
+    with patch("openai.ChatCompletion.create") as mock_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_create.return_value = openai_chat
+            nebuly_init(mock_observer)
+            from langchain.schema.runnable import RunnableParallel
+
+            model = ChatOpenAI()
+            chain1 = (
+                ChatPromptTemplate.from_template("tell me a joke about {topic}") | model
+            )
+            chain2 = (
+                ChatPromptTemplate.from_template(
+                    "write a short (2 line) poem about {topic}"
+                )
+                | model
+            )
+            combined = RunnableParallel(joke=chain1, poem=chain2)
+            result = combined.invoke({"topic": "bears"}, user_id="test_user")
+
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input in (
+                "write a short (2 line) poem about bears",
+                "tell me a joke about bears",
+            )
+            assert interaction_watch.output == (
+                "joke: content='Hi there! How can I assist you today?'\npoem: "
+                "content='Hi there! How can I assist you today?'"
+            )
+            assert interaction_watch.end_user == "test_user"
+            assert len(interaction_watch.spans) == 9
+            assert len(interaction_watch.hierarchy) == 9
+            for span in interaction_watch.spans:
+                assert isinstance(span, SpanWatch)
+                assert span.provider_extras is not None
+                if span.module == "langchain":
+                    assert span.provider_extras.get("event_type") is not None
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+@pytest.fixture(name="openai_chat_gen")
+def fixture_openai_chat_gen() -> list[dict[str, Any]]:
+    return [
+        {
+            "id": "chatcmpl-123",
+            "object": "chat.completion.chunk",
+            "created": 1677652288,
+            "model": "gpt-3.5-turbo",
+            "choices": [
+                {
+                    "index": 0,
+                    "delta": {
+                        "content": "Hello",
+                    },
+                    "finish_reason": "stop",
+                }
+            ],
+        },
+        {
+            "id": "chatcmpl-123",
+            "object": "chat.completion.chunk",
+            "created": 1677652288,
+            "model": "gpt-3.5-turbo",
+            "choices": [
+                {
+                    "index": 0,
+                    "delta": {
+                        "content": " there",
+                    },
+                    "finish_reason": "stop",
+                }
+            ],
+        },
+        {
+            "id": "chatcmpl-123",
+            "object": "chat.completion.chunk",
+            "created": 1677652288,
+            "model": "gpt-3.5-turbo",
+            "choices": [
+                {
+                    "index": 0,
+                    "delta": {},
+                    "finish_reason": "stop",
+                }
+            ],
+        },
+    ]
+
+
+def test_langchain_llm_chain__lcel__no_context_manager__stream(
+    openai_chat_gen: dict[str, Any]
+) -> None:
+    with patch("openai.ChatCompletion.create") as mock_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_create.return_value = (el for el in openai_chat_gen)
+            nebuly_init(mock_observer)
+
+            model = ChatOpenAI()
+            prompt = ChatPromptTemplate.from_template("tell me a joke about {topic}")
+            chain = prompt | model
+
+            for _ in chain.stream({"topic": "bears"}, user_id="test_user"):
+                ...
+
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input in (
+                "write a short (2 line) poem about bears",
+                "tell me a joke about bears",
+            )
+            assert interaction_watch.output == ("Hello there")
+            assert interaction_watch.end_user == "test_user"
+            assert len(interaction_watch.spans) == 4
+            assert len(interaction_watch.hierarchy) == 3
+            for span in interaction_watch.spans:
+                assert isinstance(span, SpanWatch)
+                assert span.provider_extras is not None
+                if span.module == "langchain":
+                    assert span.provider_extras.get("event_type") is not None
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+@pytest.fixture(name="openai_chat_gen_async")
+async def fixture_openai_chat_gen_async(
+    openai_chat_gen: list[dict[str, Any]]
+) -> AsyncGenerator[dict[str, Any], None]:
+    for el in openai_chat_gen:
+        yield el
+
+
+@pytest.mark.asyncio
+async def test_langchain_llm_chain__lcel__no_context_manager__stream__async(
+    openai_chat_gen_async: dict[str, Any]
+) -> None:
+    with patch("openai.ChatCompletion.acreate") as mock_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_create.return_value = openai_chat_gen_async
+            nebuly_init(mock_observer)
+
+            model = ChatOpenAI()
+            prompt = ChatPromptTemplate.from_template("tell me a joke about {topic}")
+            chain = prompt | model
+
+            async for _ in chain.astream({"topic": "bears"}, user_id="test_user"):
+                ...
+
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input in (
+                "write a short (2 line) poem about bears",
+                "tell me a joke about bears",
+            )
+            assert interaction_watch.output == ("Hello there")
+            assert interaction_watch.end_user == "test_user"
+            assert len(interaction_watch.spans) == 4
+            assert len(interaction_watch.hierarchy) == 3
+            for span in interaction_watch.spans:
+                assert isinstance(span, SpanWatch)
+                assert span.provider_extras is not None
+                if span.module == "langchain":
+                    assert span.provider_extras.get("event_type") is not None
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+@pytest.mark.asyncio
+async def test_langchain_llm_chain__lcel__async__no_context_manager(
+    openai_chat: dict[str, Any]
+) -> None:
+    with patch("openai.ChatCompletion.acreate") as mock_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_create.return_value = openai_chat
+            nebuly_init(mock_observer)
+
+            model = ChatOpenAI()
+            prompt = ChatPromptTemplate.from_template("tell me a joke about {topic}")
+            chain = prompt | model
+
+            result = await chain.ainvoke({"topic": "bears"}, user_id="test_user")
+
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input in (
+                "write a short (2 line) poem about bears",
+                "tell me a joke about bears",
+            )
+            assert interaction_watch.output == ("Hi there! How can I assist you today?")
+            assert interaction_watch.end_user == "test_user"
+            assert len(interaction_watch.spans) == 4
+            assert len(interaction_watch.hierarchy) == 4
+            for span in interaction_watch.spans:
+                assert isinstance(span, SpanWatch)
+                assert span.provider_extras is not None
+                if span.module == "langchain":
+                    assert span.provider_extras.get("event_type") is not None
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )

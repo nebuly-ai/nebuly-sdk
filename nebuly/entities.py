@@ -78,6 +78,15 @@ class SpanWatch:  # pylint: disable=too-many-instance-attributes
     rag_source: str | None = None
     span_id: uuid.UUID = field(default_factory=uuid.uuid4)
 
+    @staticmethod
+    def clean_kwargs(kwargs: Any) -> dict[str, Any]:
+        # Find invocation_params if present and remove nebuly_interaction
+        if "invocation_params" in kwargs:
+            if "nebuly_interaction" in kwargs["invocation_params"]:
+                kwargs["invocation_params"].pop("nebuly_interaction")
+
+        return kwargs
+
     def to_dict(self) -> dict[str, Any]:
         """
         to_dict returns a dictionary representation of the SpanWatch instance.
@@ -89,7 +98,7 @@ class SpanWatch:  # pylint: disable=too-many-instance-attributes
             "called_start": self.called_start.isoformat(),
             "called_end": self.called_end.isoformat(),
             "called_with_args": self.called_with_args,
-            "called_with_kwargs": self.called_with_kwargs,
+            "called_with_kwargs": self.clean_kwargs(self.called_with_kwargs),
             "returned": self.returned,
             "generator": self.generator,
             "generator_first_element_timestamp": (
@@ -97,7 +106,11 @@ class SpanWatch:  # pylint: disable=too-many-instance-attributes
                 if self.generator_first_element_timestamp
                 else None
             ),
-            "provider_extras": self.provider_extras,
+            "provider_extras": {
+                k: v
+                for k, v in self.provider_extras.items()
+                if k != "nebuly_interaction"
+            },
             "rag_source": self.rag_source,
             "span_id": str(self.span_id),
         }

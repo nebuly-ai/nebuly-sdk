@@ -7,6 +7,7 @@ NEBULY_KWARGS = {
     "user_group_profile",
     "parent_run_id",
     "root_run_id",
+    "nebuly_interaction",
 }
 
 PACKAGES = (
@@ -32,7 +33,7 @@ PACKAGES = (
     ),
     Package(
         "langchain",
-        SupportedVersion("0.0.200"),
+        SupportedVersion("0.0.311"),
         (
             "chains.base.Chain.__call__",
             "chains.base.Chain.acall",
@@ -41,6 +42,14 @@ PACKAGES = (
             "chat_models.base.BaseChatModel.generate",
             "chat_models.base.BaseChatModel.agenerate",
             "indexes.vectorstore.VectorStoreIndexWrapper.query",
+            "schema.runnable.base.RunnableSequence.invoke",
+            "schema.runnable.base.RunnableSequence.ainvoke",
+            "schema.runnable.base.RunnableSequence.stream",
+            "schema.runnable.base.RunnableSequence.astream",
+            "schema.runnable.base.RunnableParallel.invoke",
+            "schema.runnable.base.RunnableParallel.ainvoke",
+            "schema.runnable.base.RunnableParallel.stream",
+            "schema.runnable.base.RunnableParallel.astream",
         ),
     ),
     Package(

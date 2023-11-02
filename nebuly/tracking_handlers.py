@@ -9,9 +9,18 @@ from langchain.chains.base import Chain
 from langchain.schema import Document
 from langchain.schema.messages import BaseMessage
 from langchain.schema.output import LLMResult
+from langchain.schema.runnable.base import RunnableParallel, RunnableSequence
+from langchain.schema.runnable.config import RunnableConfig, ensure_config
+from langchain.schema.runnable.utils import Input
 
-from nebuly.contextmanager import EventData, EventsStorage, get_nearest_open_interaction
+from nebuly.contextmanager import (
+    EventData,
+    EventsStorage,
+    InteractionContext,
+    get_nearest_open_interaction,
+)
 from nebuly.entities import EventType
+from nebuly.exceptions import NotInInteractionContext
 
 logger = logging.getLogger(__name__)
 
@@ -20,19 +29,38 @@ def set_tracking_handlers() -> None:
     tracking_handler = LangChainTrackingHandler()
     original_call = Chain.__call__
     original_acall = Chain.acall
+    original_sequence_invoke = RunnableSequence.invoke
+    original_parallel_invoke = RunnableParallel.invoke
+    original_sequence_ainvoke = RunnableSequence.ainvoke
+    original_parallel_ainvoke = RunnableParallel.ainvoke
+    original_sequence_stream = RunnableSequence.stream
+    original_parallel_stream = RunnableParallel.stream
+    original_sequence_astream = RunnableSequence.astream
+    original_parallel_astream = RunnableParallel.astream
+
+    def _add_tracking_handler(handlers: list) -> Callbacks:
+        handlers_new = [tracking_handler]
+        for callback in handlers:
+            if not isinstance(callback, LangChainTrackingHandler):
+                handlers_new.append(callback)
+        return handlers_new
 
     def set_callbacks_arg(callbacks: Callbacks) -> Callbacks:
         if callbacks is None:
             callbacks = [tracking_handler]
         elif isinstance(callbacks, list):
-            if tracking_handler not in callbacks:
-                callbacks.append(tracking_handler)
+            callbacks = _add_tracking_handler(callbacks)
         elif isinstance(callbacks, BaseCallbackManager):
-            if tracking_handler not in callbacks.handlers:
-                callbacks.handlers.append(tracking_handler)
-            if tracking_handler not in callbacks.inheritable_handlers:
-                callbacks.inheritable_handlers.append(tracking_handler)
+            callbacks.handlers = _add_tracking_handler(callbacks.handlers)
+            callbacks.inheritable_handlers = _add_tracking_handler(
+                callbacks.inheritable_handlers
+            )
         return callbacks
+
+    def set_config_arg(config: RunnableConfig | None) -> RunnableConfig:
+        config = ensure_config(config)
+        config["callbacks"] = set_callbacks_arg(config["callbacks"])
+        return config
 
     def tracked_call(
         self: Any,
@@ -57,7 +85,7 @@ def set_tracking_handlers() -> None:
             **kwargs,
         )
 
-    def tracked_acall(
+    async def tracked_acall(
         self: Any,
         inputs: dict[str, Any],
         return_only_outputs: bool = False,
@@ -67,7 +95,7 @@ def set_tracking_handlers() -> None:
         callbacks = set_callbacks_arg(callbacks)
         tracking_handler.nebuly_user = kwargs.pop("user_id", None)
         tracking_handler.nebuly_user_group = kwargs.pop("user_group_profile", None)
-        return original_acall(
+        return await original_acall(
             self,
             inputs=inputs,
             return_only_outputs=return_only_outputs,
@@ -75,20 +103,142 @@ def set_tracking_handlers() -> None:
             **kwargs,
         )
 
+    def tracked_invoke(
+        self: Any, input: Input, config: RunnableConfig | None = None, **kwargs: Any
+    ) -> Any:
+        config = set_config_arg(config)
+        user_id = kwargs.pop("user_id", None)
+        if user_id is not None:
+            tracking_handler.nebuly_user = user_id
+        user_group_profile = kwargs.pop("user_group_profile", None)
+        if user_group_profile is not None:
+            tracking_handler.nebuly_user_group = user_group_profile
+
+        return (
+            original_sequence_invoke(
+                self,
+                input=input,
+                config=config,
+            )
+            if isinstance(self, RunnableSequence)
+            else original_parallel_invoke(
+                self,
+                input=input,
+                config=config,
+            )
+        )
+
+    async def tracked_ainvoke(
+        self: Any, input: Input, config: RunnableConfig | None = None, **kwargs: Any
+    ) -> Any:
+        config = set_config_arg(config)
+        user_id = kwargs.pop("user_id", None)
+        if user_id is not None:
+            tracking_handler.nebuly_user = user_id
+        user_group_profile = kwargs.pop("user_group_profile", None)
+        if user_group_profile is not None:
+            tracking_handler.nebuly_user_group = user_group_profile
+        return (
+            await original_sequence_ainvoke(
+                self,
+                input=input,
+                config=config,
+            )
+            if isinstance(self, RunnableSequence)
+            else await original_parallel_ainvoke(
+                self,
+                input=input,
+                config=config,
+            )
+        )
+
+    def tracked_stream(
+        self: Any, input: Input, config: RunnableConfig | None = None, **kwargs: Any
+    ) -> Any:
+        config = set_config_arg(config)
+        user_id = kwargs.pop("user_id", None)
+        if user_id is not None:
+            tracking_handler.nebuly_user = user_id
+        user_group_profile = kwargs.pop("user_group_profile", None)
+        if user_group_profile is not None:
+            tracking_handler.nebuly_user_group = user_group_profile
+
+        if isinstance(self, RunnableSequence):
+            return original_sequence_stream(
+                self,
+                input=input,
+                config=config,
+            )
+        return original_parallel_stream(
+            self,
+            input=input,
+            config=config,
+        )
+
+    async def tracked_astream(
+        self: Any, input: Input, config: RunnableConfig | None = None, **kwargs: Any
+    ) -> Any:
+        config = set_config_arg(config)
+        user_id = kwargs.pop("user_id", None)
+        if user_id is not None:
+            tracking_handler.nebuly_user = user_id
+        user_group_profile = kwargs.pop("user_group_profile", None)
+        if user_group_profile is not None:
+            tracking_handler.nebuly_user_group = user_group_profile
+        if isinstance(self, RunnableSequence):
+            async for chunk in await original_sequence_astream(
+                self,
+                input=input,
+                config=config,
+            ):
+                yield chunk
+        else:
+            async for chunk in await original_parallel_astream(
+                self,
+                input=input,
+                config=config,
+            ):
+                yield chunk
+
     Chain.__call__ = tracked_call  # type: ignore
     Chain.acall = tracked_acall  # type: ignore
+    RunnableSequence.invoke = tracked_invoke  # type: ignore
+    RunnableParallel.invoke = tracked_invoke  # type: ignore
+    RunnableSequence.ainvoke = tracked_ainvoke  # type: ignore
+    RunnableParallel.ainvoke = tracked_ainvoke  # type: ignore
+    RunnableSequence.stream = tracked_stream  # type: ignore
+    RunnableParallel.stream = tracked_stream  # type: ignore
+    RunnableSequence.astream = tracked_astream  # type: ignore
+    RunnableParallel.astream = tracked_astream  # type: ignore
 
 
 class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
     def __init__(self) -> None:
         self.nebuly_user = None
         self.nebuly_user_group = None
+        self._current_interaction: InteractionContext | None = None
 
     @property
     def current_interaction_storage(self) -> EventsStorage:
         return (
-            get_nearest_open_interaction()._events_storage  # pylint: disable=protected-access  # noqa: E501
+            self.current_interaction._events_storage  # pylint: disable=protected-access  # noqa: E501
         )
+
+    @property
+    def current_interaction(self) -> InteractionContext:
+        try:
+            self._current_interaction = get_nearest_open_interaction()
+        except NotInInteractionContext:
+            if self._current_interaction is None:
+                raise NotInInteractionContext(
+                    "The current interaction is not set and there "
+                    "is no open interaction"
+                )
+            return self._current_interaction
+        return self._current_interaction
+
+    def set_interaction(self, interaction: InteractionContext) -> None:
+        self._current_interaction = interaction
 
     def on_tool_start(  # pylint: disable=arguments-differ
         self,

@@ -286,7 +286,10 @@ def _add_interaction_span(  # pylint: disable=too-many-arguments, too-many-local
         model_output_res = ""
 
     try:
-        interaction = get_nearest_open_interaction()
+        if "nebuly_interaction" in nebuly_kwargs:
+            interaction = nebuly_kwargs["nebuly_interaction"]
+        else:
+            interaction = get_nearest_open_interaction()
         if isinstance(model_input_res, list):
             logger.warning(
                 "Batch prediction found inside a user defined interaction, only the "
@@ -525,7 +528,6 @@ def _setup_args_kwargs(
     """
     nebuly_kwargs, function_kwargs = _split_nebuly_kwargs(args, kwargs)
     original_args = deepcopy(args)
-    nebuly_kwargs = deepcopy(nebuly_kwargs)
     original_kwargs = deepcopy(function_kwargs)
 
     return original_args, original_kwargs, function_kwargs, nebuly_kwargs
@@ -595,7 +597,7 @@ def coroutine_wrapper(
                 wrap_langchain_async,
             )
 
-            return wrap_langchain_async(
+            return await wrap_langchain_async(
                 observer=observer,
                 function_name=function_name,
                 f=f,
