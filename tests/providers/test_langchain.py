@@ -547,7 +547,7 @@ def test_langchain_llm_chain__lcel__no_context_manager(
             prompt = PromptTemplate.from_template(
                 "What is a good name for a company that makes {product}?"
             )
-            runnable = prompt | OpenAI() | StrOutputParser()
+            runnable = prompt | OpenAI(openai_api_key="test") | StrOutputParser()
             result = runnable.invoke(
                 {"product": "colorful socks"}, user_id="test_user"  # type: ignore
             )
@@ -585,7 +585,7 @@ def test_langchain_chat_chain__lcel__no_context_manager(
             prompt = PromptTemplate.from_template(
                 "What is a good name for a company that makes {product}?"
             )
-            runnable = prompt | ChatOpenAI() | StrOutputParser()
+            runnable = prompt | ChatOpenAI(openai_api_key="test") | StrOutputParser()
             result = runnable.invoke(
                 {"product": "colorful socks"}, user_id="test_user"  # type: ignore
             )
@@ -621,7 +621,7 @@ def test_langchain_parallel_chain__lcel__no_context_manager(
             mock_completion_create.return_value = openai_chat
             nebuly_init(mock_observer)
 
-            model = ChatOpenAI()
+            model = ChatOpenAI(openai_api_key="test")
             chain1 = (
                 ChatPromptTemplate.from_template("tell me a joke about {topic}") | model
             )
@@ -719,7 +719,7 @@ def test_langchain_llm_chain__lcel__no_context_manager__stream(
             mock_completion_create.return_value = (el for el in openai_chat_gen)
             nebuly_init(mock_observer)
 
-            model = ChatOpenAI()
+            model = ChatOpenAI(openai_api_key="test")
             prompt = ChatPromptTemplate.from_template("tell me a joke about {topic}")
             chain = prompt | model
 
@@ -765,7 +765,7 @@ async def test_langchain_llm_chain__lcel__no_context_manager__stream__async(
             mock_completion_create.return_value = openai_chat_gen_async
             nebuly_init(mock_observer)
 
-            model = ChatOpenAI()
+            model = ChatOpenAI(openai_api_key="test")
             prompt = ChatPromptTemplate.from_template("tell me a joke about {topic}")
             chain = prompt | model
 
@@ -803,7 +803,7 @@ async def test_langchain_llm_chain__lcel__async__no_context_manager(
             mock_completion_create.return_value = openai_chat
             nebuly_init(mock_observer)
 
-            model = ChatOpenAI()
+            model = ChatOpenAI(openai_api_key="test")
             prompt = ChatPromptTemplate.from_template("tell me a joke about {topic}")
             chain = prompt | model
 
