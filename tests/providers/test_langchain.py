@@ -633,7 +633,7 @@ def test_langchain_parallel_chain__lcel__no_context_manager(
             )
             combined = RunnableParallel(joke=chain1, poem=chain2)
             result = combined.invoke(
-                {"topic": "bears"}, user_id="test_user"  # type: ignore
+                {"topic": "bears"}, user_id="test_user"  # type: ignore  #pylint: disable=unexpected-keyword-arg  # noqa: E501
             )
 
             assert result is not None

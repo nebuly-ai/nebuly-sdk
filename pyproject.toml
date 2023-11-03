@@ -23,7 +23,7 @@ safety = "^2.3.5"
 pre-commit = "^3.4.0"
 pytest-cov = "^4.1.0"
 pytest-asyncio = "^0.21.1"
-google-cloud-aiplatform = "^1.33.1"
+google-cloud-aiplatform = ">=1.36.0"
 cohere = "^4.27"
 anthropic = "^0.3.11"
 langchain = { version = "^0.0.311", python = ">=3.8.1,<4.0" }
