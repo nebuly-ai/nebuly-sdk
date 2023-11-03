@@ -79,7 +79,7 @@ class SpanWatch:  # pylint: disable=too-many-instance-attributes
     span_id: uuid.UUID = field(default_factory=uuid.uuid4)
 
     @staticmethod
-    def clean_kwargs(kwargs: Any) -> dict[str, Any]:
+    def clean_kwargs(kwargs: dict[str, Any]) -> dict[str, Any]:
         # Find invocation_params if present and remove nebuly_interaction
         if "invocation_params" in kwargs:
             if "nebuly_interaction" in kwargs["invocation_params"]:
@@ -110,7 +110,9 @@ class SpanWatch:  # pylint: disable=too-many-instance-attributes
                 k: v
                 for k, v in self.provider_extras.items()
                 if k != "nebuly_interaction"
-            },
+            }
+            if self.provider_extras is not None
+            else None,
             "rag_source": self.rag_source,
             "span_id": str(self.span_id),
         }

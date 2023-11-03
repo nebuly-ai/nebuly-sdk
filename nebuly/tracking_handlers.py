@@ -25,7 +25,9 @@ from nebuly.exceptions import NotInInteractionContext
 logger = logging.getLogger(__name__)
 
 
-def set_tracking_handlers() -> None:
+def set_tracking_handlers() -> (
+    None
+):  # pylint: disable=too-many-locals,too-many-statements
     tracking_handler = LangChainTrackingHandler()
     original_call = Chain.__call__
     original_acall = Chain.acall
@@ -38,8 +40,10 @@ def set_tracking_handlers() -> None:
     original_sequence_astream = RunnableSequence.astream
     original_parallel_astream = RunnableParallel.astream
 
-    def _add_tracking_handler(handlers: list) -> Callbacks:
-        handlers_new = [tracking_handler]
+    def _add_tracking_handler(
+        handlers: list[BaseCallbackHandler],
+    ) -> list[BaseCallbackHandler]:
+        handlers_new: list[BaseCallbackHandler] = [tracking_handler]
         for callback in handlers:
             if not isinstance(callback, LangChainTrackingHandler):
                 handlers_new.append(callback)
@@ -104,7 +108,10 @@ def set_tracking_handlers() -> None:
         )
 
     def tracked_invoke(
-        self: Any, input: Input, config: RunnableConfig | None = None, **kwargs: Any
+        self: Any,
+        input: Input,  # pylint: disable=redefined-builtin
+        config: RunnableConfig | None = None,
+        **kwargs: Any,
     ) -> Any:
         config = set_config_arg(config)
         user_id = kwargs.pop("user_id", None)
@@ -129,7 +136,10 @@ def set_tracking_handlers() -> None:
         )
 
     async def tracked_ainvoke(
-        self: Any, input: Input, config: RunnableConfig | None = None, **kwargs: Any
+        self: Any,
+        input: Input,  # pylint: disable=redefined-builtin
+        config: RunnableConfig | None = None,
+        **kwargs: Any,
     ) -> Any:
         config = set_config_arg(config)
         user_id = kwargs.pop("user_id", None)
@@ -153,7 +163,10 @@ def set_tracking_handlers() -> None:
         )
 
     def tracked_stream(
-        self: Any, input: Input, config: RunnableConfig | None = None, **kwargs: Any
+        self: Any,
+        input: Input,  # pylint: disable=redefined-builtin
+        config: RunnableConfig | None = None,
+        **kwargs: Any,
     ) -> Any:
         config = set_config_arg(config)
         user_id = kwargs.pop("user_id", None)
@@ -176,7 +189,10 @@ def set_tracking_handlers() -> None:
         )
 
     async def tracked_astream(
-        self: Any, input: Input, config: RunnableConfig | None = None, **kwargs: Any
+        self: Any,
+        input: Input,  # pylint: disable=redefined-builtin
+        config: RunnableConfig | None = None,
+        **kwargs: Any,
     ) -> Any:
         config = set_config_arg(config)
         user_id = kwargs.pop("user_id", None)
@@ -186,14 +202,14 @@ def set_tracking_handlers() -> None:
         if user_group_profile is not None:
             tracking_handler.nebuly_user_group = user_group_profile
         if isinstance(self, RunnableSequence):
-            async for chunk in await original_sequence_astream(
+            async for chunk in await original_sequence_astream(  # type: ignore
                 self,
                 input=input,
                 config=config,
             ):
                 yield chunk
         else:
-            async for chunk in await original_parallel_astream(
+            async for chunk in await original_parallel_astream(  # type: ignore
                 self,
                 input=input,
                 config=config,
@@ -228,12 +244,12 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
     def current_interaction(self) -> InteractionContext:
         try:
             self._current_interaction = get_nearest_open_interaction()
-        except NotInInteractionContext:
+        except NotInInteractionContext as e:
             if self._current_interaction is None:
                 raise NotInInteractionContext(
                     "The current interaction is not set and there "
                     "is no open interaction"
-                )
+                ) from e
             return self._current_interaction
         return self._current_interaction
 

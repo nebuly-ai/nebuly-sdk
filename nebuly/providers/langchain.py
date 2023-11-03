@@ -14,7 +14,11 @@ from langchain.prompts.chat import AIMessagePromptTemplate, HumanMessagePromptTe
 from langchain.schema.messages import AIMessage
 from langchain.schema.runnable.base import RunnableSequence
 
-from nebuly.contextmanager import get_nearest_open_interaction, new_interaction
+from nebuly.contextmanager import (
+    InteractionContext,
+    get_nearest_open_interaction,
+    new_interaction,
+)
 from nebuly.entities import HistoryEntry, ModelInput, Observer
 from nebuly.exceptions import MissingRequiredNebulyFieldError, NotInInteractionContext
 from nebuly.providers.utils import get_argument
@@ -41,7 +45,7 @@ def _get_tracking_info_for_provider_call(**kwargs: Any) -> dict[str, Any]:
     # Get the parent_run_id from the CallbackManager
     callback_manager = callbacks
     parent_run_id = cast(UUID, callback_manager.parent_run_id)
-    additional_kwargs = {"parent_run_id": str(parent_run_id)}
+    additional_kwargs: dict[str, Any] = {"parent_run_id": str(parent_run_id)}
 
     # Get the root_run_id from the LangChainTrackingHandler
     for handler in callback_manager.handlers:
@@ -119,7 +123,7 @@ def _get_input_and_history(chain: Chain, inputs: dict[str, Any] | Any) -> ModelI
 
 
 def _get_input_and_history_runnable_seq(
-    sequence: RunnableSequence, inputs: dict[str, Any] | Any
+    sequence: RunnableSequence[Any, Any], inputs: dict[str, Any] | Any
 ) -> ModelInput:
     first = getattr(sequence, "first", None)
 
@@ -142,7 +146,7 @@ def _get_output_chain(chain: Chain, result: dict[str, Any]) -> str:
     return _parse_output(output)
 
 
-def _parse_output(output: dict | str | AIMessage) -> str:
+def _parse_output(output: str | dict[str, Any] | AIMessage) -> str:
     if isinstance(output, dict):
         return "\n".join([f"{key}: {value}" for key, value in output.items()])
     if isinstance(output, AIMessage):
@@ -164,35 +168,38 @@ def _get_tracking_handler(
     raise ValueError("LangChainTrackingHandler not found")
 
 
-def _result_from_generator(generator: Generator, interaction) -> Generator:
-    original_result = []
+def _result_from_generator(
+    generator: Generator[Any, Any, Any], interaction: InteractionContext
+) -> Generator[Any, Any, Any]:
+    original_results = []
 
     for element in generator:
         logger.debug("Yielding %s", element)
-        original_result.append(deepcopy(element.content))
+        original_results.append(deepcopy(str(element.content)))
         yield element
 
-    original_result = "".join(original_result)
+    original_result = "".join(original_results)
+
     interaction.set_output(_parse_output(original_result))
     interaction._finish()  # pylint: disable=protected-access
 
 
 async def _result_from_generator_async(
-    generator: AsyncGenerator, interaction
-) -> AsyncGenerator:
-    original_result = []
+    generator: AsyncGenerator[Any, Any], interaction: InteractionContext
+) -> AsyncGenerator[Any, Any]:
+    original_results = []
 
     async for element in generator:
         logger.debug("Yielding %s", element)
-        original_result.append(deepcopy(element.content))
+        original_results.append(deepcopy(element.content))
         yield element
 
-    original_result = "".join(original_result)
+    original_result = "".join(original_results)
     interaction.set_output(_parse_output(original_result))
     interaction._finish()  # pylint: disable=protected-access
 
 
-def wrap_langchain(
+def wrap_langchain(  # pylint: disable=too-many-return-statements,too-many-statements
     observer: Observer,
     function_name: str,
     f: Callable[[Any], Any],
@@ -230,8 +237,8 @@ def wrap_langchain(
         except NotInInteractionContext:
             try:
                 user_id = kwargs.pop("user_id")
-            except KeyError:
-                raise MissingRequiredNebulyFieldError("user_id")
+            except KeyError as e:
+                raise MissingRequiredNebulyFieldError("user_id") from e
             with new_interaction(
                 user_id=user_id,
                 user_group_profile=kwargs.pop("user_group_profile", None),
@@ -277,13 +284,13 @@ def wrap_langchain(
                     logger.debug("Result is a generator")
                     return _result_from_generator(original_res, interaction)
                 interaction.set_output(_parse_output(original_res))
-                interaction._finish()
+                interaction._finish()  # pylint: disable=protected-access
                 return original_res
 
     raise ValueError(f"Unknown function name: {function_name}")
 
 
-async def wrap_langchain_async(
+async def wrap_langchain_async(  # pylint: disable=too-many-return-statements,too-many-statements, too-many-branches  # noqa: E501
     observer: Observer,
     function_name: str,
     f: Callable[[Any], Any],
@@ -363,7 +370,7 @@ async def wrap_langchain_async(
                     logger.debug("Result is a generator")
                     return _result_from_generator_async(original_res, interaction)
                 interaction.set_output(_parse_output(original_res))
-                interaction._finish()
+                interaction._finish()  # pylint: disable=protected-access
                 return original_res
 
     raise ValueError(f"Unknown function name: {function_name}")

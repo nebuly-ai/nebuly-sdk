@@ -243,9 +243,9 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
         for span in self.spans:
             if span.provider_extras is None:
                 continue
-            parent_id: UUID | None = span.provider_extras.get("parent_run_id")
+            parent_id = span.provider_extras.get("parent_run_id")
             if parent_id is not None:
-                self.hierarchy[span.span_id] = parent_id
+                self.hierarchy[span.span_id] = UUID(parent_id)
         if self._observer is not None:
             self._observer(self._as_interaction_watch())
 
@@ -264,6 +264,13 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
             raise ValueError("Interaction has no history.")
         if self.hierarchy is None:
             raise ValueError("Interaction has no hierarchy.")
+        if len(self.hierarchy) > 0:
+            for value in self.hierarchy.values():
+                if value is not None and value not in self.hierarchy:
+                    raise ValueError(
+                        f"Interaction hierarchy has a reference to a non-existing "
+                        f"event: {value}"
+                    )
         if self.user is None:
             raise MissingRequiredNebulyFieldError(
                 "Missing required nebuly field: 'user_id'. Please add it when calling "
@@ -317,5 +324,4 @@ def new_interaction(
                 interaction = get_nearest_open_interaction()
             except NotInInteractionContext:
                 raise InteractionMustBeLocalVariable()  # pylint: disable=raise-missing-from  # noqa: E501
-            else:
-                interaction._finish()  # pylint: disable=protected-access
+            interaction._finish()  # pylint: disable=protected-access

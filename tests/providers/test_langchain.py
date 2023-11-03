@@ -24,6 +24,7 @@ from langchain.llms.openai import OpenAI
 from langchain.prompts import PromptTemplate
 from langchain.prompts.chat import ChatPromptTemplate
 from langchain.schema import StrOutputParser, SystemMessage
+from langchain.schema.runnable import RunnableParallel
 
 from nebuly.contextmanager import new_interaction
 from nebuly.entities import (
@@ -547,7 +548,9 @@ def test_langchain_llm_chain__lcel__no_context_manager(
                 "What is a good name for a company that makes {product}?"
             )
             runnable = prompt | OpenAI() | StrOutputParser()
-            result = runnable.invoke({"product": "colorful socks"}, user_id="test_user")
+            result = runnable.invoke(
+                {"product": "colorful socks"}, user_id="test_user"  # type: ignore
+            )
 
             assert result is not None
             assert mock_observer.call_count == 1
@@ -583,7 +586,9 @@ def test_langchain_chat_chain__lcel__no_context_manager(
                 "What is a good name for a company that makes {product}?"
             )
             runnable = prompt | ChatOpenAI() | StrOutputParser()
-            result = runnable.invoke({"product": "colorful socks"}, user_id="test_user")
+            result = runnable.invoke(
+                {"product": "colorful socks"}, user_id="test_user"  # type: ignore
+            )
 
             assert result is not None
             assert mock_observer.call_count == 1
@@ -615,7 +620,6 @@ def test_langchain_parallel_chain__lcel__no_context_manager(
         with patch.object(NebulyObserver, "on_event_received") as mock_observer:
             mock_completion_create.return_value = openai_chat
             nebuly_init(mock_observer)
-            from langchain.schema.runnable import RunnableParallel
 
             model = ChatOpenAI()
             chain1 = (
@@ -628,7 +632,9 @@ def test_langchain_parallel_chain__lcel__no_context_manager(
                 | model
             )
             combined = RunnableParallel(joke=chain1, poem=chain2)
-            result = combined.invoke({"topic": "bears"}, user_id="test_user")
+            result = combined.invoke(
+                {"topic": "bears"}, user_id="test_user"  # type: ignore
+            )
 
             assert result is not None
             assert mock_observer.call_count == 1
