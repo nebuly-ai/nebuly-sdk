@@ -1,4 +1,5 @@
-# pylint: disable=duplicate-code, wrong-import-position
+# flake8: noqa: E501
+# pylint: disable=duplicate-code, wrong-import-position,line-too-long
 from __future__ import annotations
 
 import json
@@ -61,16 +62,16 @@ def nebuly_init(observer: Observer) -> None:
     langchain.chains.base.Chain.acall = orig_chain_acall  # type: ignore
     langchain.llms.base.BaseLLM.generate = orig_func_llm_gen  # type: ignore
     langchain.llms.base.BaseLLM.agenerate = orig_func_llm_agen  # type: ignore
-    langchain.chat_models.base.BaseChatModel.generate = orig_func_chat_gen  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
-    langchain.chat_models.base.BaseChatModel.agenerate = orig_func_chat_agen  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
-    langchain.schema.runnable.base.RunnableSequence.invoke = orig_invoke_seq  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
-    langchain.schema.runnable.base.RunnableSequence.stream = orig_stream_seq  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
-    langchain.schema.runnable.base.RunnableParallel.invoke = orig_invoke_par  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
-    langchain.schema.runnable.base.RunnableParallel.stream = orig_stream_par  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
-    langchain.schema.runnable.base.RunnableSequence.ainvoke = orig_ainvoke_seq  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
-    langchain.schema.runnable.base.RunnableSequence.astream = orig_astream_seq  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
-    langchain.schema.runnable.base.RunnableParallel.ainvoke = orig_ainvoke_par  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
-    langchain.schema.runnable.base.RunnableParallel.astream = orig_astream_par  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
+    langchain.chat_models.base.BaseChatModel.generate = orig_func_chat_gen  # type: ignore
+    langchain.chat_models.base.BaseChatModel.agenerate = orig_func_chat_agen  # type: ignore
+    langchain.schema.runnable.base.RunnableSequence.invoke = orig_invoke_seq  # type: ignore
+    langchain.schema.runnable.base.RunnableSequence.stream = orig_stream_seq  # type: ignore
+    langchain.schema.runnable.base.RunnableParallel.invoke = orig_invoke_par  # type: ignore
+    langchain.schema.runnable.base.RunnableParallel.stream = orig_stream_par  # type: ignore
+    langchain.schema.runnable.base.RunnableSequence.ainvoke = orig_ainvoke_seq  # type: ignore
+    langchain.schema.runnable.base.RunnableSequence.astream = orig_astream_seq  # type: ignore
+    langchain.schema.runnable.base.RunnableParallel.ainvoke = orig_ainvoke_par  # type: ignore
+    langchain.schema.runnable.base.RunnableParallel.astream = orig_astream_par  # type: ignore
     common.nebuly_init(observer)
 
 
@@ -405,7 +406,7 @@ def test_langchain__chain_with_function_tool(
                 "calculating lengths of words."
             )
             prompt = OpenAIFunctionsAgent.create_prompt(system_message=system_message)
-            agent = OpenAIFunctionsAgent(llm=llm, tools=tools, prompt=prompt)  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
+            agent = OpenAIFunctionsAgent(llm=llm, tools=tools, prompt=prompt)  # type: ignore
             agent_executor = AgentExecutor(agent=agent, tools=tools)  # type: ignore
             agent_executor.run(
                 input="how many letters in the word educa?",
@@ -540,39 +541,39 @@ def test_langchain_sequential_chain_multiple_input_vars(
 def test_langchain_llm_chain__lcel__no_context_manager(
     openai_completion: dict[str, Any]
 ) -> None:
-    with patch("openai.Completion.create") as mock_completion_create:
-        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
-            mock_completion_create.return_value = openai_completion
-            nebuly_init(mock_observer)
-            prompt = PromptTemplate.from_template(
-                "What is a good name for a company that makes {product}?"
-            )
-            runnable = prompt | OpenAI(openai_api_key="test") | StrOutputParser()
-            result = runnable.invoke(
-                {"product": "colorful socks"}, user_id="test_user"  # type: ignore
-            )
+    with patch("openai.Completion.create") as mock_completion_create, patch.object(
+        NebulyObserver, "on_event_received"
+    ) as mock_observer:
+        mock_completion_create.return_value = openai_completion
+        nebuly_init(mock_observer)
+        prompt = PromptTemplate.from_template(
+            "What is a good name for a company that makes {product}?"
+        )
+        runnable = prompt | OpenAI(openai_api_key="test") | StrOutputParser()
+        result = runnable.invoke(
+            {"product": "colorful socks"}, user_id="test_user"  # type: ignore
+        )
 
-            assert result is not None
-            assert mock_observer.call_count == 1
-            interaction_watch = mock_observer.call_args[0][0]
-            assert isinstance(interaction_watch, InteractionWatch)
-            assert (
-                interaction_watch.input
-                == "What is a good name for a company that makes colorful socks?"
-            )
-            assert interaction_watch.output == "Sample langchain response"
-            assert interaction_watch.end_user == "test_user"
-            assert len(interaction_watch.spans) == 5
-            assert len(interaction_watch.hierarchy) == 5
-            for span in interaction_watch.spans:
-                assert isinstance(span, SpanWatch)
-                assert span.provider_extras is not None
-                if span.module == "langchain":
-                    assert span.provider_extras.get("event_type") is not None
-            assert (
-                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
-                is not None
-            )
+        assert result is not None
+        assert mock_observer.call_count == 1
+        interaction_watch = mock_observer.call_args[0][0]
+        assert isinstance(interaction_watch, InteractionWatch)
+        assert (
+            interaction_watch.input
+            == "What is a good name for a company that makes colorful socks?"
+        )
+        assert interaction_watch.output == "Sample langchain response"
+        assert interaction_watch.end_user == "test_user"
+        assert len(interaction_watch.spans) == 5
+        assert len(interaction_watch.hierarchy) == 5
+        for span in interaction_watch.spans:
+            assert isinstance(span, SpanWatch)
+            assert span.provider_extras is not None
+            if span.module == "langchain":
+                assert span.provider_extras.get("event_type") is not None
+        assert (
+            json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder) is not None
+        )
 
 
 def test_langchain_chat_chain__lcel__no_context_manager(

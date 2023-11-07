@@ -264,7 +264,7 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
             raise ValueError("Interaction has no history.")
         if self.hierarchy is None:
             raise ValueError("Interaction has no hierarchy.")
-        if len(self.hierarchy) > 0:
+        if self.hierarchy:
             for value in self.hierarchy.values():
                 if value is not None and value not in self.hierarchy:
                     raise ValueError(
