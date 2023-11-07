@@ -2,47 +2,6 @@
 
 The SDK for instrumenting applications for tracking AI costs.
 
-## TODO
-
-1. Nice to have: semantic versioning expansion in package (maybe OSS library or Poetry?)
-1. Check the publisher doens't crash, and if it does re start it somehow
-1. batch processing
-1. if publishing message fails retry (discuss how many retries before dropping the
-   message)
-1. limit queue size (discuss how long it should be and what to do if it gets full)
-
-## Design
-
-```mermaid
-classDiagram
-    Init --> Config
-    Config --> Package
-    Init --> MonkeyPatching
-    MonkeyPatching --> Observer_T
-    Init --> Observer
-    Init --> Consumer
-    Init --> DevelopmentPhase
-    Init --> SpanWatch
-    Init --> Observer_T
-    MonkeyPatching --> Package
-    MonkeyPatching --> SpanWatch
-    Observer --> DevelopmentPhase
-    Observer --> SpanWatch
-    Observer --> Publisher_T
-    Observer --> SpanWatch
-    Consumer --> SpanWatch
-    Consumer --> Publisher_T
-    Observer --|> Observer_T
-    Consumer --|> Publisher_T
-    Publisher_T --> SpanWatch
-    Observer_T --> SpanWatch
-    <<Interface>> Publisher_T
-    <<Interface>> Observer_T
-    <<Entity>> Package
-    <<Entity>> SpanWatch
-    <<Enum>> DevelopmentPhase
-```
-
 ## Code Quality Checks
 
 This section provides guidelines and instructions on how to perform code quality checks
