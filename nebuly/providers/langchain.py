@@ -8,22 +8,104 @@ from typing import Any, Dict, Sequence, Tuple, cast
 from uuid import UUID
 
 from langchain.callbacks.base import BaseCallbackHandler
+from langchain.chains.base import Chain
+from langchain.load import load
+from langchain.prompts import ChatPromptTemplate, PromptTemplate
+from langchain.prompts.chat import AIMessagePromptTemplate, HumanMessagePromptTemplate
 from langchain.schema import Document
 from langchain.schema.messages import AIMessage, BaseMessage, HumanMessage
 from langchain.schema.output import LLMResult
 
-from nebuly.entities import EventType, HistoryEntry, InteractionWatch, SpanWatch
+from nebuly.entities import (
+    EventType,
+    HistoryEntry,
+    InteractionWatch,
+    ModelInput,
+    SpanWatch,
+)
 from nebuly.requests import post_message
 
 logger = logging.getLogger(__name__)
 
 
-def _parse_langchain_data(data: str | dict[str, Any] | AIMessage) -> str:
+def _process_prompt_template(
+    inputs: dict[str, Any] | Any, prompt: PromptTemplate
+) -> str:
+    if isinstance(inputs, dict):
+        return prompt.format(**{key: inputs.get(key) for key in prompt.input_variables})
+    return prompt.format(**{prompt.input_variables[0]: inputs})
+
+
+def _process_chat_prompt_template(
+    inputs: dict[str, Any] | Any, prompt: ChatPromptTemplate
+) -> tuple[str, list[HistoryEntry]]:
+    messages = []
+    for message in prompt.messages:
+        if isinstance(inputs, dict):
+            input_vars = {key: inputs.get(key) for key in message.input_variables}  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
+        else:
+            input_vars = {message.input_variables[0]: inputs}  # type: ignore
+        if isinstance(message, (HumanMessagePromptTemplate, AIMessagePromptTemplate)):
+            messages.append((message.format(**input_vars).content))
+    last_prompt = messages[-1]
+    message_history = messages[:-1]
+
+    if len(message_history) % 2 != 0:
+        logger.warning("Odd number of chat history elements, ignoring last element")
+        message_history = message_history[:-1]
+
+    # Convert the history to [(user, assistant), ...] format
+    history = [
+        HistoryEntry(user=message_history[i], assistant=message_history[i + 1])
+        for i in range(0, len(message_history), 2)
+        if i < len(message_history) - 1
+    ]
+
+    return last_prompt, history
+
+
+def _get_input_and_history(chain: Chain, inputs: dict[str, Any] | Any) -> ModelInput:
+    chains = getattr(chain, "chains", None)
+    if chains is not None:
+        # If the chain is a SequentialChain, we need to get the
+        # prompt from the first chain
+        prompt = getattr(chains[0], "prompt", None)
+    else:
+        # If the chain is not a SequentialChain, we need to get
+        # the prompt from the chain
+        prompt = getattr(chain, "prompt", None)
+        if prompt is None:
+            if not isinstance(inputs, dict):
+                return ModelInput(prompt=inputs)
+            return ModelInput(prompt=inputs["input"])
+
+    if isinstance(prompt, PromptTemplate):
+        return ModelInput(prompt=_process_prompt_template(inputs, prompt))
+
+    if isinstance(prompt, ChatPromptTemplate):
+        prompt, history = _process_chat_prompt_template(inputs, prompt)
+        return ModelInput(prompt=prompt, history=history)
+
+    raise ValueError(f"Unknown prompt type: {prompt}")
+
+
+def _get_output_chain(chain: Chain, result: dict[str, Any]) -> str:
+    if len(chain.output_keys) == 1:
+        return str(result[chain.output_keys[0]])
+    output = {}
+    for key in chain.output_keys:
+        output[key] = result[key]
+    return "\n".join([f"{key}: {value}" for key, value in output.items()])
+
+
+def _parse_langchain_data(data: Any) -> str:
+    if isinstance(data, str):
+        return data
     if isinstance(data, dict):
+        if len(data) == 1:
+            return str(list(data.values())[0])
         return "\n".join([f"{key}: {value}" for key, value in data.items()])
-    if isinstance(data, AIMessage):
-        return data.content
-    return data
+    return str(data)
 
 
 @dataclass
@@ -83,7 +165,11 @@ class Event:
             inputs = self.data.kwargs.get("inputs")
             if inputs is None:
                 raise ValueError("Event has no inputs.")
-            return _parse_langchain_data(inputs)
+            try:
+                chain = load(self.data.kwargs.get("serialized", {}))
+                return _get_input_and_history(chain, inputs).prompt
+            except NotImplementedError:
+                return _parse_langchain_data(inputs)
 
         raise ValueError(f"Event type {self.data.type} not supported.")
 
@@ -94,15 +180,22 @@ class Event:
         if self.data.type in [EventType.CHAT_MODEL, EventType.LLM_MODEL]:
             return str(self.data.output.generations[-1][0].text)
         if self.data.type is EventType.CHAIN:
-            return _parse_langchain_data(self.data.output)
+            if self.data.kwargs is None:
+                raise ValueError("Event has no kwargs.")
+            try:
+                chain = load(self.data.kwargs.get("serialized", {}))
+                return _get_output_chain(chain, self.data.output)
+            except NotImplementedError:
+                return _parse_langchain_data(self.data.output)
 
         raise ValueError(f"Event type {self.data.type} not supported.")
 
     @property
     def history(self) -> list[HistoryEntry]:
+        if self.data.kwargs is None:
+            raise ValueError("Event has no kwargs.")
+
         if self.data.type is EventType.CHAT_MODEL:
-            if self.data.kwargs is None:
-                raise ValueError("Event has no kwargs.")
             messages = self.data.kwargs.get("messages")
             if messages is None:
                 raise ValueError("Event has no messages.")
@@ -122,8 +215,17 @@ class Event:
                 HistoryEntry(user=history[i].content, assistant=history[i + 1].content)
                 for i in range(0, len(history) - 1, 2)
             ]
-        if self.data.type in [EventType.LLM_MODEL, EventType.CHAIN]:
+        if self.data.type is EventType.LLM_MODEL:
             return []
+        if self.data.type is EventType.CHAIN:
+            inputs = self.data.kwargs.get("inputs")
+            if inputs is None:
+                raise ValueError("Event has no inputs.")
+            try:
+                chain = load(self.data.kwargs.get("serialized", {}))
+                return _get_input_and_history(chain, inputs).history
+            except NotImplementedError:
+                return []
 
         raise ValueError(f"Event type {self.data.type} not supported.")
 

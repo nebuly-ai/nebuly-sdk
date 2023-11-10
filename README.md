@@ -195,6 +195,7 @@ prompt = PromptTemplate(
 
 chain = LLMChain(llm=llm, prompt=prompt)
 result = chain.run(
-    "colorful socks"
+    "colorful socks",
+    callbacks=[callback],
 )
 ```

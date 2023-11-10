@@ -120,8 +120,11 @@ def test_langchain_llm_chain__callback_on_chain(
         assert mock_send_interaction.call_count == 1
         interaction_watch = mock_send_interaction.call_args[0][0]
         assert isinstance(interaction_watch, InteractionWatch)
-        assert interaction_watch.input == "product: colorful socks"
-        assert interaction_watch.output == "text: Sample langchain response"
+        assert (
+            interaction_watch.input
+            == "What is a good name for a company that makes colorful socks?"
+        )
+        assert interaction_watch.output == "Sample langchain response"
         assert interaction_watch.end_user == "test_user"
         assert len(interaction_watch.spans) == 2
         assert len(interaction_watch.hierarchy) == 2
@@ -270,11 +273,9 @@ def test_langchain__chain_with_function_tool(
         assert mock_send_interaction.call_count == 1
         interaction_watch = mock_send_interaction.call_args[0][0]
         assert isinstance(interaction_watch, InteractionWatch)
-        assert interaction_watch.input == "input: how many letters in the word educa?"
+        assert interaction_watch.input == "how many letters in the word educa?"
         assert interaction_watch.history == []
-        assert (
-            interaction_watch.output == "output: Hi there! How can I assist you today?"
-        )
+        assert interaction_watch.output == "Hi there! How can I assist you today?"
         assert len(interaction_watch.spans) == 4
         assert len(interaction_watch.hierarchy) == 4
         for span in interaction_watch.spans:
