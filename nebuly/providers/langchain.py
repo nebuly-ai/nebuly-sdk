@@ -15,6 +15,7 @@ from langchain.prompts.chat import AIMessagePromptTemplate, HumanMessagePromptTe
 from langchain.schema import Document
 from langchain.schema.messages import AIMessage, BaseMessage, HumanMessage
 from langchain.schema.output import LLMResult
+from langchain.schema.runnable import RunnableSequence
 
 from nebuly.entities import (
     EventType,
@@ -89,13 +90,36 @@ def _get_input_and_history(chain: Chain, inputs: dict[str, Any] | Any) -> ModelI
     raise ValueError(f"Unknown prompt type: {prompt}")
 
 
+def _get_input_and_history_runnable_seq(
+    sequence: RunnableSequence[Any, Any], inputs: dict[str, Any] | Any
+) -> ModelInput:
+    first = getattr(sequence, "first", None)
+
+    if isinstance(first, PromptTemplate):
+        return ModelInput(prompt=_process_prompt_template(inputs, first))
+
+    if isinstance(first, ChatPromptTemplate):
+        prompt, history = _process_chat_prompt_template(inputs, first)
+        return ModelInput(prompt=prompt, history=history)
+
+    return ModelInput(prompt="")
+
+
 def _get_output_chain(chain: Chain, result: dict[str, Any]) -> str:
     if len(chain.output_keys) == 1:
         return str(result[chain.output_keys[0]])
     output = {}
     for key in chain.output_keys:
         output[key] = result[key]
-    return "\n".join([f"{key}: {value}" for key, value in output.items()])
+    return _parse_output(output)
+
+
+def _parse_output(output: str | dict[str, Any] | AIMessage) -> str:
+    if isinstance(output, dict):
+        return "\n".join([f"{key}: {value}" for key, value in output.items()])
+    if isinstance(output, AIMessage):
+        return output.content
+    return output
 
 
 def _parse_langchain_data(data: Any) -> str:
@@ -167,6 +191,8 @@ class Event:
                 raise ValueError("Event has no inputs.")
             try:
                 chain = load(self.data.kwargs.get("serialized", {}))
+                if isinstance(chain, RunnableSequence):
+                    return _get_input_and_history_runnable_seq(chain, inputs).prompt
                 return _get_input_and_history(chain, inputs).prompt
             except NotImplementedError:
                 return _parse_langchain_data(inputs)
@@ -184,6 +210,8 @@ class Event:
                 raise ValueError("Event has no kwargs.")
             try:
                 chain = load(self.data.kwargs.get("serialized", {}))
+                if isinstance(chain, RunnableSequence):
+                    return _parse_output(self.data.output)
                 return _get_output_chain(chain, self.data.output)
             except NotImplementedError:
                 return _parse_langchain_data(self.data.output)
@@ -223,6 +251,8 @@ class Event:
                 raise ValueError("Event has no inputs.")
             try:
                 chain = load(self.data.kwargs.get("serialized", {}))
+                if isinstance(chain, RunnableSequence):
+                    return _get_input_and_history_runnable_seq(chain, inputs).history
                 return _get_input_and_history(chain, inputs).history
             except NotImplementedError:
                 return []
