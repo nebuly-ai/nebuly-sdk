@@ -195,8 +195,6 @@ prompt = PromptTemplate(
 
 chain = LLMChain(llm=llm, prompt=prompt)
 result = chain.run(
-    "colorful socks",
-    user_id="test_user",
-    user_group_profile="test_group",
+    "colorful socks"
 )
 ```
