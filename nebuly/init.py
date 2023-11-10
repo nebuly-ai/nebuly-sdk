@@ -30,15 +30,6 @@ def init(
     observer = _create_observer_and_start_publisher(api_key=api_key)
     import_and_patch_packages(PACKAGES, observer)
 
-    try:
-        from nebuly.tracking_handlers import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-            set_tracking_handlers,
-        )
-
-        set_tracking_handlers()
-    except ImportError:
-        pass
-
 
 def _get_api_key() -> str:
     api_key = os.environ.get("NEBULY_API_KEY")

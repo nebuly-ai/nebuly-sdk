@@ -32,27 +32,6 @@ PACKAGES = (
         ),
     ),
     Package(
-        "langchain",
-        SupportedVersion("0.0.311"),
-        (
-            "chains.base.Chain.__call__",
-            "chains.base.Chain.acall",
-            "llms.base.BaseLLM.generate",
-            "llms.base.BaseLLM.agenerate",
-            "chat_models.base.BaseChatModel.generate",
-            "chat_models.base.BaseChatModel.agenerate",
-            "indexes.vectorstore.VectorStoreIndexWrapper.query",
-            "schema.runnable.base.RunnableSequence.invoke",
-            "schema.runnable.base.RunnableSequence.ainvoke",
-            "schema.runnable.base.RunnableSequence.stream",
-            "schema.runnable.base.RunnableSequence.astream",
-            "schema.runnable.base.RunnableParallel.invoke",
-            "schema.runnable.base.RunnableParallel.ainvoke",
-            "schema.runnable.base.RunnableParallel.stream",
-            "schema.runnable.base.RunnableParallel.astream",
-        ),
-    ),
-    Package(
         "cohere",
         SupportedVersion("4.0.0"),
         (

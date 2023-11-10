@@ -593,19 +593,6 @@ def coroutine_wrapper(
         try:
             logger.debug("Calling %s.%s", module, function_name)
 
-            if module == "langchain":
-                from nebuly.providers.langchain import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-                    wrap_langchain_async,
-                )
-
-                return await wrap_langchain_async(
-                    observer=observer,
-                    function_name=function_name,
-                    f=f,
-                    args=args,
-                    kwargs=kwargs,
-                )
-
             _handle_unpickleable_objects(module, args)
 
             (
@@ -692,18 +679,6 @@ def function_wrapper(
         try:
             logger.debug("Calling %s.%s", module, function_name)
 
-            if module == "langchain":
-                from nebuly.providers.langchain import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-                    wrap_langchain,
-                )
-
-                return wrap_langchain(
-                    observer=observer,
-                    function_name=function_name,
-                    f=f,
-                    args=args,
-                    kwargs=kwargs,
-                )
             if module == "botocore":
                 from nebuly.providers.aws_bedrock import (  # pylint: disable=import-outside-toplevel  # noqa: E501
                     is_model_supported,
