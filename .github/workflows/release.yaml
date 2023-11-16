@@ -50,6 +50,4 @@ jobs:
       - name: Build and publish
         run: |
           poetry build --no-interaction
-          poetry publish --no-interaction --skip-existing
-        env:
-          POETRY_PYPI_TOKEN: ${{ secrets.POETRY_PYPI_TOKEN }}
+          poetry publish -u __token__ -p ${{ secrets.POETRY_PYPI_TOKEN }} --no-interaction --skip-existing
