@@ -696,7 +696,13 @@ def function_wrapper(
                 is_model_supported,
             )
 
-            if not is_model_supported(args[2]["modelId"]):
+            if args[1] not in [
+                "InvokeModel",
+                "InvokeModelWithResponseStream",
+            ] or not is_model_supported(args[2]["modelId"]):
+                for key in NEBULY_KWARGS:
+                    if key in args[2]:
+                        args[2].pop(key)
                 return f(*args, **kwargs)
 
         _handle_unpickleable_objects(module, args)
