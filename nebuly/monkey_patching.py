@@ -260,6 +260,10 @@ def _add_span_to_interaction(  # pylint: disable=too-many-arguments
         interaction._set_user_group_profile(  # pylint: disable=protected-access
             user_group_profile
         )
+    if "nebuly_tags" in nebuly_kwargs:
+        interaction._add_tags(  # pylint: disable=protected-access
+            nebuly_kwargs["nebuly_tags"]
+        )
 
 
 def _add_interaction_span(  # pylint: disable=too-many-arguments, too-many-locals
