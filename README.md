@@ -2,14 +2,6 @@
 
 The SDK for instrumenting applications for tracking AI costs.
 
-## Code Quality Checks
-
-This section provides guidelines and instructions on how to perform code quality checks
-using [**Black**](https://github.com/psf/black) as a formatter, [**Ruff
-**](https://github.com/charliermarsh/ruff) as a linter, and [**SonarCloud
-**](https://www.sonarsource.com/products/sonarcloud/) as a code quality checker. These
-tools assist in ensuring that the codebase adheres to a consistent style, follows best
-practices, and meets predefined quality standards.
 
 ### **Setup**
 
