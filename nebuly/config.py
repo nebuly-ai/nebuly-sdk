@@ -7,6 +7,7 @@ NEBULY_KWARGS = {
     "user_group_profile",
     "parent_run_id",
     "root_run_id",
+    "nebuly_tags",
 }
 
 PACKAGES = (

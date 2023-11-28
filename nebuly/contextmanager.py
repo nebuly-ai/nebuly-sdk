@@ -172,6 +172,7 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
         hierarchy: dict[UUID, UUID | None] | None = None,
         spans: list[SpanWatch] | None = None,
         do_not_call_directly: bool = False,
+        tags: dict[str, str] | None = None,
     ) -> None:
         if not do_not_call_directly:
             raise InteractionContextInitiationError(
@@ -190,6 +191,7 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
         self.history = history
         self.hierarchy = hierarchy
         self.time_start = datetime.now(timezone.utc)
+        self.tags = tags
 
     def set_input(self, value: str) -> None:
         self.input = value
@@ -255,6 +257,11 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
     def _set_user_group_profile(self, value: str | None) -> None:
         self.user_group_profile = value
 
+    def _add_tags(self, tags: dict[str, str]) -> None:
+        if self.tags is None:
+            self.tags = {}
+        self.tags = {**self.tags, **tags}
+
     def _validate_interaction(self) -> None:
         if self.input is None:
             raise ValueError("Interaction has no input.")
@@ -282,6 +289,7 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
             hierarchy=self.hierarchy,  # type: ignore
             end_user=self.user,  # type: ignore
             end_user_group_profile=self.user_group_profile,
+            tags=self.tags,
         )
 
 
@@ -299,7 +307,9 @@ def get_nearest_open_interaction() -> InteractionContext:
 
 @contextmanager
 def new_interaction(
-    user_id: str | None = None, user_group_profile: str | None = None
+    user_id: str | None = None,
+    user_group_profile: str | None = None,
+    tags: dict[str, str] | None = None,
 ) -> Generator[InteractionContext, None, None]:
     try:
         get_nearest_open_interaction()
@@ -308,7 +318,9 @@ def new_interaction(
         pass
 
     try:
-        yield InteractionContext(user_id, user_group_profile, do_not_call_directly=True)
+        yield InteractionContext(
+            user_id, user_group_profile, tags=tags, do_not_call_directly=True
+        )
     finally:
         try:
             interaction = get_nearest_open_interaction()
