@@ -260,6 +260,10 @@ def _add_span_to_interaction(  # pylint: disable=too-many-arguments
         interaction._set_user_group_profile(  # pylint: disable=protected-access
             user_group_profile
         )
+    if "nebuly_tags" in nebuly_kwargs:
+        interaction._add_tags(  # pylint: disable=protected-access
+            nebuly_kwargs["nebuly_tags"]
+        )
 
 
 def _add_interaction_span(  # pylint: disable=too-many-arguments, too-many-locals
@@ -684,7 +688,13 @@ def function_wrapper(
                     is_model_supported,
                 )
 
-                if not is_model_supported(args[2]["modelId"]):
+                if args[1] not in [
+                    "InvokeModel",
+                    "InvokeModelWithResponseStream",
+                ] or not is_model_supported(args[2]["modelId"]):
+                    for key in NEBULY_KWARGS:
+                        if key in args[2]:
+                            args[2].pop(key)
                     return f(*args, **kwargs)
 
             _handle_unpickleable_objects(module, args)

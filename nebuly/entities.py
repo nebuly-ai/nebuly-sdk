@@ -129,6 +129,7 @@ class InteractionWatch:  # pylint: disable=too-many-instance-attributes
     hierarchy: dict[uuid.UUID, uuid.UUID | None]
     end_user: str
     end_user_group_profile: str | None
+    tags: dict[str, str] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -147,6 +148,7 @@ class InteractionWatch:  # pylint: disable=too-many-instance-attributes
             },
             "end_user": self.end_user,
             "end_user_group_profile": self.end_user_group_profile,
+            "tags": self.tags,
         }
 
 
