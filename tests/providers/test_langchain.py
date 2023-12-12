@@ -4,20 +4,16 @@ from __future__ import annotations
 
 import json
 import sys
-from importlib.metadata import version
 from typing import Any
 from unittest.mock import Mock, patch
 
 import pytest
 
-from nebuly.providers.langchain import LangChainTrackingHandler
+from nebuly.providers.langchain import EventType, LangChainTrackingHandler
 
 if sys.version_info < (3, 8, 1):
     # pylint: disable=import-error, no-name-in-module
     pytest.skip("Cannot use langchain in python<3.8.1", allow_module_level=True)
-
-if not version("openai").startswith("0."):
-    pytest.skip("Langchain doesn't support openai 1.X", allow_module_level=True)
 
 from langchain.agents import AgentExecutor, OpenAIFunctionsAgent, tool
 from langchain.chains import LLMChain, SequentialChain
@@ -26,34 +22,40 @@ from langchain.llms.openai import OpenAI
 from langchain.prompts import PromptTemplate
 from langchain.prompts.chat import ChatPromptTemplate
 from langchain.schema import StrOutputParser, SystemMessage
+from openai.types import Completion, CompletionChoice, CompletionUsage
+from openai.types.chat import ChatCompletion, ChatCompletionMessage
+from openai.types.chat.chat_completion import Choice
+from openai.types.chat.chat_completion_message import FunctionCall
 
-from nebuly.entities import EventType, HistoryEntry, InteractionWatch, SpanWatch
+from nebuly.entities import HistoryEntry, InteractionWatch, SpanWatch
 from nebuly.requests import CustomJSONEncoder
 
 
 @pytest.fixture(name="openai_completion")
-def fixture_openai_completion() -> dict[str, Any]:
-    return {
-        "id": "cmpl-81JyWoIj5m9qz0M9g7aLBGtwZzUIg",
-        "object": "text_completion",
-        "created": 1695325804,
-        "model": "gpt-3.5-turbo-instruct",
-        "choices": [
-            {
-                "text": "Sample langchain response",
-                "index": 0,
-                "logprobs": None,
-                "finish_reason": "stop",
-            }
+def fixture_openai_completion() -> Completion:
+    return Completion(
+        id="cmpl-86EVWjLg0rentPFmNfvt5ZlVjKsWW",
+        choices=[
+            CompletionChoice(
+                finish_reason="stop",
+                index=0,
+                logprobs=None,
+                text="Sample langchain response",
+            )
         ],
-        "usage": {"prompt_tokens": 5, "completion_tokens": 6, "total_tokens": 11},
-    }
+        created=1696496426,
+        model="gpt-3.5-turbo-instruct",
+        object="text_completion",
+        usage=CompletionUsage(completion_tokens=7, prompt_tokens=5, total_tokens=12),
+    )
 
 
 def test_langchain_llm_chain__callback_on_model(
     openai_completion: dict[str, Any]
 ) -> None:
-    with patch("openai.Completion.create") as mock_completion_create, patch(
+    with patch(
+        "openai.resources.completions.Completions.create"
+    ) as mock_completion_create, patch(
         "nebuly.providers.langchain.post_message",
         return_value=Mock(),
     ) as mock_send_interaction:
@@ -98,7 +100,9 @@ def test_langchain_llm_chain__callback_on_model(
 def test_langchain_llm_chain__callback_on_chain(
     openai_completion: dict[str, Any]
 ) -> None:
-    with patch("openai.Completion.create") as mock_completion_create, patch(
+    with patch(
+        "openai.resources.completions.Completions.create"
+    ) as mock_completion_create, patch(
         "nebuly.providers.langchain.post_message",
         return_value=Mock(),
     ) as mock_send_interaction:
@@ -139,28 +143,31 @@ def test_langchain_llm_chain__callback_on_chain(
 
 
 @pytest.fixture(name="openai_chat")
-def fixture_openai_chat() -> dict[str, Any]:
-    return {
-        "id": "chatcmpl-81Kl80GyhDVsOiEBQLQ6vG8svCUPe",
-        "object": "chat.completion",
-        "created": 1695328818,
-        "model": "gpt-3.5-turbo-0613",
-        "choices": [
-            {
-                "index": 0,
-                "message": {
-                    "role": "assistant",
-                    "content": "Hi there! How can I assist you today?",
-                },
-                "finish_reason": "stop",
-            }
+def fixture_openai_chat() -> ChatCompletion:
+    return ChatCompletion(
+        id="chatcmpl-86HFm0Y1fWK3XOKb0vQ7j09ZUdPws",
+        choices=[
+            Choice(
+                finish_reason="stop",
+                index=0,
+                message=ChatCompletionMessage(
+                    content="Hi there! How can I assist you today?",
+                    role="assistant",
+                    function_call=None,
+                ),
+            )
         ],
-        "usage": {"prompt_tokens": 19, "completion_tokens": 10, "total_tokens": 29},
-    }
+        created=1696506982,
+        model="gpt-3.5-turbo-0613",
+        object="chat.completion",
+        usage=CompletionUsage(completion_tokens=5, prompt_tokens=12, total_tokens=17),
+    )
 
 
 def test_langchain_chat_chain__callback_on_model(openai_chat: dict[str, Any]) -> None:
-    with patch("openai.ChatCompletion.create") as mock_chat_completion_create, patch(
+    with patch(
+        "openai.resources.chat.completions.Completions.create"
+    ) as mock_chat_completion_create, patch(
         "nebuly.providers.langchain.post_message",
         return_value=Mock(),
     ) as mock_send_interaction:
@@ -210,34 +217,36 @@ def test_langchain_chat_chain__callback_on_model(openai_chat: dict[str, Any]) ->
 
 
 @pytest.fixture(name="openai_chat_with_function")
-def fixture_openai_chat_with_function() -> dict[str, Any]:
-    return {
-        "id": "chatcmpl-82LLsqQsyEqBvTMvGUr9jgc7w3NfZ",
-        "object": "chat.completion",
-        "created": 1695569424,
-        "model": "gpt-3.5-turbo-0613",
-        "choices": [
-            {
-                "index": 0,
-                "message": {
-                    "role": "assistant",
-                    "content": None,
-                    "function_call": {
-                        "name": "get_word_length",
-                        "arguments": '{\n  "word": "educa"\n}',
-                    },
-                },
-                "finish_reason": "function_call",
-            }
+def fixture_openai_chat_with_function() -> ChatCompletion:
+    return ChatCompletion(
+        id="chatcmpl-88VfyByOf2FT704n7rdk6lxa8p6XV",
+        choices=[
+            Choice(
+                finish_reason="function_call",
+                index=0,
+                message=ChatCompletionMessage(
+                    content=None,
+                    role="assistant",
+                    function_call=FunctionCall(
+                        name="get_word_length",
+                        arguments='{\n  "word": "educa"\n}',
+                    ),
+                ),
+            )
         ],
-        "usage": {"prompt_tokens": 80, "completion_tokens": 17, "total_tokens": 97},
-    }
+        created=1697039078,
+        model="gpt-3.5-turbo-0613",
+        object="chat.completion",
+        usage=CompletionUsage(completion_tokens=16, prompt_tokens=83, total_tokens=99),
+    )
 
 
 def test_langchain__chain_with_function_tool(
     openai_chat_with_function: dict[str, Any], openai_chat: dict[str, Any]
 ) -> None:
-    with patch("openai.ChatCompletion.create") as mock_chat_completion_create, patch(
+    with patch(
+        "openai.resources.chat.completions.Completions.create"
+    ) as mock_chat_completion_create, patch(
         "nebuly.providers.langchain.post_message",
         return_value=Mock(),
     ) as mock_send_interaction:
@@ -295,7 +304,9 @@ def test_langchain__chain_with_function_tool(
 def test_langchain_sequential_chain_single_input_var(
     openai_completion: dict[str, Any]
 ) -> None:
-    with patch("openai.Completion.create") as mock_completion_create, patch(
+    with patch(
+        "openai.resources.completions.Completions.create"
+    ) as mock_completion_create, patch(
         "nebuly.providers.langchain.post_message",
         return_value=Mock(),
     ) as mock_send_interaction:
@@ -344,7 +355,9 @@ def test_langchain_sequential_chain_single_input_var(
 def test_langchain_sequential_chain_multiple_input_vars(
     openai_completion: dict[str, Any]
 ) -> None:
-    with patch("openai.Completion.create") as mock_completion_create, patch(
+    with patch(
+        "openai.resources.completions.Completions.create"
+    ) as mock_completion_create, patch(
         "nebuly.providers.langchain.post_message",
         return_value=Mock(),
     ) as mock_send_interaction:
@@ -397,7 +410,9 @@ def test_langchain_sequential_chain_multiple_input_vars(
 def test_langchain_llm_chain__lcel__callback_on_model(
     openai_completion: dict[str, Any]
 ) -> None:
-    with patch("openai.Completion.create") as mock_completion_create, patch(
+    with patch(
+        "openai.resources.completions.Completions.create"
+    ) as mock_completion_create, patch(
         "nebuly.providers.langchain.post_message",
         return_value=Mock(),
     ) as mock_send_interaction:
@@ -441,7 +456,9 @@ def test_langchain_llm_chain__lcel__callback_on_model(
 def test_langchain_chat_chain__lcel__callback_on_model(
     openai_chat: dict[str, Any]
 ) -> None:
-    with patch("openai.ChatCompletion.create") as mock_completion_create, patch(
+    with patch(
+        "openai.resources.chat.completions.Completions.create"
+    ) as mock_completion_create, patch(
         "nebuly.providers.langchain.post_message",
         return_value=Mock(),
     ) as mock_send_interaction:
