@@ -4,13 +4,34 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Tuple, cast
 from uuid import UUID
 
+import llama_index
 from llama_index.callbacks import CBEventType, EventPayload
 from llama_index.callbacks.base_handler import BaseCallbackHandler
-from llama_index.llms.base import ChatResponse
-from llama_index.response.schema import Response
+from llama_index.chat_engine.types import AgentChatResponse, StreamingAgentChatResponse
+from llama_index.llms.types import ChatResponse
+from llama_index.response.schema import Response, StreamingResponse
 
 from nebuly.entities import EventHierarchy, HistoryEntry, InteractionWatch, SpanWatch
 from nebuly.requests import post_message
+
+orig_download_loader = llama_index.download_loader
+
+
+def download_loader_patched(*args: Any, **kwargs: Any) -> Any:
+    res = orig_download_loader(*args, **kwargs)
+    orig_load = res.load_data
+
+    def load_data(self: Any, *args: Any, **kwargs: Any) -> Any:
+        res = orig_load(self, *args, **kwargs)
+        for r in res:
+            r.metadata["nebuly_rag_source"] = self.__class__.__name__
+        return res
+
+    res.load_data = load_data  # type: ignore[method-assign]
+    return res
+
+
+llama_index.download_loader = download_loader_patched
 
 
 @dataclass
@@ -44,23 +65,67 @@ class Event:
     end_time: datetime | None = None
 
     @property
-    def input(self) -> str | None:
+    def input(self) -> str:
+        if self.data.kwargs is None:
+            return ""
+
         if CBEventType(self.data.type) is CBEventType.QUERY:
-            return self.data.kwargs["payload"][EventPayload.QUERY_STR]
+            return str(self.data.kwargs["input_payload"][EventPayload.QUERY_STR])
         elif CBEventType(self.data.type) is CBEventType.LLM:
-            return self.data.kwargs["payload"][EventPayload.PROMPT]
-        else:
-            return None
+            return str(self.data.kwargs["input_payload"][EventPayload.PROMPT])
+        elif CBEventType(self.data.type) is CBEventType.AGENT_STEP:
+            return str(self.data.kwargs["input_payload"][EventPayload.MESSAGES][-1])
+
+        return ""
 
     @property
-    def output(self) -> str | None:
-        return self.data.output
+    def output(self) -> str:
+        if self.data.kwargs is None:
+            return ""
+
+        if self.data.output:
+            return str(self.data.output)
+        output = self.data.kwargs["output_payload"][EventPayload.RESPONSE]
+        if output.response:
+            return str(output.response)
+        if isinstance(output, StreamingResponse):
+            return str(output.get_response().response)
+        if isinstance(output, StreamingAgentChatResponse):
+            output_text = ""
+            for token in output.response_gen:
+                output_text += token
+            return output_text
+
+        return ""
 
     @property
     def history(self) -> list[HistoryEntry]:
         return []
 
     def _get_rag_source(self) -> str | None:
+        if self.data.kwargs is None:
+            return None
+
+        if CBEventType(self.data.type) in [CBEventType.QUERY, CBEventType.RETRIEVE]:
+            if CBEventType(self.data.type) is CBEventType.QUERY:
+                response = self.data.kwargs["output_payload"][EventPayload.RESPONSE]
+                source_nodes = getattr(response, "source_nodes", [])
+            else:
+                source_nodes = self.data.kwargs["output_payload"][EventPayload.NODES]
+            if len(source_nodes) > 0:
+                file_name = source_nodes[0].metadata.get("file_name", None)
+                if file_name is not None:
+                    return str(file_name)
+                rag_source: str | None = source_nodes[0].metadata.pop(
+                    "nebuly_rag_source", None
+                )
+                return rag_source
+        if CBEventType(self.data.type) is CBEventType.FUNCTION_CALL:
+            function_name: str | None = self.data.kwargs["input_payload"][
+                EventPayload.TOOL
+            ].name
+            return function_name
+
         return None
 
     def as_span_watch(self) -> SpanWatch:
@@ -72,7 +137,7 @@ class Event:
             version="unknown",
             function=self.data.type,
             called_start=self.start_time,
-            called_end=self.end_time,
+            called_end=cast(datetime, self.end_time),
             called_with_args=cast(Tuple[Any], self.data.args),
             called_with_kwargs=cast(Dict[str, Any], self.data.kwargs),
             returned=self.data.output,
@@ -170,17 +235,19 @@ class NebulyTrackingHandler(BaseCallbackHandler):
         self.tags = tags
         self._events_storage = EventsStorage()
 
+    @staticmethod
     def _trace_map_to_hierarchy(
-        self, trace_map: dict[str, list[str]] | None
+        trace_map: dict[str, list[str]] | None
     ) -> dict[UUID, UUID | None]:
         hierarchy = {}
-        for parent_id, child_ids in trace_map.items():
-            if parent_id == "root":
-                parent_id = None
-            else:
-                parent_id = UUID(parent_id)
-            for child_id in child_ids:
-                hierarchy[UUID(child_id)] = parent_id
+        if trace_map is not None:
+            for parent_id, child_ids in trace_map.items():
+                if parent_id == "root":
+                    p_id = None
+                else:
+                    p_id = UUID(parent_id)
+                for child_id in child_ids:
+                    hierarchy[UUID(child_id)] = p_id
         return hierarchy
 
     def _send_interaction(
@@ -214,9 +281,10 @@ class NebulyTrackingHandler(BaseCallbackHandler):
         trace_id: str | None = None,
         trace_map: dict[str, list[str]] | None = None,
     ) -> None:
-        if trace_id in ["query"]:
+        if trace_map is not None and "root" in trace_map:
             root_id = UUID(trace_map["root"][0])
-            self._send_interaction(root_id, trace_map=trace_map)
+            if trace_id in ["query", "chat"]:
+                self._send_interaction(root_id, trace_map=trace_map)
             self._events_storage.delete_events(root_id)
 
     def on_event_start(
@@ -227,7 +295,6 @@ class NebulyTrackingHandler(BaseCallbackHandler):
         parent_id: str = "",
         **kwargs: Any,
     ) -> str:
-        print(f"Event type: {event_type}")
         if payload is not None:
             self._events_storage.add_event(
                 event_id=UUID(event_id),
@@ -237,7 +304,7 @@ class NebulyTrackingHandler(BaseCallbackHandler):
                 data=EventData(
                     type=event_type.value,
                     args=tuple(),
-                    kwargs={"payload": payload, **kwargs},
+                    kwargs={"input_payload": payload, **kwargs},
                 ),
             )
         return event_id
@@ -249,20 +316,28 @@ class NebulyTrackingHandler(BaseCallbackHandler):
         event_id: str = "",
         **kwargs: Any,
     ) -> None:
-        print(f"Event type: {event_type}")
         run_id = UUID(event_id)
-        if event_type in [CBEventType.QUERY, CBEventType.LLM]:
-            response = payload[EventPayload.RESPONSE]
-            if isinstance(response, Response):
-                output = response.response
-            elif isinstance(response, ChatResponse):
-                output = response.message.content
-            else:
-                raise ValueError(f"Unknown response type: {type(response)}")
-        else:
-            output = None
         if payload is not None:
+            if event_type in [
+                CBEventType.QUERY,
+                CBEventType.LLM,
+                CBEventType.AGENT_STEP,
+            ]:
+                response = payload[EventPayload.RESPONSE]
+                if isinstance(response, (Response, AgentChatResponse)):
+                    output = response.response
+                elif isinstance(response, ChatResponse):
+                    output = response.message.content
+                elif isinstance(
+                    response, (StreamingResponse, StreamingAgentChatResponse)
+                ):
+                    output = ""
+                else:
+                    raise ValueError(f"Unknown response type: {type(response)}")
+            else:
+                output = None
+
             self._events_storage.events[run_id].data.add_end_event_data(
-                kwargs=kwargs, output=output
+                kwargs={"output_payload": payload, **kwargs}, output=output
             )
             self._events_storage.events[run_id].set_end_time()
