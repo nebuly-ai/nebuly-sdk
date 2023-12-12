@@ -49,7 +49,7 @@ def _process_chat_prompt_template(
             input_vars = {message.input_variables[0]: inputs}  # type: ignore
         if isinstance(message, (HumanMessagePromptTemplate, AIMessagePromptTemplate)):
             messages.append((message.format(**input_vars).content))
-    last_prompt = messages[-1]
+    last_prompt = str(messages[-1])
     message_history = messages[:-1]
 
     if len(message_history) % 2 != 0:
@@ -58,7 +58,9 @@ def _process_chat_prompt_template(
 
     # Convert the history to [(user, assistant), ...] format
     history = [
-        HistoryEntry(user=message_history[i], assistant=message_history[i + 1])
+        HistoryEntry(
+            user=str(message_history[i]), assistant=str(message_history[i + 1])
+        )
         for i in range(0, len(message_history), 2)
         if i < len(message_history) - 1
     ]
@@ -119,7 +121,7 @@ def _parse_output(output: str | dict[str, Any] | AIMessage) -> str:
     if isinstance(output, dict):
         return "\n".join([f"{key}: {value}" for key, value in output.items()])
     if isinstance(output, AIMessage):
-        return output.content
+        return str(output.content)
     return output
 
 
@@ -245,7 +247,9 @@ class Event:
             if len(history) == 0:
                 return []
             return [
-                HistoryEntry(user=history[i].content, assistant=history[i + 1].content)
+                HistoryEntry(
+                    user=str(history[i].content), assistant=str(history[i + 1].content)
+                )
                 for i in range(0, len(history) - 1, 2)
             ]
         if self.data.type is EventType.LLM_MODEL:

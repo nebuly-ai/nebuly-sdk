@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -71,9 +72,9 @@ class Event:
 
         if CBEventType(self.data.type) is CBEventType.QUERY:
             return str(self.data.kwargs["input_payload"][EventPayload.QUERY_STR])
-        elif CBEventType(self.data.type) is CBEventType.LLM:
+        if CBEventType(self.data.type) is CBEventType.LLM:
             return str(self.data.kwargs["input_payload"][EventPayload.PROMPT])
-        elif CBEventType(self.data.type) is CBEventType.AGENT_STEP:
+        if CBEventType(self.data.type) is CBEventType.AGENT_STEP:
             return str(self.data.kwargs["input_payload"][EventPayload.MESSAGES][-1])
 
         return ""
@@ -93,7 +94,7 @@ class Event:
         if isinstance(output, StreamingAgentChatResponse):
             output_text = ""
             for token in output.response_gen:
-                output_text += token
+                output_text += token  # pylint: disable=consider-using-join
             return output_text
 
         return ""

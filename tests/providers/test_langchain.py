@@ -64,7 +64,7 @@ def test_langchain_llm_chain__callback_on_model(
             api_key="test_key",
             user_id="test_user",
         )
-        llm = OpenAI(temperature=0.9, openai_api_key="test", callbacks=[callback])
+        llm = OpenAI(temperature=0.9, callbacks=[callback])
         prompt = PromptTemplate(
             input_variables=["product"],
             template="What is a good name for a company that makes {product}?",
@@ -111,7 +111,7 @@ def test_langchain_llm_chain__callback_on_chain(
             api_key="test_key",
             user_id="test_user",
         )
-        llm = OpenAI(temperature=0.9, openai_api_key="test")
+        llm = OpenAI(temperature=0.9)
         prompt = PromptTemplate(
             input_variables=["product"],
             template="What is a good name for a company that makes {product}?",
@@ -176,7 +176,7 @@ def test_langchain_chat_chain__callback_on_model(openai_chat: dict[str, Any]) ->
             api_key="test_key",
             user_id="test_user",
         )
-        llm = ChatOpenAI(openai_api_key="test", callbacks=[callback])
+        llm = ChatOpenAI(callbacks=[callback])
 
         chat_prompt = ChatPromptTemplate.from_messages(
             messages=[
@@ -259,7 +259,7 @@ def test_langchain__chain_with_function_tool(
             user_id="test_user",
         )
 
-        llm = ChatOpenAI(temperature=0, openai_api_key="test")
+        llm = ChatOpenAI(temperature=0)
 
         @tool
         def get_word_length(word: str) -> int:
@@ -315,7 +315,7 @@ def test_langchain_sequential_chain_single_input_var(
             api_key="test_key",
             user_id="test_user",
         )
-        llm = OpenAI(temperature=0.7, openai_api_key="test")
+        llm = OpenAI(temperature=0.7)
         synopsis_template = """
         Title: {title}
         Playwright: This is a synopsis for the above play:"""
@@ -325,7 +325,7 @@ def test_langchain_sequential_chain_single_input_var(
         synopsis_chain = LLMChain(
             llm=llm, prompt=synopsis_prompt_template, output_key="synopsis"
         )
-        llm = OpenAI(temperature=0.7, openai_api_key="test")
+        llm = OpenAI(temperature=0.7)
         template = """
         Play Synopsis:
         {synopsis}
@@ -366,7 +366,7 @@ def test_langchain_sequential_chain_multiple_input_vars(
             api_key="test_key",
             user_id="test_user",
         )
-        llm = OpenAI(temperature=0.7, openai_api_key="test")
+        llm = OpenAI(temperature=0.7)
         synopsis_template = """
         Title: {title}
         Era: {era}
@@ -377,7 +377,7 @@ def test_langchain_sequential_chain_multiple_input_vars(
         synopsis_chain = LLMChain(
             llm=llm, prompt=synopsis_prompt_template, output_key="synopsis"
         )
-        llm = OpenAI(temperature=0.7, openai_api_key="test")
+        llm = OpenAI(temperature=0.7)
         template = """
         Play Synopsis:
         {synopsis}
@@ -424,11 +424,7 @@ def test_langchain_llm_chain__lcel__callback_on_model(
         prompt = PromptTemplate.from_template(
             "What is a good name for a company that makes {product}?"
         )
-        runnable = (
-            prompt
-            | OpenAI(openai_api_key="test", callbacks=[callback])
-            | StrOutputParser()
-        )
+        runnable = prompt | OpenAI(callbacks=[callback]) | StrOutputParser()
         result = runnable.invoke({"product": "colorful socks"})
 
         assert result is not None
@@ -470,11 +466,7 @@ def test_langchain_chat_chain__lcel__callback_on_model(
         prompt = PromptTemplate.from_template(
             "What is a good name for a company that makes {product}?"
         )
-        runnable = (
-            prompt
-            | ChatOpenAI(openai_api_key="test", callbacks=[callback])
-            | StrOutputParser()
-        )
+        runnable = prompt | ChatOpenAI(callbacks=[callback]) | StrOutputParser()
         result = runnable.invoke({"product": "colorful socks"})
 
         assert result is not None
