@@ -10,8 +10,7 @@ from langchain.schema import Document
 from langchain.schema.messages import AIMessage, HumanMessage, SystemMessage
 from langchain.schema.output import ChatGeneration, Generation, LLMResult
 
-from nebuly.entities import EventType
-from nebuly.providers.langchain import LangChainTrackingHandler
+from nebuly.providers.langchain import EventType, LangChainTrackingHandler
 
 
 def test_langchain_tracking_handler__can_instantiate() -> None:
@@ -432,6 +431,7 @@ def test_event_handler_on_tool_end(
     assert wiki_watched_event.data.kwargs == {
         "input_str": "Leonardo DiCaprio's girlfriend",
         "serialized": tool_serialized_data,
+        "parent_run_id": parent_tool_id,
         **dict(default_tool_kwargs, **tool_end_sample_kwargs),
     }
 
@@ -446,6 +446,7 @@ def test_event_handler_on_tool_end(
     assert search_watched_event.data.kwargs == {
         "input_str": "Leonardo DiCaprio's girlfriend",
         "serialized": tool_serialized_data,
+        "parent_run_id": chain_id,
         **dict(default_tool_kwargs, **tool_end_sample_kwargs),
     }
 
@@ -604,6 +605,7 @@ def test_event_handler_on_retriever_end(
     assert watched_event.data.kwargs == {
         "query": "What did the president say about Ketanji Brown Jackson",
         "serialized": retrieval_serialized_data,
+        "parent_run_id": chain_id,
         **dict(retriever_kwargs, **retrieval_output_kwargs),
     }
 
@@ -896,6 +898,7 @@ def test_event_handler_on_llm_end(  # pylint: disable=too-many-arguments
         "prompts": sample_llm_prompts,
         "serialized": llm_serialized_data,
         "invocation_params": llm_invocation_params,
+        "parent_run_id": llm_chain_id,
         **default_kwargs,
     }
 
@@ -997,5 +1000,6 @@ def test_event_handler_on_llm_end__chat_model(  # pylint: disable=too-many-argum
         "messages": sample_chat_messages,
         "serialized": chat_serialized_data,
         "invocation_params": chat_invocation_params,
+        "parent_run_id": llm_chain_id,
         **default_kwargs,
     }
