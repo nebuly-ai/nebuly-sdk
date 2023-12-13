@@ -1,7 +1,9 @@
 # pylint: disable=duplicate-code
+from __future__ import annotations
+
 import uuid
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from dataclasses import dataclass
+from datetime import datetime
 from typing import Any, Dict, Tuple, cast
 from uuid import UUID
 
@@ -12,7 +14,8 @@ from llama_index.chat_engine.types import AgentChatResponse, StreamingAgentChatR
 from llama_index.llms.types import ChatResponse, CompletionResponse
 from llama_index.response.schema import Response, StreamingResponse
 
-from nebuly.entities import EventHierarchy, HistoryEntry, InteractionWatch, SpanWatch
+from nebuly.entities import HistoryEntry, InteractionWatch, SpanWatch
+from nebuly.providers.handlers import Event, EventData, EventsStorage
 from nebuly.requests import post_message
 
 orig_download_loader = llama_index.download_loader
@@ -32,39 +35,27 @@ def download_loader_patched(*args: Any, **kwargs: Any) -> Any:
     return res
 
 
+# Patch download_loader to add the source of the RAG node in the metadata
 llama_index.download_loader = download_loader_patched
 
 
-@dataclass
-class EventData:
-    type: str
-    args: tuple[Any, ...] | None = None
-    kwargs: dict[str, Any] | None = None
-    output: Any | None = None
-
-    def add_end_event_data(
-        self,
-        output: Any,
-        args: tuple[Any, ...] | None = None,
-        kwargs: dict[str, Any] | None = None,
-    ) -> None:
-        if self.args is None:
-            self.args = tuple()
-        if self.kwargs is None:
-            self.kwargs = {}
-        self.args += args if args is not None else tuple()
-        self.kwargs = dict(self.kwargs, **kwargs) if kwargs is not None else self.kwargs
-        self.output = output
+def _get_spans(
+    events: dict[UUID, Event], trace_map: dict[str, list[str]] | None = None
+) -> list[SpanWatch]:
+    if trace_map is None:
+        event_ids = list(events.keys())
+    else:
+        values = trace_map.values()
+        event_ids = [UUID(item) for sublist in values for item in sublist]
+    return [
+        event.as_span_watch()
+        for event in events.values()
+        if event.event_id in event_ids
+    ]
 
 
 @dataclass
-class Event:
-    event_id: UUID
-    hierarchy: EventHierarchy | None
-    data: EventData
-    start_time: datetime
-    end_time: datetime | None = None
-
+class LLamaIndexEvent(Event):
     @property
     def input(self) -> str:
         if self.data.kwargs is None:
@@ -97,6 +88,7 @@ class Event:
 
     @property
     def history(self) -> list[HistoryEntry]:
+        # TODO: Find a way to implement this
         return []
 
     def _get_rag_source(self) -> str | None:
@@ -145,77 +137,6 @@ class Event:
             },
             rag_source=self._get_rag_source(),
         )
-
-    def set_end_time(self) -> None:
-        self.end_time = datetime.now(timezone.utc)
-
-
-@dataclass
-class EventsStorage:
-    events: dict[UUID, Event] = field(default_factory=dict)
-
-    def get_root_id(self, event_id: UUID) -> UUID | None:
-        if event_id not in self.events:
-            return None
-        event = self.events[event_id]
-        if event.hierarchy is None:
-            return event_id
-        return self.get_root_id(event.hierarchy.root_run_id)
-
-    def add_event(
-        self,
-        event_id: UUID,
-        parent_id: UUID | None,
-        data: EventData,
-    ) -> None:
-        if event_id in self.events:
-            raise ValueError(f"Event {event_id} already exists in events storage.")
-
-        # Handle new event
-        if parent_id is None:
-            hierarchy = None
-        else:
-            root_id = self.get_root_id(parent_id)
-            if root_id is None:
-                hierarchy = None
-            else:
-                hierarchy = EventHierarchy(parent_run_id=parent_id, root_run_id=root_id)
-        self.events[event_id] = Event(
-            event_id=event_id,
-            hierarchy=hierarchy,
-            data=data,
-            start_time=datetime.now(timezone.utc),
-        )
-
-    def delete_events(self, root_id: UUID) -> None:
-        if root_id not in self.events:
-            raise ValueError(f"Event {root_id} not found in events hierarchy storage.")
-
-        keys_to_delete = [root_id]
-
-        for event_id, event_detail in self.events.items():
-            if (
-                event_detail.hierarchy is not None
-                and event_detail.hierarchy.root_run_id == root_id
-            ):
-                keys_to_delete.append(event_id)
-
-        for key in keys_to_delete:
-            self.events.pop(key)
-
-    def get_spans(
-        self, trace_map: dict[str, list[str]] | None = None
-    ) -> list[SpanWatch]:
-        if trace_map is None:
-            event_ids = list(self.events.keys())
-        else:
-            values = trace_map.values()
-            event_ids = [UUID(item) for sublist in values for item in sublist]
-        return [
-            event.as_span_watch()
-            for event in self.events.values()
-            if event.event_id in event_ids
-        ]
 
 
 class NebulyTrackingHandler(
@@ -285,7 +206,7 @@ class NebulyTrackingHandler(
             time_start=event.start_time,
             time_end=cast(datetime, event.end_time),
             history=event.history,
-            spans=self._events_storage.get_spans(trace_map=trace_map),
+            spans=_get_spans(events=self._events_storage.events, trace_map=trace_map),
             hierarchy=self._trace_map_to_hierarchy(trace_map=trace_map, run_id=root_id),
             tags=self.tags,
         )
@@ -337,6 +258,7 @@ class NebulyTrackingHandler(
     ) -> str:
         if payload is not None:
             self._events_storage.add_event(
+                constructor=LLamaIndexEvent,
                 event_id=UUID(event_id),
                 parent_id=UUID(parent_id)
                 if parent_id and parent_id != "root"
@@ -346,6 +268,7 @@ class NebulyTrackingHandler(
                     args=tuple(),
                     kwargs={"input_payload": payload, **kwargs},
                 ),
+                module="llama_index",
             )
         return event_id
 
