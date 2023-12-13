@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 from typing import Any
 from unittest.mock import Mock, patch
@@ -29,6 +30,8 @@ from openai.types.chat.chat_completion_message import FunctionCall
 
 from nebuly.entities import HistoryEntry, InteractionWatch, SpanWatch
 from nebuly.requests import CustomJSONEncoder
+
+os.environ["OPENAI_API_KEY"] = "test_key"
 
 
 @pytest.fixture(name="openai_completion")

@@ -227,7 +227,7 @@ class NebulyTrackingHandler(
                 event = self._events_storage.events[final_stream_event_run_id]
             else:
                 event = self._events_storage.events[root_id]
-            response = event.data.kwargs["output_payload"].get(  # type: ignore
+            response = event.data.kwargs.get("output_payload", {}).get(  # type: ignore
                 EventPayload.RESPONSE, None
             )
             if response is not None and trace_id in ["query", "chat"]:

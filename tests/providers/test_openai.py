@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from importlib.metadata import version
 from typing import AsyncGenerator
 from unittest.mock import AsyncMock, patch
@@ -31,6 +32,8 @@ from nebuly.entities import HistoryEntry, InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver
 from nebuly.requests import CustomJSONEncoder
 from tests.providers.common import nebuly_init
+
+os.environ["OPENAI_API_KEY"] = "test_key"
 
 
 @pytest.fixture(name="openai_completion")

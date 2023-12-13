@@ -1,13 +1,20 @@
 # isort:skip_file
 # pylint: disable=ungrouped-imports,wrong-import-order
 import json
+import os
 from unittest.mock import Mock, patch
+
+import numpy as np
 
 from nebuly.providers.llama_index import NebulyTrackingHandler
 
 import llama_index
 import pytest
-from llama_index import VectorStoreIndex, download_loader
+from llama_index import (
+    download_loader,
+    StorageContext,
+    load_index_from_storage,
+)
 from llama_index.llms import OpenAI
 from openai.types import CompletionUsage
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
@@ -16,9 +23,15 @@ from openai.types.chat.chat_completion import Choice
 from nebuly.entities import InteractionWatch, SpanWatch
 from nebuly.requests import CustomJSONEncoder
 
+os.environ["OPENAI_API_KEY"] = "test_key"
 llama_index.global_handler = NebulyTrackingHandler(
     api_key="nb-748b415156ef9cfa46c2e371fff27a6a0c42d6b4a3f1ff9d", user_id="test_user"
 )
+
+
+@pytest.fixture(name="openai_embedding")
+def fixture_openai_embedding() -> list[float]:
+    return list(np.random.uniform(low=-0.1, high=0.1, size=(1536,)))
 
 
 @pytest.fixture(name="openai_chat_completion")
@@ -71,20 +84,27 @@ def test_llm_completion(openai_chat_completion: ChatCompletion) -> None:
         )
 
 
-def test_query(openai_chat_completion: ChatCompletion) -> None:
+def test_query(
+    openai_chat_completion: ChatCompletion, openai_embedding: list[float]
+) -> None:
     with patch(
         "openai.resources.chat.completions.Completions.create"
     ) as mock_completion_create, patch(
         "nebuly.providers.llama_index.post_message",
         return_value=Mock(),
-    ) as mock_send_interaction:
+    ) as mock_send_interaction, patch(
+        "openai.resources.embeddings.Embeddings.create"
+    ) as mock_embedding_create:
         mock_completion_create.return_value = openai_chat_completion
+        mock_embedding_create.return_value = Mock(
+            data=[Mock(embedding=openai_embedding)]
+        )
         SimpleWebPageReader = download_loader("SimpleWebPageReader")
-
-        loader = SimpleWebPageReader()
-        documents = loader.load_data(urls=["https://google.com"])
-        index = VectorStoreIndex.from_documents(documents)
-
+        assert SimpleWebPageReader is not None
+        storage_context = StorageContext.from_defaults(
+            persist_dir="tests/providers/test_index"
+        )
+        index = load_index_from_storage(storage_context)
         query_engine = index.as_query_engine()
         result = query_engine.query("What language is on this website?")
 
@@ -111,28 +131,36 @@ def test_query(openai_chat_completion: ChatCompletion) -> None:
         )
 
 
-def test_chat(openai_chat_completion: ChatCompletion) -> None:
+def test_chat(
+    openai_chat_completion: ChatCompletion, openai_embedding: list[float]
+) -> None:
     with patch(
         "openai.resources.chat.completions.Completions.create"
     ) as mock_completion_create, patch(
         "nebuly.providers.llama_index.post_message",
         return_value=Mock(),
-    ) as mock_send_interaction:
+    ) as mock_send_interaction, patch(
+        "openai.resources.embeddings.Embeddings.create"
+    ) as mock_embedding_create:
+        mock_completion_create.return_value = openai_chat_completion
+        mock_embedding_create.return_value = Mock(
+            data=[Mock(embedding=openai_embedding)]
+        )
         mock_completion_create.return_value = openai_chat_completion
         SimpleWebPageReader = download_loader("SimpleWebPageReader")
-
-        loader = SimpleWebPageReader()
-        documents = loader.load_data(urls=["https://google.com"])
-        index = VectorStoreIndex.from_documents(documents)
-
+        assert SimpleWebPageReader is not None
+        storage_context = StorageContext.from_defaults(
+            persist_dir="tests/providers/test_index"
+        )
+        index = load_index_from_storage(storage_context)
         chat_engine = index.as_chat_engine()
-        result = chat_engine.chat("Tell me a language")
+        result = chat_engine.chat("What language is on this website?")
 
         assert result is not None
         assert mock_send_interaction.call_count == 1
         interaction_watch = mock_send_interaction.call_args[0][0]
         assert isinstance(interaction_watch, InteractionWatch)
-        assert interaction_watch.input == "Tell me a language"
+        assert interaction_watch.input == "What language is on this website?"
         assert interaction_watch.output == "Italian"
         assert interaction_watch.end_user == "test_user"
         assert len(interaction_watch.spans) == 2
