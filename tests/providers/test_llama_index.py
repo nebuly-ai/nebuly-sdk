@@ -1,5 +1,8 @@
 # isort:skip_file
 # pylint: disable=ungrouped-imports,wrong-import-order
+
+from __future__ import annotations
+
 import json
 import os
 from unittest.mock import Mock, patch
