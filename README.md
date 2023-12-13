@@ -43,6 +43,7 @@ make lint-fix
     - HuggingFace pipelines
     - HuggingFace HUB
     - LangChain
+    - LlamaIndex
     - Amazon Bedrock
     - Amazon SageMaker
     - Google PALM API
@@ -149,4 +150,25 @@ result = chain.run(
     "colorful socks",
     callbacks=[callback],
 )
+```
+
+## LlamaIndex Callbacks
+
+```python
+import os
+from nebuly.providers.llama_index import LlamaIndexTrackingHandler
+
+handler = LlamaIndexTrackingHandler(
+    api_key=os.getenv("NEBULY_API_KEY"), user_id="test_user"
+)
+
+import llama_index
+from llama_index import SimpleDirectoryReader, VectorStoreIndex
+
+llama_index.global_handler = handler
+
+documents = SimpleDirectoryReader("data").load_data()
+index = VectorStoreIndex.from_documents(documents)
+query_engine = index.as_query_engine()
+response = query_engine.query("What did the author do growing up?")
 ```

@@ -9,7 +9,7 @@ from unittest.mock import Mock, patch
 
 import numpy as np
 
-from nebuly.providers.llama_index import NebulyTrackingHandler
+from nebuly.providers.llama_index import LlamaIndexTrackingHandler
 
 import llama_index
 import pytest
@@ -27,7 +27,7 @@ from nebuly.entities import InteractionWatch, SpanWatch
 from nebuly.requests import CustomJSONEncoder
 
 os.environ["OPENAI_API_KEY"] = "test_key"
-llama_index.global_handler = NebulyTrackingHandler(
+llama_index.global_handler = LlamaIndexTrackingHandler(
     api_key="nb-748b415156ef9cfa46c2e371fff27a6a0c42d6b4a3f1ff9d", user_id="test_user"
 )
 

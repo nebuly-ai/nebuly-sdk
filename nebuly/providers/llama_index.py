@@ -139,7 +139,7 @@ class LLamaIndexEvent(Event):
         )
 
 
-class NebulyTrackingHandler(
+class LlamaIndexTrackingHandler(
     BaseCallbackHandler
 ):  # pylint: disable=too-many-instance-attributes
     def __init__(
