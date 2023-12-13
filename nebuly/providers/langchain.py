@@ -19,7 +19,7 @@ from langchain.schema.output import LLMResult
 from langchain.schema.runnable import RunnableSequence
 
 from nebuly.entities import HistoryEntry, InteractionWatch, ModelInput, SpanWatch
-from nebuly.providers.handlers import Event, EventData, EventsStorage
+from nebuly.events import Event, EventData, EventsStorage
 from nebuly.requests import post_message
 
 logger = logging.getLogger(__name__)

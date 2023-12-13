@@ -15,7 +15,7 @@ from llama_index.llms.types import ChatResponse, CompletionResponse
 from llama_index.response.schema import Response, StreamingResponse
 
 from nebuly.entities import HistoryEntry, InteractionWatch, SpanWatch
-from nebuly.providers.handlers import Event, EventData, EventsStorage
+from nebuly.events import Event, EventData, EventsStorage
 from nebuly.requests import post_message
 
 orig_download_loader = llama_index.download_loader
