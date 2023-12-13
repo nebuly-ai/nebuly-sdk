@@ -9,7 +9,7 @@ import llama_index
 from llama_index.callbacks import CBEventType, EventPayload
 from llama_index.callbacks.base_handler import BaseCallbackHandler
 from llama_index.chat_engine.types import AgentChatResponse, StreamingAgentChatResponse
-from llama_index.llms.types import ChatResponse
+from llama_index.llms.types import ChatResponse, CompletionResponse
 from llama_index.response.schema import Response, StreamingResponse
 
 from nebuly.entities import EventHierarchy, HistoryEntry, InteractionWatch, SpanWatch
@@ -70,12 +70,13 @@ class Event:
         if self.data.kwargs is None:
             return ""
 
+        input_payload = self.data.kwargs["input_payload"]
         if CBEventType(self.data.type) is CBEventType.QUERY:
-            return str(self.data.kwargs["input_payload"][EventPayload.QUERY_STR])
-        if CBEventType(self.data.type) is CBEventType.LLM:
-            return str(self.data.kwargs["input_payload"][EventPayload.PROMPT])
-        if CBEventType(self.data.type) is CBEventType.AGENT_STEP:
-            return str(self.data.kwargs["input_payload"][EventPayload.MESSAGES][-1])
+            return str(input_payload[EventPayload.QUERY_STR])
+        if CBEventType(self.data.type) in [CBEventType.LLM, CBEventType.AGENT_STEP]:
+            if EventPayload.MESSAGES in input_payload:
+                return str(input_payload[EventPayload.MESSAGES][-1])
+            return str(input_payload[EventPayload.PROMPT])
 
         return ""
 
@@ -87,15 +88,10 @@ class Event:
         if self.data.output:
             return str(self.data.output)
         output = self.data.kwargs["output_payload"][EventPayload.RESPONSE]
-        if output.response:
+        if hasattr(output, "response") and output.response:
             return str(output.response)
         if isinstance(output, StreamingResponse):
             return str(output.get_response().response)
-        if isinstance(output, StreamingAgentChatResponse):
-            output_text = ""
-            for token in output.response_gen:
-                output_text += token  # pylint: disable=consider-using-join
-            return output_text
 
         return ""
 
@@ -118,7 +114,7 @@ class Event:
                 if file_name is not None:
                     return str(file_name)
                 rag_source: str | None = source_nodes[0].metadata.pop(
-                    "nebuly_rag_source", None
+                    "nebuly_rag_source", source_nodes[0].node_id
                 )
                 return rag_source
         if CBEventType(self.data.type) is CBEventType.FUNCTION_CALL:
@@ -211,9 +207,10 @@ class EventsStorage:
         self, trace_map: dict[str, list[str]] | None = None
     ) -> list[SpanWatch]:
         if trace_map is None:
-            raise ValueError("Trace map cannot be None.")
-        values = trace_map.values()
-        event_ids = [UUID(item) for sublist in values for item in sublist]
+            event_ids = list(self.events.keys())
+        else:
+            values = trace_map.values()
+            event_ids = [UUID(item) for sublist in values for item in sublist]
         return [
             event.as_span_watch()
             for event in self.events.values()
@@ -221,7 +218,9 @@ class EventsStorage:
         ]
 
 
-class NebulyTrackingHandler(BaseCallbackHandler):
+class NebulyTrackingHandler(
+    BaseCallbackHandler
+):  # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
         api_key: str,
@@ -236,9 +235,14 @@ class NebulyTrackingHandler(BaseCallbackHandler):
         self.tags = tags
         self._events_storage = EventsStorage()
 
+        # Attributes needed for handling streaming responses
+        self._waiting_stream_response = False
+        self._trace_map: dict[str, list[str]] | None = None
+        self._trace_id: str | None = None
+
     @staticmethod
     def _trace_map_to_hierarchy(
-        trace_map: dict[str, list[str]] | None
+        trace_map: dict[str, list[str]] | None, run_id: uuid.UUID
     ) -> dict[UUID, UUID | None]:
         hierarchy = {}
         if trace_map is not None:
@@ -249,27 +253,40 @@ class NebulyTrackingHandler(BaseCallbackHandler):
                     p_id = UUID(parent_id)
                 for child_id in child_ids:
                     hierarchy[UUID(child_id)] = p_id
+        else:
+            hierarchy[run_id] = None
         return hierarchy
 
     def _send_interaction(
-        self, run_id: uuid.UUID, trace_map: dict[str, list[str]] | None
+        self,
+        root_id: uuid.UUID,
+        trace_map: dict[str, list[str]] | None,
+        final_stream_event_run_id: uuid.UUID | None = None,
     ) -> None:
         if (
             len(self._events_storage.events) < 1
-            or run_id not in self._events_storage.events
+            or root_id not in self._events_storage.events
         ):
-            raise ValueError(f"Event {run_id} not found in events storage.")
+            raise ValueError(f"Event {root_id} not found in events storage.")
 
+        event = self._events_storage.events[root_id]
+        if final_stream_event_run_id is not None:
+            response = self._events_storage.events[  # type: ignore
+                final_stream_event_run_id
+            ].data.kwargs["output_payload"][EventPayload.RESPONSE]
+            output = response.message.content
+        else:
+            output = event.output
         interaction = InteractionWatch(
             end_user=self.nebuly_user,
             end_user_group_profile=self.nebuly_user_group,
-            input=self._events_storage.events[run_id].input,
-            output=self._events_storage.events[run_id].output,
-            time_start=self._events_storage.events[run_id].start_time,
-            time_end=cast(datetime, self._events_storage.events[run_id].end_time),
-            history=self._events_storage.events[run_id].history,
+            input=event.input,
+            output=output,
+            time_start=event.start_time,
+            time_end=cast(datetime, event.end_time),
+            history=event.history,
             spans=self._events_storage.get_spans(trace_map=trace_map),
-            hierarchy=self._trace_map_to_hierarchy(trace_map=trace_map),
+            hierarchy=self._trace_map_to_hierarchy(trace_map=trace_map, run_id=root_id),
             tags=self.tags,
         )
         post_message(interaction, self.api_key)
@@ -281,12 +298,34 @@ class NebulyTrackingHandler(BaseCallbackHandler):
         self,
         trace_id: str | None = None,
         trace_map: dict[str, list[str]] | None = None,
+        final_stream_event_run_id: uuid.UUID | None = None,
     ) -> None:
         if trace_map is not None and "root" in trace_map:
             root_id = UUID(trace_map["root"][0])
-            if trace_id in ["query", "chat"]:
-                self._send_interaction(root_id, trace_map=trace_map)
-            self._events_storage.delete_events(root_id)
+            if final_stream_event_run_id is not None:
+                event = self._events_storage.events[final_stream_event_run_id]
+            else:
+                event = self._events_storage.events[root_id]
+            response = event.data.kwargs["output_payload"].get(  # type: ignore
+                EventPayload.RESPONSE, None
+            )
+            if response is not None and trace_id in ["query", "chat"]:
+                if isinstance(
+                    response, (StreamingResponse, StreamingAgentChatResponse)
+                ):
+                    # When streaming responses are used, the end_trace is called before
+                    # the end_event, so we need store some variables to send the
+                    # interaction when the end_event will be received later
+                    self._waiting_stream_response = True
+                    self._trace_map = trace_map
+                    self._trace_id = trace_id
+                else:
+                    self._send_interaction(
+                        root_id,
+                        trace_map=trace_map,
+                        final_stream_event_run_id=final_stream_event_run_id,
+                    )
+                    self._events_storage.delete_events(root_id)
 
     def on_event_start(
         self,
@@ -310,7 +349,7 @@ class NebulyTrackingHandler(BaseCallbackHandler):
             )
         return event_id
 
-    def on_event_end(
+    def on_event_end(  # pylint: disable=too-many-branches
         self,
         event_type: CBEventType,
         payload: dict[str, Any] | None = None,
@@ -324,15 +363,22 @@ class NebulyTrackingHandler(BaseCallbackHandler):
                 CBEventType.LLM,
                 CBEventType.AGENT_STEP,
             ]:
-                response = payload[EventPayload.RESPONSE]
+                if EventPayload.RESPONSE in payload:
+                    response = payload[EventPayload.RESPONSE]
+                elif EventPayload.COMPLETION in payload:
+                    response = payload[EventPayload.COMPLETION]
+                else:
+                    raise ValueError("Unknown response type.")
                 if isinstance(response, (Response, AgentChatResponse)):
                     output = response.response
                 elif isinstance(response, ChatResponse):
                     output = response.message.content
+                elif isinstance(response, CompletionResponse):
+                    output = response.text
                 elif isinstance(
                     response, (StreamingResponse, StreamingAgentChatResponse)
                 ):
-                    output = ""
+                    output = None
                 else:
                     raise ValueError(f"Unknown response type: {type(response)}")
             else:
@@ -342,3 +388,21 @@ class NebulyTrackingHandler(BaseCallbackHandler):
                 kwargs={"output_payload": payload, **kwargs}, output=output
             )
             self._events_storage.events[run_id].set_end_time()
+
+            if event_type is CBEventType.LLM and len(self._events_storage.events) == 1:
+                # Track single LLM calls outside of a trace
+                self._send_interaction(run_id, trace_map=None)
+                self._events_storage.delete_events(run_id)
+
+            if self._waiting_stream_response:
+                # When streaming responses are used, the end_trace is called before
+                # the end_event, so we need to wait for the end_event to send the
+                # interaction
+                self._waiting_stream_response = False
+                self.end_trace(
+                    self._trace_id,
+                    trace_map=self._trace_map,
+                    final_stream_event_run_id=run_id,
+                )
+                self._trace_map = None
+                self._trace_id = None

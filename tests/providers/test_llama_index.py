@@ -8,6 +8,7 @@ from nebuly.providers.llama_index import NebulyTrackingHandler
 import llama_index
 import pytest
 from llama_index import VectorStoreIndex, download_loader
+from llama_index.llms import OpenAI
 from openai.types import CompletionUsage
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
@@ -38,6 +39,36 @@ def fixture_openai_chat_completion() -> ChatCompletion:
         object="chat.completion",
         usage=CompletionUsage(completion_tokens=5, prompt_tokens=12, total_tokens=17),
     )
+
+
+def test_llm_completion(openai_chat_completion: ChatCompletion) -> None:
+    with patch(
+        "openai.resources.chat.completions.Completions.create"
+    ) as mock_completion_create, patch(
+        "nebuly.providers.llama_index.post_message",
+        return_value=Mock(),
+    ) as mock_send_interaction:
+        mock_completion_create.return_value = openai_chat_completion
+
+        result = OpenAI().complete("Paul Graham is ")
+
+        assert result is not None
+        assert mock_send_interaction.call_count == 1
+        interaction_watch = mock_send_interaction.call_args[0][0]
+        assert isinstance(interaction_watch, InteractionWatch)
+        assert interaction_watch.input == "Paul Graham is "
+        assert interaction_watch.output == "Italian"
+        assert interaction_watch.end_user == "test_user"
+        assert len(interaction_watch.spans) == 1
+        assert len(interaction_watch.hierarchy) == 1
+        for span in interaction_watch.spans:
+            assert isinstance(span, SpanWatch)
+            assert span.provider_extras is not None
+            if span.module == "llama_index":
+                assert span.provider_extras.get("event_type") is not None
+        assert (
+            json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder) is not None
+        )
 
 
 def test_query(openai_chat_completion: ChatCompletion) -> None:
