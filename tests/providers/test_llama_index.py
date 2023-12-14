@@ -19,11 +19,12 @@ from llama_index import (
     load_index_from_storage,
 )
 from llama_index.llms import OpenAI
+from llama_index.llms.types import ChatMessage, MessageRole
 from openai.types import CompletionUsage
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
 
-from nebuly.entities import InteractionWatch, SpanWatch
+from nebuly.entities import InteractionWatch, SpanWatch, HistoryEntry
 from nebuly.requests import CustomJSONEncoder
 
 os.environ["OPENAI_API_KEY"] = "test_key"
@@ -74,6 +75,45 @@ def test_llm_completion(openai_chat_completion: ChatCompletion) -> None:
         assert isinstance(interaction_watch, InteractionWatch)
         assert interaction_watch.input == "Paul Graham is "
         assert interaction_watch.output == "Italian"
+        assert interaction_watch.end_user == "test_user"
+        assert len(interaction_watch.spans) == 1
+        assert len(interaction_watch.hierarchy) == 1
+        for span in interaction_watch.spans:
+            assert isinstance(span, SpanWatch)
+            assert span.provider_extras is not None
+            if span.module == "llama_index":
+                assert span.provider_extras.get("event_type") is not None
+        assert (
+            json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder) is not None
+        )
+
+
+def test_llm_chat(openai_chat_completion: ChatCompletion) -> None:
+    with patch(
+        "openai.resources.chat.completions.Completions.create"
+    ) as mock_completion_create, patch(
+        "nebuly.providers.llama_index.post_message",
+        return_value=Mock(),
+    ) as mock_send_interaction:
+        mock_completion_create.return_value = openai_chat_completion
+
+        result = OpenAI().chat(
+            messages=[
+                ChatMessage(role=MessageRole.USER, content="Hello"),
+                ChatMessage(role=MessageRole.ASSISTANT, content="Hello, how are you?"),
+                ChatMessage(role=MessageRole.USER, content="I am fine, thanks"),
+            ]
+        )
+
+        assert result is not None
+        assert mock_send_interaction.call_count == 1
+        interaction_watch = mock_send_interaction.call_args[0][0]
+        assert isinstance(interaction_watch, InteractionWatch)
+        assert interaction_watch.input == "I am fine, thanks"
+        assert interaction_watch.output == "Italian"
+        assert interaction_watch.history == [
+            HistoryEntry(user="Hello", assistant="Hello, how are you?"),
+        ]
         assert interaction_watch.end_user == "test_user"
         assert len(interaction_watch.spans) == 1
         assert len(interaction_watch.hierarchy) == 1
@@ -157,7 +197,13 @@ def test_chat(
         )
         index = load_index_from_storage(storage_context)
         chat_engine = index.as_chat_engine()
-        result = chat_engine.chat("What language is on this website?")
+        result = chat_engine.chat(
+            "What language is on this website?",
+            chat_history=[
+                ChatMessage(role=MessageRole.USER, content="Hello"),
+                ChatMessage(role=MessageRole.ASSISTANT, content="Hello, how are you?"),
+            ],
+        )
 
         assert result is not None
         assert mock_send_interaction.call_count == 1

@@ -11,7 +11,12 @@ import llama_index
 from llama_index.callbacks import CBEventType, EventPayload
 from llama_index.callbacks.base_handler import BaseCallbackHandler
 from llama_index.chat_engine.types import AgentChatResponse, StreamingAgentChatResponse
-from llama_index.llms.types import ChatResponse, CompletionResponse
+from llama_index.llms.types import (
+    ChatMessage,
+    ChatResponse,
+    CompletionResponse,
+    MessageRole,
+)
 from llama_index.response.schema import Response, StreamingResponse
 
 from nebuly.entities import HistoryEntry, InteractionWatch, SpanWatch
@@ -66,7 +71,10 @@ class LLamaIndexEvent(Event):
             return str(input_payload[EventPayload.QUERY_STR])
         if CBEventType(self.data.type) in [CBEventType.LLM, CBEventType.AGENT_STEP]:
             if EventPayload.MESSAGES in input_payload:
-                return str(input_payload[EventPayload.MESSAGES][-1])
+                last_user_input = input_payload[EventPayload.MESSAGES][-1]
+                if isinstance(last_user_input, ChatMessage):
+                    return str(last_user_input.content)
+                return str(last_user_input)
             return str(input_payload[EventPayload.PROMPT])
 
         return ""
@@ -94,11 +102,19 @@ class LLamaIndexEvent(Event):
         if CBEventType(self.data.type) is CBEventType.LLM:
             input_payload = self.data.kwargs.get("input_payload")
             if input_payload is not None:
-                messages = input_payload.get(EventPayload.MESSAGES)
+                messages: list[ChatMessage] = input_payload.get(EventPayload.MESSAGES)
                 if messages is not None:
+                    messages = [
+                        m
+                        for m in messages
+                        if m.role in [MessageRole.USER, MessageRole.ASSISTANT]
+                    ]
                     if len(messages) % 2 != 0:
                         return [
-                            HistoryEntry(user=messages[i], assistant=messages[i + 1])
+                            HistoryEntry(
+                                user=str(messages[i].content),
+                                assistant=str(messages[i + 1].content),
+                            )
                             for i in range(len(messages[:-1]) - 1)
                         ]
         return []
