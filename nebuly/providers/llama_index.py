@@ -88,7 +88,19 @@ class LLamaIndexEvent(Event):
 
     @property
     def history(self) -> list[HistoryEntry]:
-        # TODO: Find a way to implement this
+        if self.data.kwargs is None:
+            return []
+
+        if CBEventType(self.data.type) is CBEventType.LLM:
+            input_payload = self.data.kwargs.get("input_payload")
+            if input_payload is not None:
+                messages = input_payload.get(EventPayload.MESSAGES)
+                if messages is not None:
+                    if len(messages) % 2 != 0:
+                        return [
+                            HistoryEntry(user=messages[i], assistant=messages[i + 1])
+                            for i in range(len(messages[:-1]) - 1)
+                        ]
         return []
 
     def _get_rag_source(self) -> str | None:
