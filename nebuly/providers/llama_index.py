@@ -249,8 +249,20 @@ class LlamaIndexTrackingHandler(
         trace_map: dict[str, list[str]] | None = None,
         final_stream_event_run_id: uuid.UUID | None = None,
     ) -> None:
-        if trace_map is not None and "root" in trace_map:
-            root_id = UUID(trace_map["root"][0])
+        if (
+            trace_id in ["query", "chat"]
+            and trace_map is not None
+            and "root" in trace_map
+        ):
+            valid_root_ids = [
+                event_id
+                for event_id in trace_map["root"]
+                if self._events_storage.events[UUID(event_id)].data.type
+                in ["query", "agent_step", "llm"]
+            ]
+            if len(valid_root_ids) == 0:
+                return
+            root_id = UUID(valid_root_ids[0])
             if final_stream_event_run_id is not None:
                 event = self._events_storage.events[final_stream_event_run_id]
             else:
@@ -258,7 +270,7 @@ class LlamaIndexTrackingHandler(
             response = event.data.kwargs.get("output_payload", {}).get(  # type: ignore
                 EventPayload.RESPONSE, None
             )
-            if response is not None and trace_id in ["query", "chat"]:
+            if response is not None:
                 if isinstance(
                     response, (StreamingResponse, StreamingAgentChatResponse)
                 ):
