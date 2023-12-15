@@ -1,22 +1,23 @@
-# pylint: disable=too-many-lines, duplicate-code
+# pylint: disable=too-many-lines, duplicate-code, protected-access
 from __future__ import annotations
 
 import uuid
 from typing import Any
-from unittest.mock import PropertyMock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 from langchain.schema import Document
 from langchain.schema.messages import AIMessage, HumanMessage, SystemMessage
 from langchain.schema.output import ChatGeneration, Generation, LLMResult
 
-from nebuly.contextmanager import EventsStorage
-from nebuly.entities import EventType
-from nebuly.tracking_handlers import LangChainTrackingHandler
+from nebuly.providers.langchain import EventType, LangChainTrackingHandler
 
 
 def test_langchain_tracking_handler__can_instantiate() -> None:
-    tracking_handler = LangChainTrackingHandler()
+    tracking_handler = LangChainTrackingHandler(
+        api_key="sample_key",
+        user_id="sample_user",
+    )
     assert tracking_handler is not None
 
 
@@ -78,17 +79,15 @@ def fixture_llm_chain_kwargs() -> dict[str, Any]:
     return {"metadata": {}, "name": None, "tags": ["step_1"]}
 
 
-@patch.object(
-    LangChainTrackingHandler,
-    "current_interaction_storage",
-    new_callable=PropertyMock(return_value=EventsStorage()),
-)
 def test_event_handler_on_chain_start__new_root_chain(
     simple_sequential_chain_serialized_data: dict[str, Any],
     default_kwargs: dict[str, Any],
 ) -> None:
     run_id = uuid.uuid4()
-    event_handler = LangChainTrackingHandler()
+    event_handler = LangChainTrackingHandler(
+        api_key="sample_key",
+        user_id="sample_user",
+    )
     event_handler.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,
         inputs={"input": "Tragedy at sunset on the beach"},
@@ -97,27 +96,19 @@ def test_event_handler_on_chain_start__new_root_chain(
         **default_kwargs,
     )
 
-    assert event_handler.current_interaction_storage.events is not None
-    assert len(event_handler.current_interaction_storage.events) == 1
-    assert run_id in event_handler.current_interaction_storage.events
-    assert event_handler.current_interaction_storage.events[run_id].event_id == run_id
-    assert event_handler.current_interaction_storage.events[run_id].hierarchy is None
-    assert (
-        event_handler.current_interaction_storage.events[run_id].data.type
-        == EventType.CHAIN
-    )
-    assert event_handler.current_interaction_storage.events[run_id].data.kwargs == {
+    assert event_handler._events_storage.events is not None
+    assert len(event_handler._events_storage.events) == 1
+    assert run_id in event_handler._events_storage.events
+    assert event_handler._events_storage.events[run_id].event_id == run_id
+    assert event_handler._events_storage.events[run_id].hierarchy is None
+    assert event_handler._events_storage.events[run_id].data.type == EventType.CHAIN
+    assert event_handler._events_storage.events[run_id].data.kwargs == {
         "inputs": {"input": "Tragedy at sunset on the beach"},
         "serialized": simple_sequential_chain_serialized_data,
         **default_kwargs,
     }
 
 
-@patch.object(
-    LangChainTrackingHandler,
-    "current_interaction_storage",
-    new_callable=PropertyMock(return_value=EventsStorage()),
-)
 def test_event_handler_on_chain_start__existing_root_chain(
     simple_sequential_chain_serialized_data: dict[str, Any],
     llm_chain_serialized_data: dict[str, Any],
@@ -125,7 +116,10 @@ def test_event_handler_on_chain_start__existing_root_chain(
     llm_chain_kwargs: dict[str, Any],
 ) -> None:
     root_id = uuid.uuid4()
-    event_handler = LangChainTrackingHandler()
+    event_handler = LangChainTrackingHandler(
+        api_key="sample_key",
+        user_id="sample_user",
+    )
     event_handler.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,
         inputs={"input": "Tragedy at sunset on the beach"},
@@ -143,130 +137,109 @@ def test_event_handler_on_chain_start__existing_root_chain(
         **llm_chain_kwargs,
     )
 
-    assert event_handler.current_interaction_storage.events is not None
-    assert len(event_handler.current_interaction_storage.events) == 2
-    assert run_id in event_handler.current_interaction_storage.events
-    assert event_handler.current_interaction_storage.events[run_id].event_id == run_id
+    assert event_handler._events_storage.events is not None
+    assert len(event_handler._events_storage.events) == 2
+    assert run_id in event_handler._events_storage.events
+    assert event_handler._events_storage.events[run_id].event_id == run_id
+    assert event_handler._events_storage.events[run_id].hierarchy is not None
     assert (
-        event_handler.current_interaction_storage.events[run_id].hierarchy is not None
-    )
-    assert (
-        event_handler.current_interaction_storage.events[run_id].hierarchy.parent_run_id  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
+        event_handler._events_storage.events[run_id].hierarchy.parent_run_id  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
         == root_id
     )
     assert (
-        event_handler.current_interaction_storage.events[run_id].hierarchy.root_run_id  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
+        event_handler._events_storage.events[run_id].hierarchy.root_run_id  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
         == root_id
     )
-    assert (
-        event_handler.current_interaction_storage.events[run_id].data.type
-        == EventType.CHAIN
-    )
-    assert event_handler.current_interaction_storage.events[run_id].data.kwargs == {
+    assert event_handler._events_storage.events[run_id].data.type == EventType.CHAIN
+    assert event_handler._events_storage.events[run_id].data.kwargs == {
         "inputs": {"title": "Tragedy at sunset on the beach"},
         "serialized": llm_chain_serialized_data,
         **llm_chain_kwargs,
     }
 
 
-@patch.object(
-    LangChainTrackingHandler,
-    "current_interaction_storage",
-    new_callable=PropertyMock(return_value=EventsStorage()),
-)
 def test_event_handler_on_chain_end__root_chain(
     simple_sequential_chain_serialized_data: dict[str, Any],
     default_kwargs: dict[str, Any],
 ) -> None:
-    run_id = uuid.uuid4()
-    event_handler = LangChainTrackingHandler()
-    event_handler.on_chain_start(
-        serialized=simple_sequential_chain_serialized_data,
-        inputs={"input": "Tragedy at sunset on the beach"},
-        run_id=run_id,
-        parent_run_id=None,
-        **default_kwargs,
-    )
+    with patch.object(
+        LangChainTrackingHandler,
+        "_send_interaction",
+        return_value=Mock(),
+    ) as mock_send_interaction:
+        run_id = uuid.uuid4()
+        event_handler = LangChainTrackingHandler(
+            api_key="sample_key",
+            user_id="sample_user",
+        )
+        event_handler.on_chain_start(
+            serialized=simple_sequential_chain_serialized_data,
+            inputs={"input": "Tragedy at sunset on the beach"},
+            run_id=run_id,
+            parent_run_id=None,
+            **default_kwargs,
+        )
 
-    output_kwargs = {"tags": ["step_1"]}
-    event_handler.on_chain_end(
-        outputs={"text": "Tragedy at Sunset on the Beach"},
-        run_id=run_id,
-        parent_run_id=None,
-        **output_kwargs,
-    )
+        assert len(event_handler._events_storage.events) == 1
 
-    assert event_handler.current_interaction_storage.events is not None
-    assert len(event_handler.current_interaction_storage.events) == 1
+        output_kwargs = {"tags": ["step_1"]}
+        event_handler.on_chain_end(
+            outputs={"text": "Tragedy at Sunset on the Beach"},
+            run_id=run_id,
+            parent_run_id=None,
+            **output_kwargs,
+        )
 
-    watched_event = event_handler.current_interaction_storage.events.get(run_id)
-    assert watched_event is not None
-    assert watched_event.event_id == run_id
-    assert watched_event.hierarchy is None
-    assert watched_event.data.output == {"text": "Tragedy at Sunset on the Beach"}
-    assert watched_event.data.type is EventType.CHAIN
-    assert watched_event.data.kwargs == {
-        "inputs": {"input": "Tragedy at sunset on the beach"},
-        "serialized": simple_sequential_chain_serialized_data,
-        **dict(default_kwargs, **output_kwargs),
-    }
+        assert event_handler._events_storage.events is not None
+        assert len(event_handler._events_storage.events) == 0
+        assert mock_send_interaction.call_count == 1
 
 
-@patch.object(
-    LangChainTrackingHandler,
-    "current_interaction_storage",
-    new_callable=PropertyMock(return_value=EventsStorage()),
-)
 def test_event_handler_on_chain_end__child_chain(
     simple_sequential_chain_serialized_data: dict[str, Any],
     llm_chain_serialized_data: dict[str, Any],
     default_kwargs: dict[str, Any],
 ) -> None:
-    root_id = uuid.uuid4()
-    event_handler = LangChainTrackingHandler()
-    event_handler.on_chain_start(
-        serialized=simple_sequential_chain_serialized_data,
-        inputs={"input": "Tragedy at sunset on the beach"},
-        run_id=root_id,
-        parent_run_id=None,
-        **default_kwargs,
-    )
+    with patch.object(
+        LangChainTrackingHandler,
+        "_send_interaction",
+        return_value=Mock(),
+    ) as mock_send_interaction:
+        root_id = uuid.uuid4()
+        event_handler = LangChainTrackingHandler(
+            api_key="sample_key",
+            user_id="sample_user",
+        )
+        event_handler.on_chain_start(
+            serialized=simple_sequential_chain_serialized_data,
+            inputs={"input": "Tragedy at sunset on the beach"},
+            run_id=root_id,
+            parent_run_id=None,
+            **default_kwargs,
+        )
 
-    run_id = uuid.uuid4()
-    event_handler.on_chain_start(
-        serialized=llm_chain_serialized_data,
-        inputs={"title": "Tragedy at sunset on the beach"},
-        run_id=run_id,
-        parent_run_id=root_id,
-        **default_kwargs,
-    )
+        run_id = uuid.uuid4()
+        event_handler.on_chain_start(
+            serialized=llm_chain_serialized_data,
+            inputs={"title": "Tragedy at sunset on the beach"},
+            run_id=run_id,
+            parent_run_id=root_id,
+            **default_kwargs,
+        )
 
-    output_kwargs = {"tags": ["step_1"]}
-    event_handler.on_chain_end(
-        outputs={"text": "Tragedy at Sunset on the Beach"},
-        run_id=run_id,
-        parent_run_id=root_id,
-        **output_kwargs,
-    )
+        assert len(event_handler._events_storage.events) == 2
 
-    assert event_handler.current_interaction_storage.events is not None
-    assert len(event_handler.current_interaction_storage.events) == 2
-    assert root_id in event_handler.current_interaction_storage.events
-    assert run_id in event_handler.current_interaction_storage.events
+        output_kwargs = {"tags": ["step_1"]}
+        event_handler.on_chain_end(
+            outputs={"text": "Tragedy at Sunset on the Beach"},
+            run_id=run_id,
+            parent_run_id=root_id,
+            **output_kwargs,
+        )
 
-    watched_event = event_handler.current_interaction_storage.events.get(run_id)
-    assert watched_event is not None
-    assert watched_event.event_id == run_id
-    assert watched_event.hierarchy is not None
-    assert watched_event.hierarchy.parent_run_id == root_id
-    assert watched_event.hierarchy.root_run_id == root_id
-    assert watched_event.data.output == {"text": "Tragedy at Sunset on the Beach"}
-    assert watched_event.data.type is EventType.CHAIN
-    assert watched_event.data.kwargs == {
-        "inputs": {"title": "Tragedy at sunset on the beach"},
-        "serialized": llm_chain_serialized_data,
-        **dict(default_kwargs, **output_kwargs),
-    }
+        assert event_handler._events_storage.events is not None
+        assert len(event_handler._events_storage.events) == 2
+        assert mock_send_interaction.call_count == 0
 
 
 @pytest.fixture(name="tool_serialized_data")
@@ -299,11 +272,6 @@ def fixture_agent_chain_serialized_data() -> dict[str, Any]:
     }
 
 
-@patch.object(
-    LangChainTrackingHandler,
-    "current_interaction_storage",
-    new_callable=PropertyMock(return_value=EventsStorage()),
-)
 def test_event_handler_on_tool_start(
     agent_chain_serialized_data: dict[str, Any],
     tool_serialized_data: dict[str, Any],
@@ -311,7 +279,10 @@ def test_event_handler_on_tool_start(
     default_tool_kwargs: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    event_handler = LangChainTrackingHandler()
+    event_handler = LangChainTrackingHandler(
+        api_key="sample_key",
+        user_id="sample_user",
+    )
     event_handler.on_chain_start(
         serialized=agent_chain_serialized_data,
         inputs={"input": "Who is Leo DiCaprio's girlfriend?"},
@@ -343,39 +314,31 @@ def test_event_handler_on_tool_start(
         **default_tool_kwargs,
     )
 
-    assert event_handler.current_interaction_storage.events is not None
-    assert len(event_handler.current_interaction_storage.events) == 3
-    assert run_id in event_handler.current_interaction_storage.events
+    assert event_handler._events_storage.events is not None
+    assert len(event_handler._events_storage.events) == 3
+    assert run_id in event_handler._events_storage.events
     assert (
-        event_handler.current_interaction_storage.events[parent_tool_id].event_id
-        == parent_tool_id
+        event_handler._events_storage.events[parent_tool_id].event_id == parent_tool_id
     )
+    assert event_handler._events_storage.events[parent_tool_id].hierarchy is not None
     assert (
-        event_handler.current_interaction_storage.events[parent_tool_id].hierarchy
-        is not None
-    )
-    assert (
-        event_handler.current_interaction_storage.events[
+        event_handler._events_storage.events[
             parent_tool_id
         ].hierarchy.parent_run_id  # type: ignore
         == chain_id
     )
-    assert event_handler.current_interaction_storage.events[
-        parent_tool_id
-    ].data.kwargs == {
+    assert event_handler._events_storage.events[parent_tool_id].data.kwargs == {
         "input_str": "Leonardo DiCaprio's girlfriend",
         "serialized": tool_serialized_data,
         **default_tool_kwargs,
     }
-    assert event_handler.current_interaction_storage.events[run_id].event_id == run_id
+    assert event_handler._events_storage.events[run_id].event_id == run_id
+    assert event_handler._events_storage.events[run_id].hierarchy is not None
     assert (
-        event_handler.current_interaction_storage.events[run_id].hierarchy is not None
-    )
-    assert (
-        event_handler.current_interaction_storage.events[run_id].hierarchy.parent_run_id  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
+        event_handler._events_storage.events[run_id].hierarchy.parent_run_id  # type: ignore  # noqa: E501  # pylint: disable=line-too-long
         == parent_tool_id
     )
-    assert event_handler.current_interaction_storage.events[run_id].data.kwargs == {
+    assert event_handler._events_storage.events[run_id].data.kwargs == {
         "input_str": "Leonardo DiCaprio's girlfriend",
         "serialized": tool_serialized_data,
         **default_tool_kwargs,
@@ -399,11 +362,6 @@ def fixture_tool_sample_output() -> str:
         """
 
 
-@patch.object(
-    LangChainTrackingHandler,
-    "current_interaction_storage",
-    new_callable=PropertyMock(return_value=EventsStorage()),
-)
 def test_event_handler_on_tool_end(
     agent_chain_serialized_data: dict[str, Any],
     tool_serialized_data: dict[str, Any],
@@ -412,7 +370,10 @@ def test_event_handler_on_tool_end(
     default_tool_kwargs: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    event_handler = LangChainTrackingHandler()
+    event_handler = LangChainTrackingHandler(
+        api_key="sample_key",
+        user_id="sample_user",
+    )
     event_handler.on_chain_start(
         serialized=agent_chain_serialized_data,
         inputs={"input": "Who is Leo DiCaprio's girlfriend?"},
@@ -456,10 +417,10 @@ def test_event_handler_on_tool_end(
         **tool_end_sample_kwargs,
     )
 
-    assert event_handler.current_interaction_storage.events is not None
-    assert len(event_handler.current_interaction_storage.events) == 3
+    assert event_handler._events_storage.events is not None
+    assert len(event_handler._events_storage.events) == 3
 
-    wiki_watched_event = event_handler.current_interaction_storage.events.get(run_id)
+    wiki_watched_event = event_handler._events_storage.events.get(run_id)
     assert wiki_watched_event is not None
     assert wiki_watched_event.event_id == run_id
     assert wiki_watched_event.hierarchy is not None
@@ -470,12 +431,11 @@ def test_event_handler_on_tool_end(
     assert wiki_watched_event.data.kwargs == {
         "input_str": "Leonardo DiCaprio's girlfriend",
         "serialized": tool_serialized_data,
+        "parent_run_id": parent_tool_id,
         **dict(default_tool_kwargs, **tool_end_sample_kwargs),
     }
 
-    search_watched_event = event_handler.current_interaction_storage.events.get(
-        parent_tool_id
-    )
+    search_watched_event = event_handler._events_storage.events.get(parent_tool_id)
     assert search_watched_event is not None
     assert search_watched_event.event_id == parent_tool_id
     assert search_watched_event.hierarchy is not None
@@ -486,6 +446,7 @@ def test_event_handler_on_tool_end(
     assert search_watched_event.data.kwargs == {
         "input_str": "Leonardo DiCaprio's girlfriend",
         "serialized": tool_serialized_data,
+        "parent_run_id": chain_id,
         **dict(default_tool_kwargs, **tool_end_sample_kwargs),
     }
 
@@ -513,18 +474,16 @@ def fixture_qa_chain_serialized_data() -> dict[str, Any]:
     }
 
 
-@patch.object(
-    LangChainTrackingHandler,
-    "current_interaction_storage",
-    new_callable=PropertyMock(return_value=EventsStorage()),
-)
 def test_event_handler_on_retriever_start(
     qa_chain_serialized_data: dict[str, Any],
     retrieval_serialized_data: dict[str, Any],
     default_kwargs: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    event_handler = LangChainTrackingHandler()
+    event_handler = LangChainTrackingHandler(
+        api_key="sample_key",
+        user_id="sample_user",
+    )
     event_handler.on_chain_start(
         serialized=qa_chain_serialized_data,
         inputs={"query": "What did the president say about Ketanji Brown Jackson"},
@@ -544,48 +503,38 @@ def test_event_handler_on_retriever_start(
         **retriever_kwargs,
     )
 
-    assert event_handler.current_interaction_storage.events is not None
-    assert len(event_handler.current_interaction_storage.events) == 2
-    assert retriever_id in event_handler.current_interaction_storage.events
+    assert event_handler._events_storage.events is not None
+    assert len(event_handler._events_storage.events) == 2
+    assert retriever_id in event_handler._events_storage.events
+    assert event_handler._events_storage.events[retriever_id].event_id == retriever_id
+    assert event_handler._events_storage.events[retriever_id].hierarchy is not None
     assert (
-        event_handler.current_interaction_storage.events[retriever_id].event_id
-        == retriever_id
-    )
-    assert (
-        event_handler.current_interaction_storage.events[retriever_id].hierarchy
-        is not None
-    )
-    assert (
-        event_handler.current_interaction_storage.events[
+        event_handler._events_storage.events[
             retriever_id
         ].hierarchy.parent_run_id  # type: ignore
         == chain_id
     )
     assert (
-        event_handler.current_interaction_storage.events[retriever_id].data.type
+        event_handler._events_storage.events[retriever_id].data.type
         == EventType.RETRIEVAL
     )
-    assert event_handler.current_interaction_storage.events[
-        retriever_id
-    ].data.kwargs == {
+    assert event_handler._events_storage.events[retriever_id].data.kwargs == {
         "query": "What did the president say about Ketanji Brown Jackson",
         "serialized": retrieval_serialized_data,
         **retriever_kwargs,
     }
 
 
-@patch.object(
-    LangChainTrackingHandler,
-    "current_interaction_storage",
-    new_callable=PropertyMock(return_value=EventsStorage()),
-)
 def test_event_handler_on_retriever_end(
     qa_chain_serialized_data: dict[str, Any],
     retrieval_serialized_data: dict[str, Any],
     default_kwargs: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    event_handler = LangChainTrackingHandler()
+    event_handler = LangChainTrackingHandler(
+        api_key="sample_key",
+        user_id="sample_user",
+    )
     event_handler.on_chain_start(
         serialized=qa_chain_serialized_data,
         inputs={"query": "What did the president say about Ketanji Brown Jackson"},
@@ -641,11 +590,11 @@ def test_event_handler_on_retriever_end(
         **retrieval_output_kwargs,
     )
 
-    assert event_handler.current_interaction_storage.events is not None
-    assert len(event_handler.current_interaction_storage.events) == 2
-    assert retriever_id in event_handler.current_interaction_storage.events
+    assert event_handler._events_storage.events is not None
+    assert len(event_handler._events_storage.events) == 2
+    assert retriever_id in event_handler._events_storage.events
 
-    watched_event = event_handler.current_interaction_storage.events.get(retriever_id)
+    watched_event = event_handler._events_storage.events.get(retriever_id)
     assert watched_event is not None
     assert watched_event.event_id == retriever_id
     assert watched_event.hierarchy is not None
@@ -656,6 +605,7 @@ def test_event_handler_on_retriever_end(
     assert watched_event.data.kwargs == {
         "query": "What did the president say about Ketanji Brown Jackson",
         "serialized": retrieval_serialized_data,
+        "parent_run_id": chain_id,
         **dict(retriever_kwargs, **retrieval_output_kwargs),
     }
 
@@ -690,11 +640,6 @@ def fixture_llm_invocation_params() -> dict[str, Any]:
     }
 
 
-@patch.object(
-    LangChainTrackingHandler,
-    "current_interaction_storage",
-    new_callable=PropertyMock(return_value=EventsStorage()),
-)
 def test_event_handler_on_llm_start(  # pylint: disable=too-many-arguments
     simple_sequential_chain_serialized_data: dict[str, Any],
     llm_chain_serialized_data: dict[str, Any],
@@ -704,7 +649,10 @@ def test_event_handler_on_llm_start(  # pylint: disable=too-many-arguments
     llm_invocation_params: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    event_handler = LangChainTrackingHandler()
+    event_handler = LangChainTrackingHandler(
+        api_key="sample_key",
+        user_id="sample_user",
+    )
     event_handler.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,
         inputs={"era": "Victorian England", "title": "Tragedy at sunset on the beach"},
@@ -738,30 +686,22 @@ def test_event_handler_on_llm_start(  # pylint: disable=too-many-arguments
         **default_kwargs,
     )
 
-    assert event_handler.current_interaction_storage.events is not None
-    assert len(event_handler.current_interaction_storage.events) == 3
-    assert llm_model_id in event_handler.current_interaction_storage.events
+    assert event_handler._events_storage.events is not None
+    assert len(event_handler._events_storage.events) == 3
+    assert llm_model_id in event_handler._events_storage.events
+    assert event_handler._events_storage.events[llm_model_id].event_id == llm_model_id
+    assert event_handler._events_storage.events[llm_model_id].hierarchy is not None
     assert (
-        event_handler.current_interaction_storage.events[llm_model_id].event_id
-        == llm_model_id
-    )
-    assert (
-        event_handler.current_interaction_storage.events[llm_model_id].hierarchy
-        is not None
-    )
-    assert (
-        event_handler.current_interaction_storage.events[
+        event_handler._events_storage.events[
             llm_model_id
         ].hierarchy.parent_run_id  # type: ignore
         == llm_chain_id
     )
     assert (
-        event_handler.current_interaction_storage.events[llm_model_id].data.type
+        event_handler._events_storage.events[llm_model_id].data.type
         == EventType.LLM_MODEL
     )
-    assert event_handler.current_interaction_storage.events[
-        llm_model_id
-    ].data.kwargs == {
+    assert event_handler._events_storage.events[llm_model_id].data.kwargs == {
         "prompts": sample_llm_prompts,
         "serialized": llm_serialized_data,
         "invocation_params": llm_invocation_params,
@@ -796,11 +736,6 @@ def fixture_chat_invocation_params() -> dict[str, Any]:
     }
 
 
-@patch.object(
-    LangChainTrackingHandler,
-    "current_interaction_storage",
-    new_callable=PropertyMock(return_value=EventsStorage()),
-)
 def test_event_handler_on_chat_model_start(  # pylint: disable=too-many-arguments  # noqa: E501
     simple_sequential_chain_serialized_data: dict[str, Any],
     llm_chain_serialized_data: dict[str, Any],
@@ -810,7 +745,10 @@ def test_event_handler_on_chat_model_start(  # pylint: disable=too-many-argument
     chat_invocation_params: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    event_handler = LangChainTrackingHandler()
+    event_handler = LangChainTrackingHandler(
+        api_key="sample_key",
+        user_id="sample_user",
+    )
     event_handler.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,
         inputs={"era": "Victorian England", "title": "Tragedy at sunset on the beach"},
@@ -849,30 +787,22 @@ def test_event_handler_on_chat_model_start(  # pylint: disable=too-many-argument
         **default_kwargs,
     )
 
-    assert event_handler.current_interaction_storage.events is not None
-    assert len(event_handler.current_interaction_storage.events) == 3
-    assert llm_model_id in event_handler.current_interaction_storage.events
+    assert event_handler._events_storage.events is not None
+    assert len(event_handler._events_storage.events) == 3
+    assert llm_model_id in event_handler._events_storage.events
+    assert event_handler._events_storage.events[llm_model_id].event_id == llm_model_id
+    assert event_handler._events_storage.events[llm_model_id].hierarchy is not None
     assert (
-        event_handler.current_interaction_storage.events[llm_model_id].event_id
-        == llm_model_id
-    )
-    assert (
-        event_handler.current_interaction_storage.events[llm_model_id].hierarchy
-        is not None
-    )
-    assert (
-        event_handler.current_interaction_storage.events[
+        event_handler._events_storage.events[
             llm_model_id
         ].hierarchy.parent_run_id  # type: ignore
         == llm_chain_id
     )
     assert (
-        event_handler.current_interaction_storage.events[llm_model_id].data.type
+        event_handler._events_storage.events[llm_model_id].data.type
         == EventType.CHAT_MODEL
     )
-    assert event_handler.current_interaction_storage.events[
-        llm_model_id
-    ].data.kwargs == {
+    assert event_handler._events_storage.events[llm_model_id].data.kwargs == {
         "messages": sample_chat_messages,
         "serialized": chat_serialized_data,
         "invocation_params": chat_invocation_params,
@@ -880,11 +810,6 @@ def test_event_handler_on_chat_model_start(  # pylint: disable=too-many-argument
     }
 
 
-@patch.object(
-    LangChainTrackingHandler,
-    "current_interaction_storage",
-    new_callable=PropertyMock(return_value=EventsStorage()),
-)
 def test_event_handler_on_llm_end(  # pylint: disable=too-many-arguments
     simple_sequential_chain_serialized_data: dict[str, Any],
     llm_chain_serialized_data: dict[str, Any],
@@ -894,7 +819,10 @@ def test_event_handler_on_llm_end(  # pylint: disable=too-many-arguments
     llm_chain_kwargs: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    event_handler = LangChainTrackingHandler()
+    event_handler = LangChainTrackingHandler(
+        api_key="sample_key",
+        user_id="sample_user",
+    )
     event_handler.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,
         inputs={"era": "Victorian England", "title": "Tragedy at sunset on the beach"},
@@ -955,10 +883,10 @@ def test_event_handler_on_llm_end(  # pylint: disable=too-many-arguments
         tags=[],
     )
 
-    assert event_handler.current_interaction_storage.events is not None
-    assert len(event_handler.current_interaction_storage.events) == 3
+    assert event_handler._events_storage.events is not None
+    assert len(event_handler._events_storage.events) == 3
 
-    watched_event = event_handler.current_interaction_storage.events.get(llm_model_id)
+    watched_event = event_handler._events_storage.events.get(llm_model_id)
     assert watched_event is not None
     assert watched_event.event_id == llm_model_id
     assert watched_event.hierarchy is not None
@@ -970,15 +898,11 @@ def test_event_handler_on_llm_end(  # pylint: disable=too-many-arguments
         "prompts": sample_llm_prompts,
         "serialized": llm_serialized_data,
         "invocation_params": llm_invocation_params,
+        "parent_run_id": llm_chain_id,
         **default_kwargs,
     }
 
 
-@patch.object(
-    LangChainTrackingHandler,
-    "current_interaction_storage",
-    new_callable=PropertyMock(return_value=EventsStorage()),
-)
 def test_event_handler_on_llm_end__chat_model(  # pylint: disable=too-many-arguments  # noqa: E501
     simple_sequential_chain_serialized_data: dict[str, Any],
     llm_chain_serialized_data: dict[str, Any],
@@ -988,7 +912,10 @@ def test_event_handler_on_llm_end__chat_model(  # pylint: disable=too-many-argum
     llm_chain_kwargs: dict[str, Any],
 ) -> None:
     chain_id = uuid.uuid4()
-    event_handler = LangChainTrackingHandler()
+    event_handler = LangChainTrackingHandler(
+        api_key="sample_key",
+        user_id="sample_user",
+    )
     event_handler.on_chain_start(
         serialized=simple_sequential_chain_serialized_data,
         inputs={"era": "Victorian England", "title": "Tragedy at sunset on the beach"},
@@ -1058,10 +985,10 @@ def test_event_handler_on_llm_end__chat_model(  # pylint: disable=too-many-argum
         tags=[],
     )
 
-    assert event_handler.current_interaction_storage.events is not None
-    assert len(event_handler.current_interaction_storage.events) == 3
+    assert event_handler._events_storage.events is not None
+    assert len(event_handler._events_storage.events) == 3
 
-    watched_event = event_handler.current_interaction_storage.events.get(chat_model_id)
+    watched_event = event_handler._events_storage.events.get(chat_model_id)
     assert watched_event is not None
     assert watched_event.event_id == chat_model_id
     assert watched_event.hierarchy is not None
@@ -1073,5 +1000,6 @@ def test_event_handler_on_llm_end__chat_model(  # pylint: disable=too-many-argum
         "messages": sample_chat_messages,
         "serialized": chat_serialized_data,
         "invocation_params": chat_invocation_params,
+        "parent_run_id": llm_chain_id,
         **default_kwargs,
     }

@@ -22,7 +22,7 @@ from nebuly.contextmanager import (
     new_interaction,
 )
 from nebuly.entities import HistoryEntry, ModelInput, Observer, Package, SpanWatch
-from nebuly.exceptions import NotInInteractionContext
+from nebuly.exceptions import NebulyException, NotInInteractionContext
 from nebuly.providers.base import ProviderDataExtractor
 
 logger = logging.getLogger(__name__)
@@ -290,7 +290,10 @@ def _add_interaction_span(  # pylint: disable=too-many-arguments, too-many-local
         model_output_res = ""
 
     try:
-        interaction = get_nearest_open_interaction()
+        if "nebuly_interaction" in nebuly_kwargs:
+            interaction = nebuly_kwargs["nebuly_interaction"]
+        else:
+            interaction = get_nearest_open_interaction()
         if isinstance(model_input_res, list):
             logger.warning(
                 "Batch prediction found inside a user defined interaction, only the "
@@ -529,7 +532,6 @@ def _setup_args_kwargs(
     """
     nebuly_kwargs, function_kwargs = _split_nebuly_kwargs(args, kwargs)
     original_args = deepcopy(args)
-    nebuly_kwargs = deepcopy(nebuly_kwargs)
     original_kwargs = deepcopy(function_kwargs)
 
     return original_args, original_kwargs, function_kwargs, nebuly_kwargs
@@ -592,82 +594,79 @@ def coroutine_wrapper(
 ) -> Callable[[Any], Any]:
     @wraps(f)
     async def wrapper(*args: Any, **kwargs: Any) -> Any:
-        logger.debug("Calling %s.%s", module, function_name)
+        try:
+            logger.debug("Calling %s.%s", module, function_name)
 
-        if module == "langchain":
-            from nebuly.providers.langchain import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-                wrap_langchain_async,
-            )
+            _handle_unpickleable_objects(module, args)
 
-            return wrap_langchain_async(
-                observer=observer,
-                function_name=function_name,
-                f=f,
-                args=args,
-                kwargs=kwargs,
-            )
+            (
+                original_args,
+                original_kwargs,
+                function_kwargs,
+                nebuly_kwargs,
+            ) = _setup_args_kwargs(*args, **kwargs)
 
-        _handle_unpickleable_objects(module, args)
+            generator_first_element_timestamp = None
 
-        (
-            original_args,
-            original_kwargs,
-            function_kwargs,
-            nebuly_kwargs,
-        ) = _setup_args_kwargs(*args, **kwargs)
+            called_start = datetime.now(timezone.utc)
 
-        generator_first_element_timestamp = None
+            if isasyncgenfunction(f):
+                result = f(*args, **function_kwargs)
+            else:
+                result = await f(*args, **function_kwargs)
 
-        called_start = datetime.now(timezone.utc)
+            if _is_generator(result, module):
+                logger.debug("Result is a generator")
+                return watch_from_generator_async(
+                    generator=result,
+                    observer=observer,
+                    module=module,
+                    package_version=package_version,
+                    function_name=function_name,
+                    called_start=called_start,
+                    original_args=original_args,
+                    original_kwargs=original_kwargs,
+                    nebuly_kwargs=nebuly_kwargs,
+                )
 
-        if isasyncgenfunction(f):
-            result = f(*args, **function_kwargs)
-        else:
-            result = await f(*args, **function_kwargs)
+            logger.debug("Result is not a generator")
 
-        if _is_generator(result, module):
-            logger.debug("Result is a generator")
-            return watch_from_generator_async(
-                generator=result,
-                observer=observer,
+            original_result = deepcopy(result)
+            called_end = datetime.now(timezone.utc)
+            watched = SpanWatch(
                 module=module,
-                package_version=package_version,
-                function_name=function_name,
+                version=package_version,
+                function=function_name,
                 called_start=called_start,
+                called_end=called_end,
+                called_with_args=original_args,
+                called_with_kwargs=original_kwargs,
+                returned=original_result,
+                generator=False,
+                generator_first_element_timestamp=generator_first_element_timestamp,
+                provider_extras=nebuly_kwargs,
+            )
+            _add_interaction_span(
                 original_args=original_args,
                 original_kwargs=original_kwargs,
+                module=module,
+                function_name=function_name,
+                output=original_result,
+                observer=observer,
+                watched=watched,
                 nebuly_kwargs=nebuly_kwargs,
+                start_time=called_start,
             )
-
-        logger.debug("Result is not a generator")
-
-        original_result = deepcopy(result)
-        called_end = datetime.now(timezone.utc)
-        watched = SpanWatch(
-            module=module,
-            version=package_version,
-            function=function_name,
-            called_start=called_start,
-            called_end=called_end,
-            called_with_args=original_args,
-            called_with_kwargs=original_kwargs,
-            returned=original_result,
-            generator=False,
-            generator_first_element_timestamp=generator_first_element_timestamp,
-            provider_extras=nebuly_kwargs,
-        )
-        _add_interaction_span(
-            original_args=original_args,
-            original_kwargs=original_kwargs,
-            module=module,
-            function_name=function_name,
-            output=original_result,
-            observer=observer,
-            watched=watched,
-            nebuly_kwargs=nebuly_kwargs,
-            start_time=called_start,
-        )
-        return result
+            return result
+        except NebulyException as e:
+            raise e
+        except Exception as e:  # pylint: disable=broad-except
+            logger.error("An error occurred when tracking the function: %s", e)
+            # call the original function
+            _, function_kwargs = _split_nebuly_kwargs(args, kwargs)
+            if isasyncgenfunction(f):
+                return f(*args, **function_kwargs)
+            return await f(*args, **function_kwargs)
 
     return wrapper
 
@@ -681,54 +680,56 @@ def function_wrapper(
 ) -> Callable[[Any], Any]:
     @wraps(f)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
-        logger.debug("Calling %s.%s", module, function_name)
+        try:
+            logger.debug("Calling %s.%s", module, function_name)
 
-        if module == "langchain":
-            from nebuly.providers.langchain import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-                wrap_langchain,
-            )
-
-            return wrap_langchain(
-                observer=observer,
-                function_name=function_name,
-                f=f,
-                args=args,
-                kwargs=kwargs,
-            )
-        if module == "botocore":
-            from nebuly.providers.aws_bedrock import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-                is_model_supported,
-            )
-
-            if args[1] not in [
-                "InvokeModel",
-                "InvokeModelWithResponseStream",
-            ] or not is_model_supported(args[2]["modelId"]):
-                for key in NEBULY_KWARGS:
-                    if key in args[2]:
-                        args[2].pop(key)
-                return f(*args, **kwargs)
-
-        _handle_unpickleable_objects(module, args)
-
-        (
-            original_args,
-            original_kwargs,
-            function_kwargs,
-            nebuly_kwargs,
-        ) = _setup_args_kwargs(*args, **kwargs)
-
-        generator_first_element_timestamp = None
-
-        called_start = datetime.now(timezone.utc)
-        result = f(*args, **function_kwargs)
-
-        if _is_generator(result, module):
-            logger.debug("Result is a generator")
             if module == "botocore":
-                # AWS case must be handled separatly because has a different return type
-                result["body"] = watch_from_generator(
-                    generator=result["body"],
+                from nebuly.providers.aws_bedrock import (  # pylint: disable=import-outside-toplevel  # noqa: E501
+                    is_model_supported,
+                )
+
+                if args[1] not in [
+                    "InvokeModel",
+                    "InvokeModelWithResponseStream",
+                ] or not is_model_supported(args[2]["modelId"]):
+                    for key in NEBULY_KWARGS:
+                        if key in args[2]:
+                            args[2].pop(key)
+                    return f(*args, **kwargs)
+
+            _handle_unpickleable_objects(module, args)
+
+            (
+                original_args,
+                original_kwargs,
+                function_kwargs,
+                nebuly_kwargs,
+            ) = _setup_args_kwargs(*args, **kwargs)
+
+            generator_first_element_timestamp = None
+
+            called_start = datetime.now(timezone.utc)
+            result = f(*args, **function_kwargs)
+
+            if _is_generator(result, module):
+                logger.debug("Result is a generator")
+                if module == "botocore":
+                    # AWS case must be handled separatly because has a
+                    # different return type
+                    result["body"] = watch_from_generator(
+                        generator=result["body"],
+                        observer=observer,
+                        module=module,
+                        package_version=package_version,
+                        function_name=function_name,
+                        called_start=called_start,
+                        original_args=original_args,
+                        original_kwargs=original_kwargs,
+                        nebuly_kwargs=nebuly_kwargs,
+                    )
+                    return result
+                return watch_from_generator(
+                    generator=result,
                     observer=observer,
                     module=module,
                     package_version=package_version,
@@ -738,48 +739,43 @@ def function_wrapper(
                     original_kwargs=original_kwargs,
                     nebuly_kwargs=nebuly_kwargs,
                 )
-                return result
-            return watch_from_generator(
-                generator=result,
-                observer=observer,
+
+            logger.debug("Result is not a generator")
+
+            original_result = deepcopy(result)
+            called_end = datetime.now(timezone.utc)
+            watched = SpanWatch(
                 module=module,
-                package_version=package_version,
-                function_name=function_name,
+                version=package_version,
+                function=function_name,
                 called_start=called_start,
+                called_end=called_end,
+                called_with_args=original_args,
+                called_with_kwargs=original_kwargs,
+                returned=original_result,
+                generator=False,
+                generator_first_element_timestamp=generator_first_element_timestamp,
+                provider_extras=nebuly_kwargs,
+            )
+            _add_interaction_span(
                 original_args=original_args,
                 original_kwargs=original_kwargs,
+                module=module,
+                function_name=function_name,
+                output=original_result,
+                observer=observer,
+                watched=watched,
                 nebuly_kwargs=nebuly_kwargs,
+                start_time=called_start,
             )
-
-        logger.debug("Result is not a generator")
-
-        original_result = deepcopy(result)
-        called_end = datetime.now(timezone.utc)
-        watched = SpanWatch(
-            module=module,
-            version=package_version,
-            function=function_name,
-            called_start=called_start,
-            called_end=called_end,
-            called_with_args=original_args,
-            called_with_kwargs=original_kwargs,
-            returned=original_result,
-            generator=False,
-            generator_first_element_timestamp=generator_first_element_timestamp,
-            provider_extras=nebuly_kwargs,
-        )
-        _add_interaction_span(
-            original_args=original_args,
-            original_kwargs=original_kwargs,
-            module=module,
-            function_name=function_name,
-            output=original_result,
-            observer=observer,
-            watched=watched,
-            nebuly_kwargs=nebuly_kwargs,
-            start_time=called_start,
-        )
-        return result
+            return result
+        except NebulyException as e:
+            raise e
+        except Exception as e:  # pylint: disable=broad-except
+            logger.error("An error occurred when tracking the function: %s", e)
+            # call the original function
+            _, function_kwargs = _split_nebuly_kwargs(args, kwargs)
+            return f(*args, **function_kwargs)
 
     return wrapper
 

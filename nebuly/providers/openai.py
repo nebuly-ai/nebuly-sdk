@@ -22,6 +22,7 @@ from openai.types.completion_choice import (  # type: ignore  # noqa: E501
 )
 
 from nebuly.entities import HistoryEntry, ModelInput
+from nebuly.exceptions import ModelNotSupportedError
 from nebuly.providers.base import PicklerHandler, ProviderDataExtractor
 
 logger = logging.getLogger(__name__)
@@ -87,6 +88,13 @@ class OpenAIDataExtractor(ProviderDataExtractor):
         return history
 
     def extract_input_and_history(self) -> ModelInput:
+        if self.original_kwargs.get("model") in [
+            "gpt-4-vision-preview",
+            "gpt-4-1106-vision-preview",
+        ]:
+            raise ModelNotSupportedError(
+                f"Model {self.original_kwargs.get('model')} is not supported"
+            )
         if self.function_name in [
             "resources.completions.Completions.create",
             "resources.completions.AsyncCompletions.create",

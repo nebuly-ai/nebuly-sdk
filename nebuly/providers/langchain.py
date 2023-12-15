@@ -1,52 +1,32 @@
 from __future__ import annotations
 
 import logging
-from inspect import isasyncgenfunction
-from typing import Any, Callable, cast
+import uuid
+from dataclasses import dataclass
+from datetime import datetime
+from enum import Enum
+from typing import Any, Dict, Sequence, Tuple, cast
 from uuid import UUID
 
-from langchain.callbacks.manager import CallbackManager
+from langchain.callbacks.base import BaseCallbackHandler
 from langchain.chains.base import Chain
+from langchain.load import load
 from langchain.prompts import ChatPromptTemplate, PromptTemplate
 from langchain.prompts.chat import AIMessagePromptTemplate, HumanMessagePromptTemplate
+from langchain.schema import Document
+from langchain.schema.messages import AIMessage, BaseMessage, HumanMessage
+from langchain.schema.output import LLMResult
+from langchain.schema.runnable import RunnableSequence
 
-from nebuly.contextmanager import get_nearest_open_interaction, new_interaction
-from nebuly.entities import HistoryEntry, ModelInput, Observer
-from nebuly.exceptions import NotInInteractionContext
-from nebuly.providers.utils import get_argument
-from nebuly.tracking_handlers import LangChainTrackingHandler
+from nebuly.entities import HistoryEntry, InteractionWatch, ModelInput, SpanWatch
+from nebuly.events import Event, EventData, EventsStorage
+from nebuly.requests import post_message
 
 logger = logging.getLogger(__name__)
 
 
-def _get_tracking_info_for_provider_call(**kwargs: Any) -> dict[str, Any]:
-    """
-    This function is a hack to add the chain run_ids info to the kwargs of the
-    provider call. This is needed to associate each call to a provider (ex OpenAI)
-    with the belonging chain.
-    """
-    callbacks = kwargs.get("callbacks")
-    if not isinstance(callbacks, CallbackManager) or callbacks.parent_run_id is None:
-        # If the llm/chat_model is called without a CallbackManager, it's not
-        # called from a chain, so we don't need to add the run ids info
-        return {}
-
-    # Get the parent_run_id from the CallbackManager
-    callback_manager = callbacks
-    parent_run_id = cast(UUID, callback_manager.parent_run_id)
-    additional_kwargs = {"parent_run_id": str(parent_run_id)}
-
-    # Get the root_run_id from the LangChainTrackingHandler
-    for handler in callback_manager.handlers:
-        if isinstance(handler, LangChainTrackingHandler):
-            interaction = get_nearest_open_interaction()
-            root_run_id = interaction._events_storage.get_root_id(  # pylint: disable=protected-access  # noqa: E501
-                parent_run_id
-            )
-            additional_kwargs["root_run_id"] = str(root_run_id)
-            break
-
-    return additional_kwargs
+def _get_spans(events: dict[UUID, Event]) -> list[SpanWatch]:
+    return [event.as_span_watch() for event in events.values()]
 
 
 def _process_prompt_template(
@@ -68,7 +48,7 @@ def _process_chat_prompt_template(
             input_vars = {message.input_variables[0]: inputs}  # type: ignore
         if isinstance(message, (HumanMessagePromptTemplate, AIMessagePromptTemplate)):
             messages.append((message.format(**input_vars).content))
-    last_prompt = messages[-1]
+    last_prompt = str(messages[-1])
     message_history = messages[:-1]
 
     if len(message_history) % 2 != 0:
@@ -77,7 +57,9 @@ def _process_chat_prompt_template(
 
     # Convert the history to [(user, assistant), ...] format
     history = [
-        HistoryEntry(user=message_history[i], assistant=message_history[i + 1])
+        HistoryEntry(
+            user=str(message_history[i]), assistant=str(message_history[i + 1])
+        )
         for i in range(0, len(message_history), 2)
         if i < len(message_history) - 1
     ]
@@ -110,113 +92,373 @@ def _get_input_and_history(chain: Chain, inputs: dict[str, Any] | Any) -> ModelI
     raise ValueError(f"Unknown prompt type: {prompt}")
 
 
+def _get_input_and_history_runnable_seq(
+    sequence: RunnableSequence[Any, Any], inputs: dict[str, Any] | Any
+) -> ModelInput:
+    first = getattr(sequence, "first", None)
+
+    if isinstance(first, PromptTemplate):
+        return ModelInput(prompt=_process_prompt_template(inputs, first))
+
+    if isinstance(first, ChatPromptTemplate):
+        prompt, history = _process_chat_prompt_template(inputs, first)
+        return ModelInput(prompt=prompt, history=history)
+
+    return ModelInput(prompt="")
+
+
 def _get_output_chain(chain: Chain, result: dict[str, Any]) -> str:
     if len(chain.output_keys) == 1:
         return str(result[chain.output_keys[0]])
     output = {}
     for key in chain.output_keys:
         output[key] = result[key]
-    return "\n".join([f"{key}: {value}" for key, value in output.items()])
+    return _parse_output(output)
 
 
-def wrap_langchain(
-    observer: Observer,
-    function_name: str,
-    f: Callable[[Any], Any],
-    args: tuple[Any, ...],
-    kwargs: dict[str, Any],
-) -> Any:
-    if function_name.startswith(
-        ("llms.base.BaseLLM", "chat_models.base.BaseChatModel")
-    ):
-        additional_kwargs = _get_tracking_info_for_provider_call(**kwargs)
-        return f(*args, **kwargs, **additional_kwargs)
-    if function_name.startswith("chains.base.Chain"):
-        try:
-            get_nearest_open_interaction()
-            return f(*args, **kwargs)
-        except NotInInteractionContext:
-            with new_interaction() as interaction:
-                inputs = kwargs.get("inputs")
-                handler = [
-                    handler
-                    for handler in kwargs.get("callbacks", [])
-                    if isinstance(handler, LangChainTrackingHandler)
-                ][0]
-                interaction._set_user(  # pylint: disable=protected-access
-                    handler.nebuly_user  # type: ignore
+def _parse_output(output: str | dict[str, Any] | AIMessage) -> str:
+    if isinstance(output, dict):
+        return "\n".join([f"{key}: {value}" for key, value in output.items()])
+    if isinstance(output, AIMessage):
+        return str(output.content)
+    return output
+
+
+def _parse_langchain_data(data: Any) -> str:
+    if isinstance(data, str):
+        return data
+    if isinstance(data, dict):
+        if len(data) == 1:
+            return str(list(data.values())[0])
+        return "\n".join([f"{key}: {value}" for key, value in data.items()])
+    return str(data)
+
+
+class EventType(Enum):
+    """
+    The type of event generated by LangChain.
+    """
+
+    CHAIN = "chain"
+    TOOL = "tool"
+    RETRIEVAL = "retrieval"
+    LLM_MODEL = "llm_model"
+    CHAT_MODEL = "chat_model"
+
+
+@dataclass
+class LangChainEvent(Event):
+    @property
+    def input(self) -> str:
+        if self.data.kwargs is None:
+            raise ValueError("Event has no kwargs.")
+        if self.data.type is EventType.CHAT_MODEL:
+            messages = self.data.kwargs.get("messages")
+            if messages is None:
+                raise ValueError("Event has no messages.")
+            return str(messages[-1][-1].content)
+        if self.data.type is EventType.LLM_MODEL:
+            prompts = self.data.kwargs.get("prompts")
+            if prompts is None:
+                raise ValueError("Event has no prompts.")
+            return str(prompts[-1])
+        if self.data.type is EventType.CHAIN:
+            inputs = self.data.kwargs.get("inputs")
+            if inputs is None:
+                raise ValueError("Event has no inputs.")
+            try:
+                chain = load(self.data.kwargs.get("serialized", {}))
+                if isinstance(chain, RunnableSequence):
+                    return _get_input_and_history_runnable_seq(chain, inputs).prompt
+                return _get_input_and_history(chain, inputs).prompt
+            except NotImplementedError:
+                return _parse_langchain_data(inputs)
+
+        raise ValueError(f"Event type {self.data.type} not supported.")
+
+    @property
+    def output(self) -> str:
+        if self.data.output is None:
+            raise ValueError("Event has no output.")
+        if self.data.type in [EventType.CHAT_MODEL, EventType.LLM_MODEL]:
+            return str(self.data.output.generations[-1][0].text)
+        if self.data.type is EventType.CHAIN:
+            if self.data.kwargs is None:
+                raise ValueError("Event has no kwargs.")
+            try:
+                chain = load(self.data.kwargs.get("serialized", {}))
+                if isinstance(chain, RunnableSequence):
+                    return _parse_output(self.data.output)
+                return _get_output_chain(chain, self.data.output)
+            except NotImplementedError:
+                return _parse_langchain_data(self.data.output)
+
+        raise ValueError(f"Event type {self.data.type} not supported.")
+
+    @property
+    def history(self) -> list[HistoryEntry]:
+        if self.data.kwargs is None:
+            raise ValueError("Event has no kwargs.")
+
+        if self.data.type is EventType.CHAT_MODEL:
+            messages = self.data.kwargs.get("messages")
+            if messages is None:
+                raise ValueError("Event has no messages.")
+            history = [
+                message
+                for message in messages[-1][:-1]
+                if isinstance(message, (HumanMessage, AIMessage))
+            ]
+            if len(history) % 2 != 0:
+                raise ValueError(
+                    "Odd number of chat history elements, please provide "
+                    "a valid history."
                 )
-                interaction._set_user_group_profile(  # pylint: disable=protected-access
-                    handler.nebuly_user_group
+            if len(history) == 0:
+                return []
+            return [
+                HistoryEntry(
+                    user=str(history[i].content), assistant=str(history[i + 1].content)
                 )
-                interaction._set_observer(observer)  # pylint: disable=protected-access
-                model_input = _get_input_and_history(args[0], inputs)
-                interaction.set_input(model_input.prompt)
-                interaction.set_history(model_input.history)
-                original_res = f(*args, **kwargs)
-                interaction.set_output(_get_output_chain(args[0], original_res))
-                return original_res
-    if function_name.startswith("indexes.vectorstore.VectorStoreIndexWrapper"):
-        try:
-            get_nearest_open_interaction()
-            return f(*args, **kwargs)
-        except NotInInteractionContext:
-            with new_interaction() as interaction:
-                inputs = get_argument(args, kwargs, "question", 1)
-                interaction._set_user(  # pylint: disable=protected-access
-                    kwargs.pop("user_id")
-                )
-                interaction._set_user_group_profile(  # pylint: disable=protected-access
-                    kwargs.pop("user_group_profile", None)
-                )
-                interaction._set_observer(observer)  # pylint: disable=protected-access
-                model_input = _get_input_and_history(args[0], inputs)
-                interaction.set_input(model_input.prompt)
-                interaction.set_history(model_input.history)
-                original_res = f(*args, **kwargs)
-                interaction.set_output(original_res)
-                return original_res
+                for i in range(0, len(history) - 1, 2)
+            ]
+        if self.data.type is EventType.LLM_MODEL:
+            return []
+        if self.data.type is EventType.CHAIN:
+            inputs = self.data.kwargs.get("inputs")
+            if inputs is None:
+                raise ValueError("Event has no inputs.")
+            try:
+                chain = load(self.data.kwargs.get("serialized", {}))
+                if isinstance(chain, RunnableSequence):
+                    return _get_input_and_history_runnable_seq(chain, inputs).history
+                return _get_input_and_history(chain, inputs).history
+            except NotImplementedError:
+                return []
 
-    raise ValueError(f"Unknown function name: {function_name}")
+        raise ValueError(f"Event type {self.data.type} not supported.")
+
+    def as_span_watch(self) -> SpanWatch:
+        if self.end_time is None:
+            raise ValueError("Event has not been finished yet.")
+        return SpanWatch(
+            span_id=self.event_id,
+            module=self.module,
+            version="unknown",
+            function=self._get_function(),
+            called_start=self.start_time,
+            called_end=self.end_time,
+            called_with_args=cast(Tuple[Any], self.data.args),
+            called_with_kwargs=cast(Dict[str, Any], self.data.kwargs),
+            returned=self.data.output,
+            generator=False,
+            generator_first_element_timestamp=None,
+            provider_extras={
+                "event_type": self.data.type.value,
+            },
+            rag_source=self._get_rag_source(),
+        )
+
+    def _get_function(self) -> str:
+        if self.data.kwargs is None or len(self.data.kwargs) == 0:
+            raise ValueError("Event has no kwargs.")
+        if self.data.type is EventType.TOOL:
+            return self.data.kwargs["serialized"]["name"]  # type: ignore
+        return ".".join(self.data.kwargs["serialized"]["id"])
+
+    def _get_rag_source(self) -> str | None:
+        if self.data.kwargs is None or len(self.data.kwargs) == 0:
+            raise ValueError("Event has no kwargs.")
+        if self.data.type is EventType.TOOL:
+            return self.data.kwargs["serialized"]["name"]  # type: ignore
+        if self.data.type is EventType.RETRIEVAL:
+            return self.data.kwargs["serialized"]["id"][-1]  # type: ignore
+
+        return None
 
 
-async def wrap_langchain_async(
-    observer: Observer,
-    function_name: str,
-    f: Callable[[Any], Any],
-    args: tuple[Any, ...],
-    kwargs: dict[str, Any],
-) -> Any:
-    if function_name.startswith(
-        ("llms.base.BaseLLM", "chat_models.base.BaseChatModel")
-    ):
-        additional_kwargs = _get_tracking_info_for_provider_call(**kwargs)
-        if isasyncgenfunction(f):
-            return f(*args, **kwargs, **additional_kwargs)
-        return await f(*args, **kwargs, **additional_kwargs)
-    if function_name.startswith("chains.base.Chain"):
-        try:
-            get_nearest_open_interaction()
-            if isasyncgenfunction(f):
-                return f(*args, **kwargs)
-            return await f(*args, **kwargs)
-        except NotInInteractionContext:
-            with new_interaction() as interaction:
-                inputs = kwargs.get("inputs")
-                if isinstance(inputs, dict):
-                    user = inputs.pop("user_id", None)
-                    user_group = inputs.pop("user_group_profile", None)
-                    interaction._set_user(user)  # pylint: disable=protected-access
-                    interaction._set_user_group_profile(  # pylint: disable=protected-access  # noqa: E501
-                        user_group
-                    )
-                interaction._set_observer(observer)  # pylint: disable=protected-access
-                model_input = _get_input_and_history(args[0], inputs)
-                interaction.set_input(model_input.prompt)
-                interaction.set_history(model_input.history)
-                if isasyncgenfunction(f):
-                    original_res = f(*args, **kwargs)
-                else:
-                    original_res = await f(*args, **kwargs)
-                interaction.set_output(original_res)
-                return original_res
+class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
+    def __init__(
+        self, api_key: str, user_id: str, user_group_profile: str | None = None
+    ) -> None:
+        self.api_key = api_key
+        self.nebuly_user = user_id
+        self.nebuly_user_group = user_group_profile
+        self._events_storage = EventsStorage()
+
+    def _send_interaction(self, run_id: uuid.UUID) -> None:
+        if (
+            len(self._events_storage.events) < 1
+            or run_id not in self._events_storage.events
+        ):
+            raise ValueError(f"Event {run_id} not found in events storage.")
+
+        interaction = InteractionWatch(
+            end_user=self.nebuly_user,
+            end_user_group_profile=self.nebuly_user_group,
+            input=self._events_storage.events[run_id].input,
+            output=self._events_storage.events[run_id].output,
+            time_start=self._events_storage.events[run_id].start_time,
+            time_end=cast(datetime, self._events_storage.events[run_id].end_time),
+            history=self._events_storage.events[run_id].history,
+            spans=_get_spans(events=self._events_storage.events),
+            hierarchy={
+                event.event_id: event.hierarchy.parent_run_id
+                if event.hierarchy is not None
+                else None
+                for event in self._events_storage.events.values()
+            },
+        )
+        post_message(interaction, self.api_key)
+
+    def on_tool_start(  # pylint: disable=arguments-differ
+        self,
+        serialized: dict[str, Any],
+        input_str: str,
+        run_id: UUID,
+        parent_run_id: UUID | None = None,
+        **kwargs: Any,
+    ) -> None:
+        data = EventData(
+            type=EventType.TOOL,
+            kwargs={
+                "serialized": serialized,
+                "input_str": input_str,
+                **kwargs,
+            },
+        )
+        self._events_storage.add_event(
+            LangChainEvent, run_id, parent_run_id, data, module="langchain"
+        )
+
+    def on_tool_end(  # pylint: disable=arguments-differ
+        self,
+        output: str,
+        run_id: UUID,
+        **kwargs: Any,
+    ) -> None:
+        self._events_storage.events[run_id].data.add_end_event_data(
+            kwargs=kwargs, output=output
+        )
+        self._events_storage.events[run_id].set_end_time()
+
+    def on_retriever_start(  # pylint: disable=arguments-differ
+        self,
+        serialized: dict[str, Any],
+        query: str,
+        run_id: UUID,
+        parent_run_id: UUID | None = None,
+        **kwargs: Any,
+    ) -> None:
+        data = EventData(
+            type=EventType.RETRIEVAL,
+            kwargs={
+                "serialized": serialized,
+                "query": query,
+                **kwargs,
+            },
+        )
+        self._events_storage.add_event(
+            LangChainEvent, run_id, parent_run_id, data, module="langchain"
+        )
+
+    def on_retriever_end(  # pylint: disable=arguments-differ
+        self,
+        documents: Sequence[Document],
+        run_id: UUID,
+        **kwargs: Any,
+    ) -> None:
+        self._events_storage.events[run_id].data.add_end_event_data(
+            kwargs=kwargs, output=documents
+        )
+        self._events_storage.events[run_id].set_end_time()
+
+    def on_llm_start(  # pylint: disable=arguments-differ
+        self,
+        serialized: dict[str, Any],
+        prompts: list[str],
+        run_id: UUID,
+        parent_run_id: UUID | None = None,
+        **kwargs: Any,
+    ) -> None:
+        data = EventData(
+            type=EventType.LLM_MODEL,
+            kwargs={
+                "serialized": serialized,
+                "prompts": prompts,
+                **kwargs,
+            },
+        )
+        self._events_storage.add_event(
+            LangChainEvent, run_id, parent_run_id, data, module="langchain"
+        )
+
+    def on_llm_end(  # pylint: disable=arguments-differ
+        self,
+        response: LLMResult,
+        run_id: UUID,
+        **kwargs: Any,
+    ) -> None:
+        self._events_storage.events[run_id].data.add_end_event_data(
+            kwargs=kwargs, output=response
+        )
+        self._events_storage.events[run_id].set_end_time()
+
+        if len(self._events_storage.events) == 1:
+            self._send_interaction(run_id)
+            self._events_storage.delete_events(run_id)
+
+    def on_chat_model_start(  # pylint: disable=arguments-differ
+        self,
+        serialized: dict[str, Any],
+        messages: list[list[BaseMessage]],
+        run_id: UUID,
+        parent_run_id: UUID | None = None,
+        **kwargs: Any,
+    ) -> None:
+        data = EventData(
+            type=EventType.CHAT_MODEL,
+            kwargs={
+                "serialized": serialized,
+                "messages": messages,
+                **kwargs,
+            },
+        )
+        self._events_storage.add_event(
+            LangChainEvent, run_id, parent_run_id, data, module="langchain"
+        )
+
+    def on_chain_start(  # pylint: disable=arguments-differ
+        self,
+        serialized: dict[str, Any],
+        inputs: dict[str, Any],
+        run_id: UUID,
+        parent_run_id: UUID | None = None,
+        **kwargs: Any,
+    ) -> None:
+        data = EventData(
+            type=EventType.CHAIN,
+            kwargs={
+                "serialized": serialized,
+                "inputs": inputs,
+                **kwargs,
+            },
+        )
+        self._events_storage.add_event(
+            LangChainEvent, run_id, parent_run_id, data, module="langchain"
+        )
+
+    def on_chain_end(  # pylint: disable=arguments-differ
+        self,
+        outputs: dict[str, Any],
+        run_id: UUID,
+        **kwargs: Any,
+    ) -> None:
+        self._events_storage.events[run_id].data.add_end_event_data(
+            kwargs=kwargs, output=outputs
+        )
+        self._events_storage.events[run_id].set_end_time()
+
+        if self._events_storage.events[run_id].hierarchy is None:
+            self._send_interaction(run_id)
+            self._events_storage.delete_events(run_id)

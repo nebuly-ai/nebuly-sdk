@@ -8,6 +8,7 @@ NEBULY_KWARGS = {
     "parent_run_id",
     "root_run_id",
     "nebuly_tags",
+    "nebuly_interaction",
 }
 
 PACKAGES = (
@@ -29,19 +30,6 @@ PACKAGES = (
             "resources.chat.completions.AsyncCompletions.create",
             "resources.completions.Completions.create",
             "resources.completions.AsyncCompletions.create",
-        ),
-    ),
-    Package(
-        "langchain",
-        SupportedVersion("0.0.200"),
-        (
-            "chains.base.Chain.__call__",
-            "chains.base.Chain.acall",
-            "llms.base.BaseLLM.generate",
-            "llms.base.BaseLLM.agenerate",
-            "chat_models.base.BaseChatModel.generate",
-            "chat_models.base.BaseChatModel.agenerate",
-            "indexes.vectorstore.VectorStoreIndexWrapper.query",
         ),
     ),
     Package(

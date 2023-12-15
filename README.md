@@ -43,6 +43,7 @@ make lint-fix
     - HuggingFace pipelines
     - HuggingFace HUB
     - LangChain
+    - LlamaIndex
     - Amazon Bedrock
     - Amazon SageMaker
     - Google PALM API
@@ -76,34 +77,6 @@ completion = openai.ChatCompletion.create(
     messages=[
         {"role": "user", "content": "Hello world"}
     ],
-    user_id="test_user",
-    user_group_profile="test_group",
-)
-```
-
-#### Example with LangChain
-
-```python
-import os
-import nebuly
-
-api_key = os.getenv("NEBULY_API_KEY")
-nebuly.init(api_key=api_key)
-
-# Setup LangChain
-from langchain.chains import LLMChain
-from langchain.llms import OpenAI
-from langchain.prompts import PromptTemplate
-
-llm = OpenAI(temperature=0.9)
-prompt = PromptTemplate(
-    input_variables=["product"],
-    template="What is a good name for a company that makes {product}?",
-)
-
-chain = LLMChain(llm=llm, prompt=prompt)
-result = chain.run(
-    "colorful socks",
     user_id="test_user",
     user_group_profile="test_group",
 )
@@ -151,31 +124,51 @@ with new_interaction(user_id="test_user", user_group_profile="test_group") as in
     # interaction.set_output("Some custom output")
 ```
 
-#### Example with LangChain
+## LangChain Callbacks
 
 ```python
 import os
-import nebuly
-from nebuly.contextmanager import new_interaction
 
-api_key = os.getenv("NEBULY_API_KEY")
-nebuly.init(api_key=api_key)
-
-# Setup LangChain
 from langchain.chains import LLMChain
-from langchain.llms import OpenAI
+from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
+from nebuly.providers.langchain import LangChainTrackingHandler
 
-llm = OpenAI(temperature=0.9)
+callback = LangChainTrackingHandler(
+    user_id="test_user",
+    api_key=os.getenv("NEBULY_API_KEY"),
+)
+
+llm = ChatOpenAI(temperature=0.9)
 prompt = PromptTemplate(
     input_variables=["product"],
     template="What is a good name for a company that makes {product}?",
 )
-chain = LLMChain(llm=llm, prompt=prompt)
 
-with new_interaction(user_id="test_user", user_group_profile="test_group") as interaction:
-    interaction.set_input("What is a good name for a company that makes colorful socks?")
-    # interaction.set_history(...)
-    result = chain.run("colorful socks")
-    interaction.set_output("colorful socks spa")
+chain = LLMChain(llm=llm, prompt=prompt)
+result = chain.run(
+    "colorful socks",
+    callbacks=[callback],
+)
+```
+
+## LlamaIndex Callbacks
+
+```python
+import os
+from nebuly.providers.llama_index import LlamaIndexTrackingHandler
+
+handler = LlamaIndexTrackingHandler(
+    api_key=os.getenv("NEBULY_API_KEY"), user_id="test_user"
+)
+
+import llama_index
+from llama_index import SimpleDirectoryReader, VectorStoreIndex
+
+llama_index.global_handler = handler
+
+documents = SimpleDirectoryReader("data").load_data()
+index = VectorStoreIndex.from_documents(documents)
+query_engine = index.as_query_engine()
+response = query_engine.query("What did the author do growing up?")
 ```
