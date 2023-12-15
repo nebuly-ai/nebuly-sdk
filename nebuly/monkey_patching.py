@@ -11,7 +11,16 @@ from functools import wraps
 from importlib.metadata import version
 from inspect import isasyncgenfunction, iscoroutinefunction
 from types import ModuleType
-from typing import Any, AsyncGenerator, Callable, Generator, Iterable, cast
+from typing import (
+    Any,
+    AsyncGenerator,
+    Callable,
+    Generator,
+    Iterable,
+    ParamSpec,
+    TypeVar,
+    cast,
+)
 
 from packaging.version import parse as parse_version
 
@@ -26,6 +35,9 @@ from nebuly.exceptions import NebulyException, NotInInteractionContext
 from nebuly.providers.base import ProviderDataExtractor
 
 logger = logging.getLogger(__name__)
+
+P = ParamSpec("P")
+R = TypeVar("R")
 
 
 def check_no_packages_already_imported(packages: Iterable[Package]) -> None:
@@ -52,7 +64,7 @@ def _monkey_patch(package: Package, observer: Observer) -> None:
     module = importlib.import_module(package.name)
     try:
         package_version = version(package.name)
-    except Exception:  # pylint: disable=broad-except
+    except Exception:
         package_version = "unknown"
 
     if package_version != "unknown":
@@ -160,82 +172,64 @@ def _get_provider_data_extractor(
     original_kwargs: dict[str, Any],
     function_name: str,
 ) -> ProviderDataExtractor:
-    constructor: Callable[[Any], Any] | None = None
+    constructor: type[ProviderDataExtractor] | None = None
     if module == "openai":
         if (
             parse_version(version(module)) < parse_version("1.0.0")
             and parse_version(version(module)).base_version != "1.0.0"
         ):
-            from nebuly.providers.openai_legacy import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-                OpenAILegacyDataExtractor,
-            )
+            from nebuly.providers.openai_legacy import OpenAILegacyDataExtractor
 
-            constructor = OpenAILegacyDataExtractor  # type: ignore
+            constructor = OpenAILegacyDataExtractor
         else:
-            from nebuly.providers.openai import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-                OpenAIDataExtractor,
-            )
+            from nebuly.providers.openai import OpenAIDataExtractor
 
-            constructor = OpenAIDataExtractor  # type: ignore
+            constructor = OpenAIDataExtractor
     if module == "cohere":
-        from nebuly.providers.cohere import (  # pylint: disable=import-outside-toplevel
-            CohereDataExtractor,
-        )
+        from nebuly.providers.cohere import CohereDataExtractor
 
-        constructor = CohereDataExtractor  # type: ignore
+        constructor = CohereDataExtractor
     if module == "anthropic":
-        from nebuly.providers.anthropic import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-            AnthropicDataExtractor,
-        )
+        from nebuly.providers.anthropic import AnthropicDataExtractor
 
-        constructor = AnthropicDataExtractor  # type: ignore
+        constructor = AnthropicDataExtractor
 
     if module == "google":
-        from nebuly.providers.google import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-            GoogleDataExtractor,
-        )
+        from nebuly.providers.google import GoogleDataExtractor
 
-        constructor = GoogleDataExtractor  # type: ignore
+        constructor = GoogleDataExtractor
 
     if module == "transformers":
-        from nebuly.providers.huggingface import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-            HuggingFaceDataExtractor,
-        )
+        from nebuly.providers.huggingface import HuggingFaceDataExtractor
 
-        constructor = HuggingFaceDataExtractor  # type: ignore
+        constructor = HuggingFaceDataExtractor
 
     if module == "huggingface_hub":
-        from nebuly.providers.huggingface_hub import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-            HuggingFaceHubDataExtractor,
-        )
+        from nebuly.providers.huggingface_hub import HuggingFaceHubDataExtractor
 
-        constructor = HuggingFaceHubDataExtractor  # type: ignore
+        constructor = HuggingFaceHubDataExtractor
 
     if module == "vertexai":
-        from nebuly.providers.vertexai import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-            VertexAIDataExtractor,
-        )
+        from nebuly.providers.vertexai import VertexAIDataExtractor
 
-        constructor = VertexAIDataExtractor  # type: ignore
+        constructor = VertexAIDataExtractor
 
     if module == "botocore":
-        from nebuly.providers.aws_bedrock import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-            AWSBedrockDataExtractor,
-        )
+        from nebuly.providers.aws_bedrock import AWSBedrockDataExtractor
 
-        constructor = AWSBedrockDataExtractor  # type: ignore
+        constructor = AWSBedrockDataExtractor
 
-    if constructor is not None:
-        return constructor(  # type: ignore
-            original_args=original_args,
-            original_kwargs=original_kwargs,
-            function_name=function_name,
-        )
+    if constructor is None:
+        raise ValueError(f"Unknown module: {module}")
 
-    raise ValueError(f"Unknown module: {module}")
+    return constructor(
+        original_args=original_args,
+        original_kwargs=original_kwargs,
+        function_name=function_name,
+    )
 
 
-def _add_span_to_interaction(  # pylint: disable=too-many-arguments
+def _add_span_to_interaction(
     observer: Observer,
     interaction: InteractionContext,
     user_input: str,
@@ -244,8 +238,8 @@ def _add_span_to_interaction(  # pylint: disable=too-many-arguments
     watched: SpanWatch,
     nebuly_kwargs: dict[str, Any],
 ) -> None:
-    interaction._set_observer(observer)  # pylint: disable=protected-access
-    interaction._add_span(watched)  # pylint: disable=protected-access
+    interaction._set_observer(observer)
+    interaction._add_span(watched)
     if interaction.input is None:
         interaction.set_input(user_input)
     if interaction.history is None:
@@ -254,19 +248,15 @@ def _add_span_to_interaction(  # pylint: disable=too-many-arguments
         interaction.set_output(output)
     user: str | None = nebuly_kwargs.get("user_id")
     if interaction.user is None and user is not None:
-        interaction._set_user(user)  # pylint: disable=protected-access
+        interaction._set_user(user)
     user_group_profile: str | None = nebuly_kwargs.get("user_group_profile")
     if interaction.user_group_profile is None and user_group_profile is not None:
-        interaction._set_user_group_profile(  # pylint: disable=protected-access
-            user_group_profile
-        )
+        interaction._set_user_group_profile(user_group_profile)
     if "nebuly_tags" in nebuly_kwargs:
-        interaction._add_tags(  # pylint: disable=protected-access
-            nebuly_kwargs["nebuly_tags"]
-        )
+        interaction._add_tags(nebuly_kwargs["nebuly_tags"])
 
 
-def _add_interaction_span(  # pylint: disable=too-many-arguments, too-many-locals
+def _add_interaction_span(
     original_args: tuple[Any, ...],
     original_kwargs: dict[str, Any],
     module: str,
@@ -339,7 +329,7 @@ def _add_interaction_span(  # pylint: disable=too-many-arguments, too-many-local
                 )
 
 
-def watch_from_generator(  # pylint: disable=too-many-arguments
+def watch_from_generator(
     *,
     generator: Generator[Any, Any, Any],
     observer: Observer,
@@ -399,7 +389,7 @@ def watch_from_generator(  # pylint: disable=too-many-arguments
     )
 
 
-async def watch_from_generator_async(  # pylint: disable=too-many-arguments
+async def watch_from_generator_async(
     *,
     generator: AsyncGenerator[Any, Any],
     observer: Observer,
@@ -464,51 +454,41 @@ def _handle_unpickleable_objects(module: str, args: Any) -> None:
     using the deepcopy function
     """
     try:
-        from nebuly.providers.openai import (  # pylint: disable=import-outside-toplevel
-            handle_openai_unpickable_objects,
-        )
+        from nebuly.providers.openai import handle_openai_unpickable_objects
 
         handle_openai_unpickable_objects()
     except ImportError:
         pass
     try:
-        from nebuly.providers.cohere import (  # pylint: disable=import-outside-toplevel
-            handle_cohere_unpickable_objects,
-        )
+        from nebuly.providers.cohere import handle_cohere_unpickable_objects
 
         handle_cohere_unpickable_objects()
     except ImportError:
         pass
 
     try:
-        from nebuly.providers.anthropic import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-            handle_anthropic_unpickable_objects,
-        )
+        from nebuly.providers.anthropic import handle_anthropic_unpickable_objects
 
         handle_anthropic_unpickable_objects()
     except ImportError:
         pass
 
     try:
-        from nebuly.providers.google import (  # pylint: disable=import-outside-toplevel
-            handle_google_unpickable_objects,
-        )
+        from nebuly.providers.google import handle_google_unpickable_objects
 
         handle_google_unpickable_objects()
     except ImportError:
         pass
 
     try:
-        from nebuly.providers.vertexai import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-            handle_vertexai_unpickable_objects,
-        )
+        from nebuly.providers.vertexai import handle_vertexai_unpickable_objects
 
         handle_vertexai_unpickable_objects()
     except ImportError:
         pass
     if module == "botocore":
         try:
-            from nebuly.providers.aws_bedrock import (  # pylint: disable=import-outside-toplevel  # noqa: E501
+            from nebuly.providers.aws_bedrock import (
                 handle_aws_bedrock_unpickable_objects,
             )
 
@@ -542,9 +522,7 @@ def _is_generator(obj: Any, module: str) -> bool:
         return True
 
     try:
-        from nebuly.providers.openai import (  # pylint: disable=import-outside-toplevel
-            is_openai_generator,
-        )
+        from nebuly.providers.openai import is_openai_generator
 
         if is_openai_generator(obj):
             return True
@@ -552,9 +530,7 @@ def _is_generator(obj: Any, module: str) -> bool:
         pass
 
     try:
-        from nebuly.providers.cohere import (  # pylint: disable=import-outside-toplevel
-            is_cohere_generator,
-        )
+        from nebuly.providers.cohere import is_cohere_generator
 
         if is_cohere_generator(obj):
             return True
@@ -562,9 +538,7 @@ def _is_generator(obj: Any, module: str) -> bool:
         pass
 
     try:
-        from nebuly.providers.anthropic import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-            is_anthropic_generator,
-        )
+        from nebuly.providers.anthropic import is_anthropic_generator
 
         if is_anthropic_generator(obj):
             return True
@@ -573,9 +547,7 @@ def _is_generator(obj: Any, module: str) -> bool:
 
     if module == "botocore":
         try:
-            from nebuly.providers.aws_bedrock import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-                is_aws_bedrock_generator,
-            )
+            from nebuly.providers.aws_bedrock import is_aws_bedrock_generator
 
             if is_aws_bedrock_generator(obj):
                 return True
@@ -586,14 +558,14 @@ def _is_generator(obj: Any, module: str) -> bool:
 
 
 def coroutine_wrapper(
-    f: Callable[[Any], Any],
+    f: Callable[P, R],
     observer: Observer,
     module: str,
     package_version: str,
     function_name: str,
-) -> Callable[[Any], Any]:
+) -> Callable[P, R]:
     @wraps(f)
-    async def wrapper(*args: Any, **kwargs: Any) -> Any:
+    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
         try:
             logger.debug("Calling %s.%s", module, function_name)
 
@@ -660,7 +632,7 @@ def coroutine_wrapper(
             return result
         except NebulyException as e:
             raise e
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             logger.error("An error occurred when tracking the function: %s", e)
             # call the original function
             _, function_kwargs = _split_nebuly_kwargs(args, kwargs)
@@ -672,21 +644,19 @@ def coroutine_wrapper(
 
 
 def function_wrapper(
-    f: Callable[[Any], Any],
+    f: Callable[P, R],
     observer: Observer,
     module: str,
     package_version: str,
     function_name: str,
-) -> Callable[[Any], Any]:
+) -> Callable[P, R]:
     @wraps(f)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         try:
             logger.debug("Calling %s.%s", module, function_name)
 
             if module == "botocore":
-                from nebuly.providers.aws_bedrock import (  # pylint: disable=import-outside-toplevel  # noqa: E501
-                    is_model_supported,
-                )
+                from nebuly.providers.aws_bedrock import is_model_supported
 
                 if args[1] not in [
                     "InvokeModel",
@@ -771,7 +741,7 @@ def function_wrapper(
             return result
         except NebulyException as e:
             raise e
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             logger.error("An error occurred when tracking the function: %s", e)
             # call the original function
             _, function_kwargs = _split_nebuly_kwargs(args, kwargs)
@@ -782,7 +752,7 @@ def function_wrapper(
 
 def _patcher(
     observer: Observer, module: str, package_version: str, function_name: str
-) -> Callable[[Any], Any]:
+) -> Callable[[Callable[P, R]], Callable[P, R]]:
     """
     Decorator that calls observer with a SpanWatch instance when the decorated
     function is called
@@ -791,7 +761,7 @@ def _patcher(
     decorated function
     """
 
-    def inner(f: Callable[[Any], Any]) -> Callable[[Any], Any]:
+    def inner(f: Callable[P, R]) -> Callable[P, R]:
         if (
             iscoroutinefunction(f)
             or asyncio.iscoroutinefunction(f)  # Needed for python 3.9
