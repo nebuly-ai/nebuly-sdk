@@ -31,6 +31,7 @@ PACKAGES = (
             "resources.completions.Completions.create",
             "resources.completions.AsyncCompletions.create",
             "resources.beta.threads.messages.messages.Messages.list",
+            "resources.beta.threads.messages.messages.AsyncMessages.list",
         ),
     ),
     Package(

@@ -1,8 +1,9 @@
 from typing import List, Literal, Optional, Tuple
 from unittest import mock
 
-from openai import OpenAI
-from openai.pagination import SyncCursorPage
+import pytest
+from openai import AsyncOpenAI, OpenAI
+from openai.pagination import AsyncCursorPage, SyncCursorPage
 from openai.types.beta.threads import MessageContentText, ThreadMessage
 from openai.types.beta.threads.message_content_text import Text
 
@@ -72,6 +73,76 @@ def run_fake_assistant_messages(
             )
         else:
             client.beta.threads.messages.list(  # type: ignore[call-arg]  # pylint: disable=unexpected-keyword-arg  # noqa: E501
+                "thread_WPTJKw22r54NrYVM35FfHqYN", user_id="user_1"
+            )
+
+    return dummy_observer
+
+
+def create_fake_messages_async(
+    messages: List[Tuple[Literal["user", "assistant"], str]],
+    has_more: bool = False,
+    reverse: bool = False,
+) -> AsyncCursorPage[ThreadMessage]:
+    """
+    Create a fake messages list response
+    """
+    if reverse:
+        messages = messages[::-1]
+    response = AsyncCursorPage(  # type: ignore[call-arg]
+        data=[
+            ThreadMessage(
+                id=f"message_{i}",
+                assistant_id="assistant_1",
+                file_ids=[],
+                metadata=None,
+                object="thread.message",
+                role=role,
+                run_id="run_1",
+                thread_id="thread_1",
+                content=[
+                    MessageContentText(
+                        text=Text(value=message, annotations=[]),
+                        type="text",
+                    )
+                ],
+                created_at=1,
+            )
+            for i, (role, message) in enumerate(reversed(messages))
+        ],
+        has_more=has_more,
+    )
+    return response
+
+
+async def run_fake_assistant_messages_async(
+    messages: List[Tuple[Literal["user", "assistant"], str]],
+    has_more: bool = False,
+    order: Optional[Literal["asc", "desc"]] = None,
+) -> List[InteractionWatch]:
+    """
+    Mock the messages list from openai and run the assistant with the given
+    messages
+    """
+    with mock.patch(
+        "openai.resources.beta.threads.messages.messages.AsyncMessages.list",
+    ) as mock_messages_list:
+        reverse = order == "asc"
+        response = create_fake_messages_async(
+            messages, has_more=has_more, reverse=reverse
+        )
+        mock_messages_list.return_value = response
+
+        dummy_observer: List[InteractionWatch] = []
+        nebuly_init(dummy_observer.append)
+
+        client = AsyncOpenAI(api_key="test_key")
+        if order is not None:
+            await client.beta.threads.messages.list(  # type: ignore[call-arg]  # pylint: disable=unexpected-keyword-arg  # noqa: E501
+                "thread_WPTJKw22r54NrYVM35FfHqYN", order=order, user_id="user_1"
+            )
+        else:
+            await client.beta.threads.messages.list(  # type: ignore[call-arg]  # pylint: disable=unexpected-keyword-arg  # noqa: E501
                 "thread_WPTJKw22r54NrYVM35FfHqYN", user_id="user_1"
             )
 
@@ -228,5 +299,28 @@ def test_openai_assistant_messages_list_multiple_continuous_messages_order_asc()
         HistoryEntry("Hello\nWorld", "Hi\nHow can i help you?"),
     ]
     assert len(interaction_watch.spans) == 1
+    span = interaction_watch.spans[0]
+    assert "thread_WPTJKw22r54NrYVM35FfHqYN" in span.called_with_args
+
+
+@pytest.mark.asyncio
+async def test_openai_assistant_messages_list_async() -> None:
+    """
+    Test that we correctly watch the messages list and send the correct
+    interaction to the observer
+    """
+    dummy_observer = await run_fake_assistant_messages_async(
+        [
+            ("user", "Hello"),
+            ("assistant", "How can i help you?"),
+            ("user", "You can't"),
+            ("assistant", "Ok then"),
+        ]
+    )
+    assert len(dummy_observer) == 1
+    interaction_watch = dummy_observer[0]
+    assert interaction_watch.input == "You can't"
+    assert interaction_watch.output == "Ok then"
+    assert interaction_watch.history == [HistoryEntry("Hello", "How can i help you?")]
     span = interaction_watch.spans[0]
     assert "thread_WPTJKw22r54NrYVM35FfHqYN" in span.called_with_args

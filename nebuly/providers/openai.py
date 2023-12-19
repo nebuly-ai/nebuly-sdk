@@ -114,10 +114,10 @@ class OpenAIDataExtractor(ProviderDataExtractor):
             prompt = self.original_kwargs.get("messages", [])[-1]["content"]
             history = self._extract_history()
             return ModelInput(prompt=prompt, history=history)
-        if (
-            self.function_name
-            == "resources.beta.threads.messages.messages.Messages.list"
-        ):
+        if self.function_name in [
+            "resources.beta.threads.messages.messages.Messages.list",
+            "resources.beta.threads.messages.messages.AsyncMessages.list",
+        ]:
             if outputs.has_more:
                 return ModelInput(prompt="")
             user_messages, assistant_messages = self._openai_assistant_messages(outputs)
@@ -175,10 +175,10 @@ class OpenAIDataExtractor(ProviderDataExtractor):
                     ).message.function_call.arguments,
                 }
             )
-        if (
-            self.function_name
-            == "resources.beta.threads.messages.messages.Messages.list"
-        ):
+        if self.function_name in [
+            "resources.beta.threads.messages.messages.Messages.list",
+            "resources.beta.threads.messages.messages.AsyncMessages.list",
+        ]:
             if outputs.has_more:
                 return ""
             _, assistant_messages = self._openai_assistant_messages(outputs)
