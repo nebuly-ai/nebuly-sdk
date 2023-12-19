@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any, Callable
 
 from anthropic import Anthropic, AsyncAnthropic, AsyncStream, Stream
@@ -45,13 +44,18 @@ def handle_anthropic_unpickable_objects() -> None:
         )
 
 
-@dataclass(frozen=True)
 class AnthropicDataExtractor(ProviderDataExtractor):
-    original_args: tuple[Any, ...]
-    original_kwargs: dict[str, Any]
-    function_name: str
+    def __init__(
+        self,
+        function_name: str,
+        original_args: tuple[Any, ...],
+        original_kwargs: dict[str, Any],
+    ):
+        self.function_name = function_name
+        self.original_args = original_args
+        self.original_kwargs = original_kwargs
 
-    def extract_input_and_history(self) -> ModelInput:
+    def extract_input_and_history(self, outputs: Any) -> ModelInput:
         if self.function_name in [
             "resources.Completions.create",
             "resources.AsyncCompletions.create",

@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
 from typing import Any, Callable, cast
 
 from google.generativeai.discuss import ChatResponse  # type: ignore
@@ -55,11 +54,16 @@ def handle_google_unpickable_objects() -> None:
         )
 
 
-@dataclass(frozen=True)
 class GoogleDataExtractor(ProviderDataExtractor):
-    original_args: tuple[Any, ...]
-    original_kwargs: dict[str, Any]
-    function_name: str
+    def __init__(
+        self,
+        function_name: str,
+        original_args: tuple[Any, ...],
+        original_kwargs: dict[str, Any],
+    ):
+        self.function_name = function_name
+        self.original_args = original_args
+        self.original_kwargs = original_kwargs
 
     def _extract_history(self) -> list[HistoryEntry]:
         if self.function_name == "generativeai.discuss.ChatResponse.reply":
@@ -81,7 +85,7 @@ class GoogleDataExtractor(ProviderDataExtractor):
 
         return history
 
-    def extract_input_and_history(self) -> ModelInput:
+    def extract_input_and_history(self, outputs: Any) -> ModelInput:
         if self.function_name == "generativeai.generate_text":
             return ModelInput(prompt=self.original_kwargs.get("prompt", ""))
         if self.function_name in ["generativeai.chat", "generativeai.chat_async"]:

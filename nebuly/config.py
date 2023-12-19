@@ -30,6 +30,7 @@ PACKAGES = (
             "resources.chat.completions.AsyncCompletions.create",
             "resources.completions.Completions.create",
             "resources.completions.AsyncCompletions.create",
+            "resources.beta.threads.messages.messages.Messages.list",
         ),
     ),
     Package(

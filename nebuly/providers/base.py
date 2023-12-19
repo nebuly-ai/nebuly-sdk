@@ -9,7 +9,16 @@ from nebuly.entities import ModelInput
 
 class ProviderDataExtractor(abc.ABC):
     @abc.abstractmethod
-    def extract_input_and_history(self) -> ModelInput | list[ModelInput]:
+    def __init__(
+        self,
+        original_args: tuple[Any, ...],
+        original_kwargs: dict[str, Any],
+        function_name: str,
+    ):
+        raise NotImplementedError("init not implemented")
+
+    @abc.abstractmethod
+    def extract_input_and_history(self, outputs: Any) -> ModelInput | list[ModelInput]:
         raise NotImplementedError("extract_input_and_history not implemented")
 
     @abc.abstractmethod

@@ -68,7 +68,7 @@ class AWSBedrockDataExtractor(ProviderDataExtractor):
         self.original_kwargs = original_kwargs
         self.provider = original_args[2]["modelId"].split(".")[0]
 
-    def extract_input_and_history(self) -> ModelInput:
+    def extract_input_and_history(self, outputs: Any) -> ModelInput:
         if self.function_name == "client.BaseClient._make_api_call":
             if self.provider == "amazon":  # Amazon
                 return ModelInput(

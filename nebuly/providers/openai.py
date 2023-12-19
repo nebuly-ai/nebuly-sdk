@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass
-from typing import Any, Callable, cast
+from copy import deepcopy
+from typing import Any, Callable, List, Tuple, cast
 
 import openai
-from openai import AsyncOpenAI, OpenAI, _ModuleClient  # type: ignore  # noqa: E501
+from openai import AsyncOpenAI, OpenAI, _ModuleClient
+from openai.pagination import SyncCursorPage
+from openai.types.beta.threads import ThreadMessage  # type: ignore  # noqa: E501
 from openai.types.chat.chat_completion import (  # type: ignore  # noqa: E501
     ChatCompletion,
     Choice,
@@ -57,11 +59,16 @@ def is_openai_generator(obj: Any) -> bool:
     )
 
 
-@dataclass(frozen=True)
 class OpenAIDataExtractor(ProviderDataExtractor):
-    original_args: tuple[Any, ...]
-    original_kwargs: dict[str, Any]
-    function_name: str
+    def __init__(
+        self,
+        function_name: str,
+        original_args: tuple[Any, ...],
+        original_kwargs: dict[str, Any],
+    ):
+        self.function_name = function_name
+        self.original_args = original_args
+        self.original_kwargs = original_kwargs
 
     def _extract_history(self) -> list[HistoryEntry]:
         history = self.original_kwargs.get("messages", [])[:-1]
@@ -87,7 +94,7 @@ class OpenAIDataExtractor(ProviderDataExtractor):
         ]
         return history
 
-    def extract_input_and_history(self) -> ModelInput:
+    def extract_input_and_history(self, outputs: Any) -> ModelInput:
         if self.original_kwargs.get("model") in [
             "gpt-4-vision-preview",
             "gpt-4-1106-vision-preview",
@@ -107,6 +114,30 @@ class OpenAIDataExtractor(ProviderDataExtractor):
             prompt = self.original_kwargs.get("messages", [])[-1]["content"]
             history = self._extract_history()
             return ModelInput(prompt=prompt, history=history)
+        if (
+            self.function_name
+            == "resources.beta.threads.messages.messages.Messages.list"
+        ):
+            if outputs.has_more:
+                return ModelInput(prompt="")
+            user_messages, assistant_messages = self._openai_assistant_messages(outputs)
+            input_ = user_messages[0].content[0].text.value
+            return ModelInput(
+                prompt=input_,
+                history=[
+                    HistoryEntry(input_, output)
+                    for input_, output in zip(
+                        [
+                            message.content[0].text.value
+                            for message in user_messages[1:]
+                        ],
+                        [
+                            message.content[0].text.value
+                            for message in assistant_messages[1:]
+                        ],
+                    )
+                ],
+            )
 
         raise ValueError(f"Unknown function name: {self.function_name}")
 
@@ -144,6 +175,16 @@ class OpenAIDataExtractor(ProviderDataExtractor):
                     ).message.function_call.arguments,
                 }
             )
+        if (
+            self.function_name
+            == "resources.beta.threads.messages.messages.Messages.list"
+        ):
+            if outputs.has_more:
+                return ""
+            _, assistant_messages = self._openai_assistant_messages(outputs)
+
+            output = assistant_messages[0].content[0].text.value
+            return output
 
         raise ValueError(
             f"Unknown function name: {self.function_name} or "
@@ -198,3 +239,47 @@ class OpenAIDataExtractor(ProviderDataExtractor):
             f"Unknown function name: {self.function_name} "
             f"or output type: {type(outputs)}"
         )
+
+    def _openai_assistant_messages_join(
+        self, messages: list[ThreadMessage]
+    ) -> List[str]:
+        """
+        Join messages from the openai assistant when same role has multiple
+        messages consecutively
+        """
+        joined_messages = []
+        current_message = messages[0]
+        for message in messages[1:]:
+            if message.role == current_message.role:
+                current_message.content[0].text.value = (
+                    message.content[0].text.value
+                    + "\n"
+                    + current_message.content[0].text.value
+                )
+            else:
+                joined_messages.append(current_message)
+                current_message = message
+        joined_messages.append(current_message)
+        return joined_messages
+
+    def _openai_assistant_messages(
+        self, outputs: SyncCursorPage[ThreadMessage]
+    ) -> Tuple[List[str], List[str]]:
+        """
+        Extract the messages from the openai assistant
+
+        The messages are returned in the order they were created
+        """
+        # We need to deepcopy the data because the data is modified in place
+        messages = deepcopy(outputs.data)
+        if "order" in self.original_kwargs and self.original_kwargs["order"] == "asc":
+            messages = messages[::-1]
+
+        joined_messages = self._openai_assistant_messages_join(messages)
+
+        user_messages = [data for data in joined_messages if data.role == "user"]
+        assistant_messages = [
+            data for data in joined_messages if data.role == "assistant"
+        ]
+
+        return user_messages, assistant_messages
