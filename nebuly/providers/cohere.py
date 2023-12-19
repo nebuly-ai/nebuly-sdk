@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
 from typing import Any, Callable, List, Union, cast
 
 from cohere.client import Client  # type: ignore
@@ -60,11 +59,16 @@ def handle_cohere_unpickable_objects() -> None:
     pickler_handler.handle_unpickable_object(obj=Client)
 
 
-@dataclass(frozen=True)
 class CohereDataExtractor(ProviderDataExtractor):
-    original_args: tuple[Any, ...]
-    original_kwargs: dict[str, Any]
-    function_name: str
+    def __init__(
+        self,
+        function_name: str,
+        original_args: tuple[Any, ...],
+        original_kwargs: dict[str, Any],
+    ):
+        self.function_name = function_name
+        self.original_args = original_args
+        self.original_kwargs = original_kwargs
 
     def _extract_history(self) -> list[HistoryEntry]:
         history = get_argument(
@@ -94,7 +98,7 @@ class CohereDataExtractor(ProviderDataExtractor):
         ]
         return history  # type: ignore
 
-    def extract_input_and_history(self) -> ModelInput:
+    def extract_input_and_history(self, outputs: Any) -> ModelInput:
         if self.function_name in ["Client.generate", "AsyncClient.generate"]:
             prompt = get_argument(self.original_args, self.original_kwargs, "prompt", 1)
             return ModelInput(prompt=prompt)

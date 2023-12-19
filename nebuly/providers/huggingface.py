@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
 from typing import Any, Dict, List, cast
 
 from transformers.pipelines import (  # type: ignore
@@ -21,11 +20,16 @@ logger = logging.getLogger(__name__)
 TextGeneration: TypeAlias = List[Dict[str, str]]
 
 
-@dataclass(frozen=True)
 class HuggingFaceDataExtractor(ProviderDataExtractor):
-    original_args: tuple[Any, ...]
-    original_kwargs: dict[str, Any]
-    function_name: str
+    def __init__(
+        self,
+        function_name: str,
+        original_args: tuple[Any, ...],
+        original_kwargs: dict[str, Any],
+    ):
+        self.function_name = function_name
+        self.original_args = original_args
+        self.original_kwargs = original_kwargs
 
     @staticmethod
     def _extract_history(conversations: Conversation) -> list[HistoryEntry]:
@@ -53,7 +57,7 @@ class HuggingFaceDataExtractor(ProviderDataExtractor):
 
         return history  # type: ignore
 
-    def extract_input_and_history(self) -> ModelInput | list[ModelInput]:
+    def extract_input_and_history(self, outputs: Any) -> ModelInput | list[ModelInput]:
         pipeline: ConversationalPipeline | TextGenerationPipeline = self.original_args[
             0
         ]  # noqa: E501

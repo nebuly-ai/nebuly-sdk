@@ -1,7 +1,6 @@
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any, List, cast
 
 from huggingface_hub.inference._text_generation import (  # type: ignore
@@ -15,11 +14,16 @@ from nebuly.providers.base import ProviderDataExtractor
 from nebuly.providers.utils import get_argument
 
 
-@dataclass(frozen=True)
 class HuggingFaceHubDataExtractor(ProviderDataExtractor):
-    original_args: tuple[Any, ...]
-    original_kwargs: dict[str, Any]
-    function_name: str
+    def __init__(
+        self,
+        function_name: str,
+        original_args: tuple[Any, ...],
+        original_kwargs: dict[str, Any],
+    ):
+        self.function_name = function_name
+        self.original_args = original_args
+        self.original_kwargs = original_kwargs
 
     def _extract_history(self) -> list[HistoryEntry]:
         generated_responses = get_argument(
@@ -37,7 +41,7 @@ class HuggingFaceHubDataExtractor(ProviderDataExtractor):
             history.append(HistoryEntry(user=user_input, assistant=assistant_response))
         return history
 
-    def extract_input_and_history(self) -> ModelInput:
+    def extract_input_and_history(self, outputs: Any) -> ModelInput:
         if self.function_name in [
             "InferenceClient.conversational",
             "AsyncInferenceClient.conversational",

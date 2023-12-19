@@ -160,7 +160,7 @@ def _get_provider_data_extractor(
     original_kwargs: dict[str, Any],
     function_name: str,
 ) -> ProviderDataExtractor:
-    constructor: Callable[[Any], Any] | None = None
+    constructor: type[ProviderDataExtractor] | None = None
     if module == "openai":
         if (
             parse_version(version(module)) < parse_version("1.0.0")
@@ -170,63 +170,63 @@ def _get_provider_data_extractor(
                 OpenAILegacyDataExtractor,
             )
 
-            constructor = OpenAILegacyDataExtractor  # type: ignore
+            constructor = OpenAILegacyDataExtractor
         else:
             from nebuly.providers.openai import (  # pylint: disable=import-outside-toplevel  # noqa: E501
                 OpenAIDataExtractor,
             )
 
-            constructor = OpenAIDataExtractor  # type: ignore
+            constructor = OpenAIDataExtractor
     if module == "cohere":
         from nebuly.providers.cohere import (  # pylint: disable=import-outside-toplevel
             CohereDataExtractor,
         )
 
-        constructor = CohereDataExtractor  # type: ignore
+        constructor = CohereDataExtractor
     if module == "anthropic":
         from nebuly.providers.anthropic import (  # pylint: disable=import-outside-toplevel  # noqa: E501
             AnthropicDataExtractor,
         )
 
-        constructor = AnthropicDataExtractor  # type: ignore
+        constructor = AnthropicDataExtractor
 
     if module == "google":
         from nebuly.providers.google import (  # pylint: disable=import-outside-toplevel  # noqa: E501
             GoogleDataExtractor,
         )
 
-        constructor = GoogleDataExtractor  # type: ignore
+        constructor = GoogleDataExtractor
 
     if module == "transformers":
         from nebuly.providers.huggingface import (  # pylint: disable=import-outside-toplevel  # noqa: E501
             HuggingFaceDataExtractor,
         )
 
-        constructor = HuggingFaceDataExtractor  # type: ignore
+        constructor = HuggingFaceDataExtractor
 
     if module == "huggingface_hub":
         from nebuly.providers.huggingface_hub import (  # pylint: disable=import-outside-toplevel  # noqa: E501
             HuggingFaceHubDataExtractor,
         )
 
-        constructor = HuggingFaceHubDataExtractor  # type: ignore
+        constructor = HuggingFaceHubDataExtractor
 
     if module == "vertexai":
         from nebuly.providers.vertexai import (  # pylint: disable=import-outside-toplevel  # noqa: E501
             VertexAIDataExtractor,
         )
 
-        constructor = VertexAIDataExtractor  # type: ignore
+        constructor = VertexAIDataExtractor
 
     if module == "botocore":
         from nebuly.providers.aws_bedrock import (  # pylint: disable=import-outside-toplevel  # noqa: E501
             AWSBedrockDataExtractor,
         )
 
-        constructor = AWSBedrockDataExtractor  # type: ignore
+        constructor = AWSBedrockDataExtractor
 
     if constructor is not None:
-        return constructor(  # type: ignore
+        return constructor(
             original_args=original_args,
             original_kwargs=original_kwargs,
             function_name=function_name,
@@ -282,8 +282,10 @@ def _add_interaction_span(  # pylint: disable=too-many-arguments, too-many-local
         provider_data_extractor = _get_provider_data_extractor(
             module, original_args, original_kwargs, function_name
         )
-        model_input_res = provider_data_extractor.extract_input_and_history()
+        model_input_res = provider_data_extractor.extract_input_and_history(output)
         model_output_res = provider_data_extractor.extract_output(stream, output)
+    # FIXME: this is ignoring the model_input_res when the model_output_res throws an
+    # exception.
     except ValueError:
         logger.debug("Unknown module: %s", function_name)
         model_input_res = ModelInput(prompt="")
@@ -697,6 +699,8 @@ def function_wrapper(
                             args[2].pop(key)
                     return f(*args, **kwargs)
 
+            # FIXME: This is being performed for every function call, it should be
+            # performed only once
             _handle_unpickleable_objects(module, args)
 
             (
@@ -775,6 +779,8 @@ def function_wrapper(
             logger.error("An error occurred when tracking the function: %s", e)
             # call the original function
             _, function_kwargs = _split_nebuly_kwargs(args, kwargs)
+            # FIXME: This is performing the f call a second time wich could
+            # incur in client costs
             return f(*args, **function_kwargs)
 
     return wrapper

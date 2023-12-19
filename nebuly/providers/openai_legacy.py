@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass
 from typing import Any
 
 from openai.openai_object import OpenAIObject  # type: ignore
@@ -15,11 +14,16 @@ from nebuly.providers.base import ProviderDataExtractor
 logger = logging.getLogger(__name__)
 
 
-@dataclass(frozen=True)
 class OpenAILegacyDataExtractor(ProviderDataExtractor):
-    original_args: tuple[Any, ...]
-    original_kwargs: dict[str, Any]
-    function_name: str
+    def __init__(
+        self,
+        function_name: str,
+        original_args: tuple[Any, ...],
+        original_kwargs: dict[str, Any],
+    ):
+        self.function_name = function_name
+        self.original_args = original_args
+        self.original_kwargs = original_kwargs
 
     def _extract_history(self) -> list[HistoryEntry]:
         history = self.original_kwargs.get("messages", [])[:-1]
@@ -45,7 +49,7 @@ class OpenAILegacyDataExtractor(ProviderDataExtractor):
         ]
         return history
 
-    def extract_input_and_history(self) -> ModelInput:
+    def extract_input_and_history(self, outputs: Any) -> ModelInput:
         if self.function_name in ["Completion.create", "Completion.acreate"]:
             return ModelInput(prompt=self.original_kwargs.get("prompt", ""))
         if self.function_name in ["ChatCompletion.create", "ChatCompletion.acreate"]:
