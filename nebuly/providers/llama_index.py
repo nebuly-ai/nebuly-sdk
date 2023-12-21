@@ -249,7 +249,7 @@ class LlamaIndexTrackingHandler(
             time_start=event.start_time,
             time_end=cast(datetime, event.end_time),
             history=self._get_event_history(trace_id, event, spans),
-            spans=_get_spans(events=self._events_storage.events, trace_map=trace_map),
+            spans=spans,
             hierarchy=self._trace_map_to_hierarchy(trace_map=trace_map, run_id=root_id),
             tags=self.tags,
         )
