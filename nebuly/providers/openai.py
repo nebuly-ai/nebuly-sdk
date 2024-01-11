@@ -9,6 +9,7 @@ from typing import Any, Callable, List, Tuple, cast
 
 import openai
 from openai import AsyncOpenAI, OpenAI, _ModuleClient
+from openai._response import APIResponse
 from openai.pagination import SyncCursorPage
 from openai.types.beta.threads import ThreadMessage  # type: ignore  # noqa: E501
 from openai.types.chat.chat_completion import (  # type: ignore  # noqa: E501
@@ -141,7 +142,7 @@ class OpenAIDataExtractor(ProviderDataExtractor):
 
         raise ValueError(f"Unknown function name: {self.function_name}")
 
-    def extract_output(
+    def extract_output(  # pylint: disable=too-many-return-statements
         self,
         stream: bool,
         outputs: ChatCompletion
@@ -175,6 +176,11 @@ class OpenAIDataExtractor(ProviderDataExtractor):
                     ).message.function_call.arguments,
                 }
             )
+        if isinstance(outputs, APIResponse):
+            payload_dict = json.loads(outputs.content.decode("utf-8"))
+            if payload_dict.get("object") == "chat.completion":
+                payload = ChatCompletion(**payload_dict)
+                return cast(str, cast(Choice, payload.choices[0]).message.content)
         if self.function_name in [
             "resources.beta.threads.messages.messages.Messages.list",
             "resources.beta.threads.messages.messages.AsyncMessages.list",
