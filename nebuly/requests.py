@@ -89,12 +89,13 @@ def post_json_data(url: str, json_data: str, api_key: str) -> Any:
         },
     )
 
-    while True:
+    tries = 0
+    while tries < 3:
         try:
             with urllib.request.urlopen(request, timeout=3) as response:  # nosec
                 response_body = response.read().decode("utf-8")
                 logger.debug("response_body: %s", response_body)
-                break
+                return response_body
         except urllib.error.HTTPError as e:
             if e.code == 401:
                 raise InvalidNebulyKeyError(
@@ -106,6 +107,7 @@ def post_json_data(url: str, json_data: str, api_key: str) -> Any:
                 e,
             )
             sleep(3)
+            tries += 1
         except Exception as e:  # pylint: disable=broad-except
             logger.exception(
                 "Error when publishing the interaction: %s, "
@@ -113,5 +115,6 @@ def post_json_data(url: str, json_data: str, api_key: str) -> Any:
                 e,
             )
             sleep(3)
+            tries += 1
 
-    return response_body
+    logger.error("Failed to publish the interaction, giving up.")
