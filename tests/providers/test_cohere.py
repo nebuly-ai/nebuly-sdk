@@ -152,7 +152,7 @@ def fixture_cohere_chat() -> Chat:
             "search_queries": [],
         },
         message="How are you?",
-        client=Mock(),
+        client=Mock(spec=cohere.Client),
     )
 
 

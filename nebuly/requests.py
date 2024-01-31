@@ -6,7 +6,6 @@ import os
 import urllib.request
 from time import sleep
 from typing import Any
-from unittest.mock import Mock
 
 from nebuly.entities import InteractionWatch
 from nebuly.exceptions import InvalidNebulyKeyError
@@ -43,7 +42,7 @@ class CustomJSONEncoder(json.JSONEncoder):
                 json.dumps(value.__dict__)
                 is_valid_class = True
         except TypeError:
-            is_valid_class = not isinstance(value, Mock) and any(
+            is_valid_class = any(
                 (hasattr(value, key) for key in CustomJSONEncoder.ACCEPTED_KEYS)
             )
         return has_correct_type or is_valid_class
