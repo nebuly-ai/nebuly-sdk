@@ -1,7 +1,8 @@
-from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Literal, TypeAlias, Union
+from typing import Any, Literal, Sequence, TypedDict, Union
+
+from typing_extensions import TypeAlias
 
 
 class VariantKind(str, Enum):
@@ -50,3 +51,9 @@ Variant: TypeAlias = Union[PromptVariant, ModelVariant, RagSourceVariant]
 @dataclass
 class Response:
     variants: Sequence[Variant]
+
+
+class Request(TypedDict):
+    user: str
+    project_id: str
+    feature_flags: Sequence[str]
