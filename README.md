@@ -172,3 +172,18 @@ index = VectorStoreIndex.from_documents(documents)
 query_engine = index.as_query_engine()
 response = query_engine.query("What did the author do growing up?")
 ```
+
+## Variants Usage
+
+```python
+from nebuly.ab_testing import ABTesting
+
+client = ABTesting("your_nebuly_api_key")
+
+variants = client.get_variants(
+  user="<user_id>",
+  project_id="<project_id>",
+  feature_flags=["feature_flag_a", "feature_flag_b"]
+)
+print(variants)
+```
