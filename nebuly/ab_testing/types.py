@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Literal, Sequence, TypedDict, Union
+from typing import Any, List, Literal, Sequence, TypedDict, Union
 
 from typing_extensions import TypeAlias
 
@@ -27,21 +27,21 @@ class ConfigParam:
 @dataclass
 class PromptVariant:
     prompt: str
-    config_params: Sequence[ConfigParam]
+    config_params: List[ConfigParam]
     kind: Literal[VariantKind.PROMPT] = VariantKind.PROMPT
 
 
 @dataclass
 class ModelVariant:
     model_id: str
-    config_params: Sequence[ConfigParam]
+    config_params: List[ConfigParam]
     kind: Literal[VariantKind.MODEL] = VariantKind.MODEL
 
 
 @dataclass
 class RagSourceVariant:
     rag_source: str
-    config_params: Sequence[ConfigParam]
+    config_params: List[ConfigParam]
     kind: Literal[VariantKind.RAG_SOURCE] = VariantKind.RAG_SOURCE
 
 
@@ -49,8 +49,14 @@ Variant: TypeAlias = Union[PromptVariant, ModelVariant, RagSourceVariant]
 
 
 @dataclass
+class LookupVariant:
+    feature_flag_name: str
+    variant: Variant
+
+
+@dataclass
 class Response:
-    variants: Sequence[Variant]
+    variants: List[LookupVariant]
 
 
 class Request(TypedDict):
