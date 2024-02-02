@@ -1,6 +1,6 @@
 import asyncio
 import json
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import Any, Optional, Sequence
 
 from nebuly.ab_testing.types import Request, Response
@@ -19,14 +19,6 @@ class ABTestingBase(ABC):
         self._api_key = api_key
         # TODO: set the actual production URL
         self._URL = "https://dev.backend.nebuly.com/api/external/variants"
-
-    @abstractmethod
-    def get_variants(
-        self, user: str, project_id: str, feature_flags: Sequence[str]
-    ) -> Response:
-        """
-        Get the variant for each feature flag for a given user
-        """
 
     @staticmethod
     def parse_raw_response(raw_response: Any) -> Response:
@@ -70,7 +62,7 @@ class AsyncABTesting(ABTestingBase):
     Asynchronous ABTesting class
     """
 
-    async def get_variants(  # type: ignore[override]
+    async def get_variants(
         self, user: str, project_id: str, feature_flags: Sequence[str]
     ) -> Response:
         """
