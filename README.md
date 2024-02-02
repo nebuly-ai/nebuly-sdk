@@ -69,16 +69,20 @@ import nebuly
 api_key = os.getenv("NEBULY_API_KEY")
 nebuly.init(api_key=api_key)
 
-import openai
+import os
+from openai import OpenAI
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
-completion = openai.ChatCompletion.create(
-    model="gpt-3.5-turbo",
+client = OpenAI()
+chat_completion = client.chat.completions.create(
     messages=[
-        {"role": "user", "content": "Hello world"}
+        {
+            "role": "user",
+            "content": "Say this is a test",
+        }
     ],
-    user_id="test_user",
-    user_group_profile="test_group",
+    model="gpt-3.5-turbo",
+    user_id="user-123",
+    feature_flag="new-feature_flag",
 )
 ```
 
