@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nebuly"
-version = "0.3.3"
+version = "0.3.4"
 description = "The SDK for instrumenting applications for tracking AI costs."
 authors = ["Nebuly"]
 readme = "README.md"
@@ -27,13 +27,15 @@ pytest-asyncio = "^0.21.1"
 google-cloud-aiplatform = ">=1.36.0"
 cohere = "^4.27"
 anthropic = "^0.3.11"
-langchain = { version = "^0.0.346" }
+langchain = { version = "^0.1.0" }
 google-generativeai = { version = "^0.2", python = ">=3.9,<4.0" }
 transformers = "^4.34.0"
 torch = "^1.13.1"
 boto3 = "^1.28.63"
 types-urllib3 = "^1.26.25.14"
 llama-index = "^0.9.14.post1"
+langchain-openai = "^0.0.5"
+langchain-community = "^0.0.17"
 
 [build-system]
 requires = ["poetry-core"]
