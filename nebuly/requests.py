@@ -118,3 +118,4 @@ def post_json_data(url: str, json_data: str, api_key: str) -> Any:
             tries += 1
 
     logger.error("Failed to publish the interaction, giving up.")
+    return None
