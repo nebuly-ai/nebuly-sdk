@@ -18,11 +18,10 @@ if sys.version_info < (3, 8, 1):
 
 from langchain.agents import AgentExecutor, OpenAIFunctionsAgent, tool
 from langchain.chains import LLMChain, SequentialChain
-from langchain.chat_models import ChatOpenAI
-from langchain.llms.openai import OpenAI
 from langchain.prompts import PromptTemplate
 from langchain.prompts.chat import ChatPromptTemplate
 from langchain.schema import StrOutputParser, SystemMessage
+from langchain_openai import ChatOpenAI, OpenAI
 from openai.types import Completion, CompletionChoice, CompletionUsage
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
