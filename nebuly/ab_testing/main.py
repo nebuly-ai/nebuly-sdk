@@ -30,12 +30,9 @@ class ABTestingBase(ABC):
         return reponse
 
     @staticmethod
-    def get_request_payload(
-        user: str, project_id: str, feature_flags: Sequence[str]
-    ) -> str:
+    def get_request_payload(user: str, feature_flags: Sequence[str]) -> str:
         request_data: Request = {
             "user": user,
-            "project_id": project_id,
             "feature_flags": feature_flags,
         }
         payload = json.dumps(request_data)
@@ -47,13 +44,11 @@ class ABTesting(ABTestingBase):
     Synchronous ABTesting class
     """
 
-    def get_variants(
-        self, user: str, project_id: str, feature_flags: Sequence[str]
-    ) -> Response:
+    def get_variants(self, user: str, feature_flags: Sequence[str]) -> Response:
         """
         Get the variant for each feature flag for a given user
         """
-        payload = self.get_request_payload(user, project_id, feature_flags)
+        payload = self.get_request_payload(user, feature_flags)
         raw_response = post_json_data(self._URL, payload, self._api_key)
         return self.parse_raw_response(raw_response)
 
@@ -63,13 +58,11 @@ class AsyncABTesting(ABTestingBase):
     Asynchronous ABTesting class
     """
 
-    async def get_variants(
-        self, user: str, project_id: str, feature_flags: Sequence[str]
-    ) -> Response:
+    async def get_variants(self, user: str, feature_flags: Sequence[str]) -> Response:
         """
         Get the variant for each feature flag for a given user
         """
-        payload = self.get_request_payload(user, project_id, feature_flags)
+        payload = self.get_request_payload(user, feature_flags)
         loop = asyncio.get_running_loop()
         raw_response = await loop.run_in_executor(
             None,

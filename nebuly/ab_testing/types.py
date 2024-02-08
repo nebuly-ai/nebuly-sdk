@@ -128,5 +128,4 @@ class Response:
 
 class Request(TypedDict):
     user: str
-    project_id: str
     feature_flags: Sequence[str]
