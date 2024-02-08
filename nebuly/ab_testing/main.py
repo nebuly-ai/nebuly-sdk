@@ -25,8 +25,9 @@ class ABTestingBase(ABC):
         """
         Parse the raw response into a Response object
         """
-        # TODO: parse raw_response into a Response object
-        raise NotImplementedError
+        json_response = json.loads(raw_response)
+        reponse = Response.from_dict(json_response)
+        return reponse
 
     @staticmethod
     def get_request_payload(

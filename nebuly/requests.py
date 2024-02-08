@@ -89,6 +89,7 @@ def post_json_data(url: str, json_data: str, api_key: str) -> Any:
         },
     )
 
+    # TODO: move retries out of this function
     tries = 0
     while tries < 3:
         try:
