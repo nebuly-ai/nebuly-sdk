@@ -130,6 +130,9 @@ def _parse_langchain_data(data: Any) -> str:
     if isinstance(data, dict):
         if len(data) == 1:
             return str(list(data.values())[0])
+        if "answer" in data:
+            # If the data is a retrieval chain, we want to return the answer
+            return str(data["answer"])
         return "\n".join([f"{key}: {value}" for key, value in data.items()])
     return str(data)
 
