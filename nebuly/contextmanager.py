@@ -28,6 +28,7 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
         spans: list[SpanWatch] | None = None,
         do_not_call_directly: bool = False,
         tags: dict[str, str] | None = None,
+        feature_flag: str | None = None,
     ) -> None:
         if not do_not_call_directly:
             raise InteractionContextInitiationError(
@@ -46,6 +47,7 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
         self.hierarchy = hierarchy
         self.time_start = datetime.now(timezone.utc)
         self.tags = tags
+        self.feature_flag = feature_flag
 
     def set_input(self, value: str) -> None:
         self.input = value
@@ -142,6 +144,7 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
             end_user=self.user,  # type: ignore
             end_user_group_profile=self.user_group_profile,
             tags=self.tags,
+            feature_flag=self.feature_flag,
         )
 
 
@@ -163,6 +166,7 @@ def new_interaction(
     user_group_profile: str | None = None,
     tags: dict[str, str] | None = None,
     auto_publish: bool = True,
+    feature_flag: str | None = None,
 ) -> Generator[InteractionContext, None, None]:
     try:
         get_nearest_open_interaction()
@@ -172,7 +176,11 @@ def new_interaction(
 
     try:
         yield InteractionContext(
-            user_id, user_group_profile, tags=tags, do_not_call_directly=True
+            user_id,
+            user_group_profile,
+            tags=tags,
+            feature_flag=feature_flag,
+            do_not_call_directly=True,
         )
     finally:
         if auto_publish:

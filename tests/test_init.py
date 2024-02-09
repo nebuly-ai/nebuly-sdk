@@ -5,8 +5,8 @@ import os
 import pytest
 
 from nebuly import init
+from nebuly.api_key import get_api_key
 from nebuly.exceptions import APIKeyNotProvidedError, NebulyAlreadyInitializedError
-from nebuly.init import _get_api_key
 
 
 def test_cannot_init_twice() -> None:
@@ -22,6 +22,6 @@ def test_get_api_key_not_provided() -> None:
 
 def test_api_key_from_env() -> None:
     os.environ["NEBULY_API_KEY"] = "fake_key"
-    key = _get_api_key()
+    key = get_api_key()
     assert key == "fake_key"
     del os.environ["NEBULY_API_KEY"]

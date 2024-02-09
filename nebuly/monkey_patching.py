@@ -264,6 +264,9 @@ def _add_span_to_interaction(  # pylint: disable=too-many-arguments
         interaction._add_tags(  # pylint: disable=protected-access
             nebuly_kwargs["nebuly_tags"]
         )
+    feature_flag: str | None = nebuly_kwargs.get("feature_flag")
+    if interaction.feature_flag is None and feature_flag is not None:
+        interaction.feature_flag = feature_flag
 
 
 def _add_interaction_span(  # pylint: disable=too-many-arguments, too-many-locals
