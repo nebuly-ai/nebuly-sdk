@@ -82,7 +82,7 @@ chat_completion = client.chat.completions.create(
     ],
     model="gpt-3.5-turbo",
     user_id="user-123",
-    feature_flag="new-feature_flag",
+    feature_flags=["new-feature_flag"],
 )
 ```
 

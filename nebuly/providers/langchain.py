@@ -286,12 +286,12 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
         api_key: str,
         user_id: str,
         user_group_profile: str | None = None,
-        feature_flag: str | None = None,
+        feature_flags: list[str] | None = None,
     ) -> None:
         self.api_key = api_key
         self.nebuly_user = user_id
         self.nebuly_user_group = user_group_profile
-        self.nebuly_feature_flag = feature_flag
+        self.nebuly_feature_flags = feature_flags
         self._events_storage = EventsStorage()
 
     def _send_interaction(self, run_id: uuid.UUID) -> None:
@@ -316,7 +316,7 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
                 else None
                 for event in self._events_storage.events.values()
             },
-            feature_flag=self.nebuly_feature_flag,
+            feature_flags=self.nebuly_feature_flags,
         )
         post_message(interaction, self.api_key)
 
