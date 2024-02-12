@@ -176,7 +176,7 @@ class LlamaIndexTrackingHandler(
         user_id: str,
         user_group_profile: str | None = None,
         tags: dict[str, str] | None = None,
-        feature_flag: str | None = None,
+        feature_flags: list[str] | None = None,
     ) -> None:
         super().__init__(event_starts_to_ignore=[], event_ends_to_ignore=[])
         self.api_key = api_key
@@ -189,7 +189,7 @@ class LlamaIndexTrackingHandler(
         self._waiting_stream_response = False
         self._trace_map: dict[str, list[str]] | None = None
         self._trace_id: str | None = None
-        self.nebuly_feature_flag = feature_flag
+        self.nebuly_feature_flags = feature_flags
 
     @staticmethod
     def _trace_map_to_hierarchy(
@@ -254,7 +254,7 @@ class LlamaIndexTrackingHandler(
             spans=spans,
             hierarchy=self._trace_map_to_hierarchy(trace_map=trace_map, run_id=root_id),
             tags=self.tags,
-            feature_flag=self.nebuly_feature_flag,
+            feature_flags=self.nebuly_feature_flags,
         )
         post_message(interaction, self.api_key)
 
