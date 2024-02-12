@@ -186,7 +186,6 @@ client = ABTesting("your_nebuly_api_key")
 
 variants = client.get_variants(
   user="<user_id>",
-  project_id="<project_id>",
   feature_flags=["feature_flag_a", "feature_flag_b"]
 )
 print(variants)
