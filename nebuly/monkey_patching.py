@@ -264,6 +264,10 @@ def _add_span_to_interaction(  # pylint: disable=too-many-arguments
         interaction._add_tags(  # pylint: disable=protected-access
             nebuly_kwargs["nebuly_tags"]
         )
+    if "feature_flags" in nebuly_kwargs:
+        interaction._add_feature_flags(  # pylint: disable=protected-access
+            nebuly_kwargs["feature_flags"]
+        )
     feature_flags: list[str] | None = nebuly_kwargs.get("feature_flag")
     if interaction.feature_flags is None and feature_flags is not None:
         interaction.feature_flags = feature_flags

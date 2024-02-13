@@ -109,6 +109,11 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
             self.tags = {}
         self.tags = {**self.tags, **tags}
 
+    def _add_feature_flags(self, flags: list[str]) -> None:
+        if self.feature_flags is None:
+            self.feature_flags = []
+        self.feature_flags.extend(flags)
+
     def _validate_interaction(self) -> None:
         if self.input is None:
             raise ValueError("Interaction has no input.")
