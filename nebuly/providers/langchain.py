@@ -133,8 +133,23 @@ def _parse_langchain_data(data: Any) -> str:
         if "answer" in data:
             # If the data is a retrieval chain, we want to return the answer
             return str(data["answer"])
+        if "input" in data:
+            # Needed when calling invoke with input and chat_history
+            return str(data["input"])
         return "\n".join([f"{key}: {value}" for key, value in data.items()])
     return str(data)
+
+
+def _parse_langchain_history(inputs: dict[str, Any]) -> list[HistoryEntry]:
+    if "chat_history" in inputs:
+        history = inputs["chat_history"]
+        return [
+            HistoryEntry(
+                user=str(history[i].content), assistant=str(history[i + 1].content)
+            )
+            for i in range(0, len(history), 2)
+        ]
+    return []
 
 
 class EventType(Enum):
@@ -237,7 +252,7 @@ class LangChainEvent(Event):
                     return _get_input_and_history_runnable_seq(chain, inputs).history
                 return _get_input_and_history(chain, inputs).history
             except NotImplementedError:
-                return []
+                return _parse_langchain_history(inputs)
 
         raise ValueError(f"Event type {self.data.type} not supported.")
 
