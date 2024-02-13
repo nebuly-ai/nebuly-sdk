@@ -72,7 +72,6 @@ def post_message(
         {"body": watched, "anonymize": anonymize}, cls=CustomJSONEncoder
     )
     url = os.environ.get(
-        # TODO: make this url configurable
         "NEBULY_API_URL",
         "https://backend.nebuly.com/event-ingestion/api/v1/events",
     )

@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 from abc import ABC
 from typing import Any, Optional, Sequence
 
@@ -17,8 +18,11 @@ class ABTestingBase(ABC):
         if api_key is None:
             api_key = get_api_key()
         self._api_key = api_key
-        # TODO: set the actual production URL
-        self._URL = "https://dev.backend.nebuly.com/api/external/variants"
+        url = os.environ.get(
+            "NEBULY_AB_TESTING_API_URL",
+            "https://backend.nebuly.com/api/external/variants",
+        )
+        self._URL = url
 
     @staticmethod
     def parse_raw_response(raw_response: Any) -> Response:
