@@ -133,7 +133,7 @@ class LLamaIndexEvent(Event):
                 file_name = source_nodes[0].metadata.get("file_name", None)
                 if file_name is not None:
                     return str(file_name)
-                rag_source: str | None = source_nodes[0].metadata.pop(
+                rag_source: str | None = source_nodes[0].metadata.get(
                     "nebuly_rag_source", source_nodes[0].node_id
                 )
                 return rag_source
@@ -170,12 +170,13 @@ class LLamaIndexEvent(Event):
 class LlamaIndexTrackingHandler(
     BaseCallbackHandler
 ):  # pylint: disable=too-many-instance-attributes
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         api_key: str,
         user_id: str,
         user_group_profile: str | None = None,
         tags: dict[str, str] | None = None,
+        feature_flags: list[str] | None = None,
     ) -> None:
         super().__init__(event_starts_to_ignore=[], event_ends_to_ignore=[])
         self.api_key = api_key
@@ -188,6 +189,7 @@ class LlamaIndexTrackingHandler(
         self._waiting_stream_response = False
         self._trace_map: dict[str, list[str]] | None = None
         self._trace_id: str | None = None
+        self.nebuly_feature_flags = feature_flags
 
     @staticmethod
     def _trace_map_to_hierarchy(
@@ -206,8 +208,22 @@ class LlamaIndexTrackingHandler(
             hierarchy[run_id] = None
         return hierarchy
 
+    def _get_event_history(
+        self, trace_id: str | None, event: Event, spans: list[SpanWatch]
+    ) -> list[HistoryEntry]:
+        if trace_id != "chat" or CBEventType(event.data.type) is CBEventType.LLM:
+            return event.history
+        # If the event is a chat event, and the event is not a LLM event, we need to
+        # find the first event containing the LLM response to get the history
+        for span in spans:
+            if span.function == "llm":
+                llm_event = self._events_storage.events[span.span_id]
+                return llm_event.history
+        return []
+
     def _send_interaction(
         self,
+        trace_id: str | None,
         root_id: uuid.UUID,
         trace_map: dict[str, list[str]] | None,
         final_stream_event_run_id: uuid.UUID | None = None,
@@ -226,6 +242,7 @@ class LlamaIndexTrackingHandler(
             output = response.message.content
         else:
             output = event.output
+        spans = _get_spans(events=self._events_storage.events, trace_map=trace_map)
         interaction = InteractionWatch(
             end_user=self.nebuly_user,
             end_user_group_profile=self.nebuly_user_group,
@@ -233,10 +250,11 @@ class LlamaIndexTrackingHandler(
             output=output,
             time_start=event.start_time,
             time_end=cast(datetime, event.end_time),
-            history=event.history,
-            spans=_get_spans(events=self._events_storage.events, trace_map=trace_map),
+            history=self._get_event_history(trace_id, event, spans),
+            spans=spans,
             hierarchy=self._trace_map_to_hierarchy(trace_map=trace_map, run_id=root_id),
             tags=self.tags,
+            feature_flags=self.nebuly_feature_flags,
         )
         post_message(interaction, self.api_key)
 
@@ -282,6 +300,7 @@ class LlamaIndexTrackingHandler(
                     self._trace_id = trace_id
                 else:
                     self._send_interaction(
+                        trace_id,
                         root_id,
                         trace_map=trace_map,
                         final_stream_event_run_id=final_stream_event_run_id,
@@ -354,7 +373,7 @@ class LlamaIndexTrackingHandler(
 
             if event_type is CBEventType.LLM and len(self._events_storage.events) == 1:
                 # Track single LLM calls outside of a trace
-                self._send_interaction(run_id, trace_map=None)
+                self._send_interaction(trace_id=None, root_id=run_id, trace_map=None)
                 self._events_storage.delete_events(run_id)
 
             if self._waiting_stream_response:

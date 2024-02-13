@@ -9,6 +9,7 @@ NEBULY_KWARGS = {
     "root_run_id",
     "nebuly_tags",
     "nebuly_interaction",
+    "feature_flags",
 }
 
 PACKAGES = (

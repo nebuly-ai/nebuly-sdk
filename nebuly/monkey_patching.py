@@ -264,6 +264,9 @@ def _add_span_to_interaction(  # pylint: disable=too-many-arguments
         interaction._add_tags(  # pylint: disable=protected-access
             nebuly_kwargs["nebuly_tags"]
         )
+    feature_flags: list[str] | None = nebuly_kwargs.get("feature_flag")
+    if interaction.feature_flags is None and feature_flags is not None:
+        interaction.feature_flags = feature_flags
 
 
 def _add_interaction_span(  # pylint: disable=too-many-arguments, too-many-locals
@@ -596,6 +599,7 @@ def coroutine_wrapper(
 ) -> Callable[[Any], Any]:
     @wraps(f)
     async def wrapper(*args: Any, **kwargs: Any) -> Any:
+        result = None
         try:
             logger.debug("Calling %s.%s", module, function_name)
 
@@ -664,6 +668,9 @@ def coroutine_wrapper(
             raise e
         except Exception as e:  # pylint: disable=broad-except
             logger.error("An error occurred when tracking the function: %s", e)
+            if result is not None:
+                # Original call was successful, just return the result
+                return result
             # call the original function
             _, function_kwargs = _split_nebuly_kwargs(args, kwargs)
             if isasyncgenfunction(f):
@@ -682,6 +689,7 @@ def function_wrapper(
 ) -> Callable[[Any], Any]:
     @wraps(f)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
+        result = None
         try:
             logger.debug("Calling %s.%s", module, function_name)
 
@@ -777,10 +785,11 @@ def function_wrapper(
             raise e
         except Exception as e:  # pylint: disable=broad-except
             logger.error("An error occurred when tracking the function: %s", e)
+            if result is not None:
+                # Original call was successful, just return the result
+                return result
             # call the original function
             _, function_kwargs = _split_nebuly_kwargs(args, kwargs)
-            # FIXME: This is performing the f call a second time wich could
-            # incur in client costs
             return f(*args, **function_kwargs)
 
     return wrapper

@@ -212,6 +212,9 @@ def test_chat(
         assert interaction_watch.input == "What language is on this website?"
         assert interaction_watch.output == "Italian"
         assert interaction_watch.end_user == "test_user"
+        assert interaction_watch.history == [
+            HistoryEntry(user="Hello", assistant="Hello, how are you?"),
+        ]
         assert len(interaction_watch.spans) == 2
         assert len(interaction_watch.hierarchy) == 2
         for span in interaction_watch.spans:
