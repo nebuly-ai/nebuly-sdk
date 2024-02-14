@@ -120,7 +120,7 @@ def _parse_output(output: str | dict[str, Any] | AIMessage) -> str:
     if isinstance(output, dict):
         if "answer" in output:
             return str(output["answer"])
-        elif "output" in output:
+        if "output" in output:
             return str(output["output"])
         return "\n".join([f"{key}: {value}" for key, value in output.items()])
     if isinstance(output, AIMessage):
