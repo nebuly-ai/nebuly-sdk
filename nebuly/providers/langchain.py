@@ -118,6 +118,10 @@ def _get_output_chain(chain: Chain, result: dict[str, Any]) -> str:
 
 def _parse_output(output: str | dict[str, Any] | AIMessage) -> str:
     if isinstance(output, dict):
+        if "answer" in output:
+            return str(output["answer"])
+        if "output" in output:
+            return str(output["output"])
         return "\n".join([f"{key}: {value}" for key, value in output.items()])
     if isinstance(output, AIMessage):
         return str(output.content)
