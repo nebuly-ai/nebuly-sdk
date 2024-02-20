@@ -8,7 +8,7 @@ from copy import deepcopy
 from typing import Any, Callable, List, Tuple, cast
 
 import openai
-from openai import AsyncOpenAI, OpenAI, _ModuleClient
+from openai import AsyncAzureOpenAI, AsyncOpenAI, AzureOpenAI, OpenAI, _ModuleClient
 from openai._response import APIResponse
 from openai.pagination import SyncCursorPage
 from openai.types.beta.threads import ThreadMessage  # type: ignore  # noqa: E501
@@ -36,6 +36,14 @@ class OpenAIPicklerHandler(PicklerHandler):
     def _object_key_attribute_mapping(
         self,
     ) -> dict[Callable[[Any], Any], dict[str, list[str]]]:
+        openai_mapping = self._object_key_attribute_mapping_openai
+        azure_mapping = self._object_key_attribute_mapping_azure
+        return {**openai_mapping, **azure_mapping}
+
+    @property
+    def _object_key_attribute_mapping_openai(
+        self,
+    ) -> dict[Callable[[Any], Any], dict[str, list[str]]]:
         names = ["api_key", "organization"]
         return {
             key: {
@@ -45,10 +53,24 @@ class OpenAIPicklerHandler(PicklerHandler):
             for key in [OpenAI, AsyncOpenAI, _ModuleClient]
         }
 
+    @property
+    def _object_key_attribute_mapping_azure(
+        self,
+    ) -> dict[Callable[[Any], Any], dict[str, list[str]]]:
+        attribute_names = ["api_key", "organization", "base_url", "_api_version"]
+        key_names = ["api_key", "organization", "base_url", "api_version"]
+        return {
+            key: {
+                "key_names": key_names,
+                "attribute_names": attribute_names,
+            }
+            for key in [AzureOpenAI, AsyncAzureOpenAI]
+        }
+
 
 def handle_openai_unpickable_objects() -> None:
     pickler_handler = OpenAIPicklerHandler()
-    for obj in [OpenAI, AsyncOpenAI, _ModuleClient]:
+    for obj in [AzureOpenAI, AsyncAzureOpenAI, OpenAI, AsyncOpenAI, _ModuleClient]:
         pickler_handler.handle_unpickable_object(
             obj=obj,
         )
