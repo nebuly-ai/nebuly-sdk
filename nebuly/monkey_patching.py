@@ -789,6 +789,7 @@ def function_wrapper(
             raise e
         except Exception as e:  # pylint: disable=broad-except
             logger.error("An error occurred when tracking the function: %s", e)
+            raise e
             if result is not None:
                 # Original call was successful, just return the result
                 return result
