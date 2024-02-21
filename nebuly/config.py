@@ -10,6 +10,7 @@ NEBULY_KWARGS = {
     "nebuly_tags",
     "nebuly_interaction",
     "feature_flags",
+    "nebuly_api_key",
 }
 
 PACKAGES = (

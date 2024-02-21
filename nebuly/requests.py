@@ -75,6 +75,8 @@ def post_message(
         "NEBULY_API_URL",
         "https://backend.nebuly.com/event-ingestion/api/v1/events",
     )
+    if watched.api_key:
+        api_key = watched.api_key
     post_json_data(url, message, api_key)
 
 
