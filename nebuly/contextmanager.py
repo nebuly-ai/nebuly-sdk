@@ -29,6 +29,7 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
         do_not_call_directly: bool = False,
         tags: dict[str, str] | None = None,
         feature_flags: list[str] | None = None,
+        nebuly_api_key: str | None = None,
     ) -> None:
         if not do_not_call_directly:
             raise InteractionContextInitiationError(
@@ -48,6 +49,7 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
         self.time_start = datetime.now(timezone.utc)
         self.tags = tags
         self.feature_flags = feature_flags
+        self.nebuly_api_key = nebuly_api_key
 
     def set_input(self, value: str) -> None:
         self.input = value
@@ -114,6 +116,9 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
             self.feature_flags = []
         self.feature_flags.extend(flags)
 
+    def _set_api_key(self, api_key: str) -> None:
+        self.nebuly_api_key = api_key
+
     def _validate_interaction(self) -> None:
         if self.input is None:
             raise ValueError("Interaction has no input.")
@@ -150,6 +155,7 @@ class InteractionContext:  # pylint: disable=too-many-instance-attributes
             end_user_group_profile=self.user_group_profile,
             tags=self.tags,
             feature_flags=self.feature_flags,
+            api_key=self.nebuly_api_key,
         )
 
 
