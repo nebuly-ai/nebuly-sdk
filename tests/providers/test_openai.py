@@ -545,6 +545,10 @@ def test_openai_chat__no_context_manager(
                 ],
                 user_id="test_user",
                 user_group_profile="test_group",
+                nebuly_tags={
+                    "tenant": "ciao",
+                },
+                feature_flags=["flag1"],
             )
             assert result is not None
             assert mock_observer.call_count == 1
@@ -557,6 +561,8 @@ def test_openai_chat__no_context_manager(
             ]
             assert interaction_watch.end_user == "test_user"
             assert interaction_watch.end_user_group_profile == "test_group"
+            assert interaction_watch.tags == {"tenant": "ciao"}
+            assert interaction_watch.feature_flags == ["flag1"]
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
@@ -579,7 +585,10 @@ def test_openai_chat__context_manager(openai_chat_completion: ChatCompletion) ->
             )
 
             with new_interaction(
-                user_id="test_user", user_group_profile="test_group"
+                user_id="test_user",
+                user_group_profile="test_group",
+                tags={"tenant": "ciao"},
+                feature_flags=["flag1"],
             ) as interaction:
                 interaction.set_input("Say this is a test")
                 result = client.chat.completions.create(
@@ -599,6 +608,8 @@ def test_openai_chat__context_manager(openai_chat_completion: ChatCompletion) ->
             assert interaction_watch.output == "\n\nThis is a test."
             assert interaction_watch.end_user == "test_user"
             assert interaction_watch.end_user_group_profile == "test_group"
+            assert interaction_watch.tags == {"tenant": "ciao"}
+            assert interaction_watch.feature_flags == ["flag1"]
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)

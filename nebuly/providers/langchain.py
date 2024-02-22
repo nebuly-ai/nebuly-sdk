@@ -300,7 +300,7 @@ class LangChainEvent(Event):
 
 
 class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         api_key: str,
         user_id: str,

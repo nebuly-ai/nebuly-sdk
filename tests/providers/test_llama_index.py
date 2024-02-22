@@ -29,7 +29,10 @@ from nebuly.requests import CustomJSONEncoder
 
 os.environ["OPENAI_API_KEY"] = "test_key"
 llama_index.global_handler = LlamaIndexTrackingHandler(
-    api_key="nb-748b415156ef9cfa46c2e371fff27a6a0c42d6b4a3f1ff9d", user_id="test_user"
+    api_key="nb-748b415156ef9cfa46c2e371fff27a6a0c42d6b4a3f1ff9d",
+    user_id="test_user",
+    nebuly_tags={"tenant": "ciao"},
+    feature_flags=["test"],
 )
 
 
@@ -115,6 +118,8 @@ def test_llm_chat(openai_chat_completion: ChatCompletion) -> None:
             HistoryEntry(user="Hello", assistant="Hello, how are you?"),
         ]
         assert interaction_watch.end_user == "test_user"
+        assert interaction_watch.tags == {"tenant": "ciao"}
+        assert interaction_watch.feature_flags == ["test"]
         assert len(interaction_watch.spans) == 1
         assert len(interaction_watch.hierarchy) == 1
         for span in interaction_watch.spans:

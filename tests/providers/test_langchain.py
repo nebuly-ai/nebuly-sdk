@@ -422,6 +422,8 @@ def test_langchain_llm_chain__lcel__callback_on_model(
         callback = LangChainTrackingHandler(
             api_key="test_key",
             user_id="test_user",
+            nebuly_tags={"tenant": "ciao"},
+            feature_flags=["flag1"],
         )
         prompt = PromptTemplate.from_template(
             "What is a good name for a company that makes {product}?"
@@ -439,6 +441,8 @@ def test_langchain_llm_chain__lcel__callback_on_model(
         )
         assert interaction_watch.output == "Sample langchain response"
         assert interaction_watch.end_user == "test_user"
+        assert interaction_watch.tags == {"tenant": "ciao"}
+        assert interaction_watch.feature_flags == ["flag1"]
         assert len(interaction_watch.spans) == 1
         assert len(interaction_watch.hierarchy) == 1
         for span in interaction_watch.spans:
