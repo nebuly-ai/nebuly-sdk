@@ -651,7 +651,7 @@ def test_openai_chat__context_manager(openai_chat_completion: ChatCompletion) ->
             with new_interaction(
                 user_id="test_user",
                 user_group_profile="test_group",
-                tags={"tenant": "ciao"},
+                nebuly_tags={"tenant": "ciao"},
                 feature_flags=["flag1"],
             ) as interaction:
                 interaction.set_input("Say this is a test")

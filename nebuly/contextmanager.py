@@ -175,7 +175,7 @@ def get_nearest_open_interaction() -> InteractionContext:
 def new_interaction(
     user_id: str | None = None,
     user_group_profile: str | None = None,
-    tags: dict[str, str] | None = None,
+    nebuly_tags: dict[str, str] | None = None,
     auto_publish: bool = True,
     feature_flags: list[str] | None = None,
 ) -> Generator[InteractionContext, None, None]:
@@ -189,7 +189,7 @@ def new_interaction(
         yield InteractionContext(
             user_id,
             user_group_profile,
-            tags=tags,
+            tags=nebuly_tags,
             feature_flags=feature_flags,
             do_not_call_directly=True,
         )
