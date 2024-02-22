@@ -28,7 +28,7 @@ class AnthropicPicklerHandler(PicklerHandler):
             "default_headers",
         ]
         return {
-            key: {  # type: ignore
+            key: {
                 "key_names": names,
                 "attribute_names": names,
             }
@@ -40,7 +40,7 @@ def handle_anthropic_unpickable_objects() -> None:
     pickler_handler = AnthropicPicklerHandler()
     for obj in [Anthropic, AsyncAnthropic]:
         pickler_handler.handle_unpickable_object(
-            obj=obj,  # type: ignore
+            obj=obj,
         )
 
 

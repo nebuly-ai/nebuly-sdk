@@ -19,9 +19,11 @@ from tests.providers.common import nebuly_init
 @pytest.fixture(name="anthropic_completion")
 def fixture_anthropic_completion() -> Completion:
     return Completion(
+        id="123",
         completion=" Hello! My name is Claude.",
         stop_reason="stop_sequence",
         model="claude-2",
+        type="completion",
     )
 
 
@@ -154,14 +156,18 @@ async def test_anthropic_completion__async(anthropic_completion: Completion) -> 
 def fixture_anthropic_completion_gen() -> list[Completion]:
     return [
         Completion(
+            id="123",
             completion=" Hello",
             stop_reason="stop_sequence",
             model="claude-2",
+            type="completion",
         ),
         Completion(
+            id="123",
             completion="!",
             stop_reason="stop_sequence",
             model="claude-2",
+            type="completion",
         ),
     ]
 
@@ -210,14 +216,18 @@ def test_anthropic_completion_gen(anthropic_completion_gen: list[Completion]) ->
 async def fixture_anthropic_completion_gen_async() -> AsyncGenerator[Completion, None]:
     chunks = [
         Completion(
+            id="123",
             completion=" Hello",
             stop_reason="stop_sequence",
             model="claude-2",
+            type="completion",
         ),
         Completion(
+            id="123",
             completion="!",
             stop_reason="stop_sequence",
             model="claude-2",
+            type="completion",
         ),
     ]
 
