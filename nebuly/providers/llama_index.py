@@ -175,14 +175,14 @@ class LlamaIndexTrackingHandler(
         api_key: str,
         user_id: str,
         user_group_profile: str | None = None,
-        tags: dict[str, str] | None = None,
+        nebuly_tags: dict[str, str] | None = None,
         feature_flags: list[str] | None = None,
     ) -> None:
         super().__init__(event_starts_to_ignore=[], event_ends_to_ignore=[])
         self.api_key = api_key
         self.nebuly_user = user_id
         self.nebuly_user_group = user_group_profile
-        self.tags = tags
+        self.tags = nebuly_tags
         self._events_storage = EventsStorage()
 
         # Attributes needed for handling streaming responses
