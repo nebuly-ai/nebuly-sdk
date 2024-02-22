@@ -16,7 +16,7 @@ if version("openai").startswith("0."):
     )
 
 import openai
-from openai import AsyncOpenAI, OpenAI
+from openai import AsyncAzureOpenAI, AsyncOpenAI, AzureOpenAI, OpenAI
 from openai.types import Completion, CompletionChoice, CompletionUsage
 from openai.types.chat import (
     ChatCompletion,
@@ -545,6 +545,10 @@ def test_openai_chat__no_context_manager(
                 ],
                 user_id="test_user",
                 user_group_profile="test_group",
+                nebuly_tags={
+                    "tenant": "ciao",
+                },
+                feature_flags=["flag1"],
             )
             assert result is not None
             assert mock_observer.call_count == 1
@@ -557,6 +561,72 @@ def test_openai_chat__no_context_manager(
             ]
             assert interaction_watch.end_user == "test_user"
             assert interaction_watch.end_user_group_profile == "test_group"
+            assert interaction_watch.tags == {"tenant": "ciao"}
+            assert interaction_watch.feature_flags == ["flag1"]
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+def test_azure_openai_chat__no_context_manager(
+    openai_chat_completion: ChatCompletion,
+) -> None:
+    with patch(
+        "openai.resources.chat.completions.Completions.create"
+    ) as mock_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_create.return_value = openai_chat_completion
+            nebuly_init(observer=mock_observer)
+
+            client = AzureOpenAI(
+                api_version="2023-07-01-preview",
+                azure_endpoint="https://testaisweden.openai.azure.com/",
+                api_key="123456",
+            )
+            result = client.chat.completions.create(  # type: ignore
+                model="gpt-3.5-turbo",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "Say this is a test",
+                    },
+                    {
+                        "role": "user",
+                        "content": "Say this is a test",
+                    },
+                    {
+                        "role": "assistant",
+                        "content": "This is a test",
+                    },
+                    {
+                        "role": "user",
+                        "content": "Say again this is a test",
+                    },
+                ],
+                user_id="test_user",
+                user_group_profile="test_group",
+                nebuly_tags={
+                    "tenant": "ciao",
+                },
+                feature_flags=["flag1"],
+            )
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "Say again this is a test"
+            assert interaction_watch.output == "\n\nThis is a test."
+            assert interaction_watch.history == [
+                HistoryEntry(user="Say this is a test", assistant="This is a test")
+            ]
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_group"
+            assert interaction_watch.tags == {"tenant": "ciao"}
+            assert interaction_watch.feature_flags == ["flag1"]
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
@@ -579,7 +649,10 @@ def test_openai_chat__context_manager(openai_chat_completion: ChatCompletion) ->
             )
 
             with new_interaction(
-                user_id="test_user", user_group_profile="test_group"
+                user_id="test_user",
+                user_group_profile="test_group",
+                nebuly_tags={"tenant": "ciao"},
+                feature_flags=["flag1"],
             ) as interaction:
                 interaction.set_input("Say this is a test")
                 result = client.chat.completions.create(
@@ -599,6 +672,8 @@ def test_openai_chat__context_manager(openai_chat_completion: ChatCompletion) ->
             assert interaction_watch.output == "\n\nThis is a test."
             assert interaction_watch.end_user == "test_user"
             assert interaction_watch.end_user_group_profile == "test_group"
+            assert interaction_watch.tags == {"tenant": "ciao"}
+            assert interaction_watch.feature_flags == ["flag1"]
             assert len(interaction_watch.spans) == 1
             span = interaction_watch.spans[0]
             assert isinstance(span, SpanWatch)
@@ -619,6 +694,48 @@ async def test_openai_chat__async(openai_chat_completion: ChatCompletion) -> Non
 
             client = AsyncOpenAI(
                 api_key="ciao",
+            )
+            result = await client.chat.completions.create(  # type: ignore
+                model="gpt-3.5-turbo",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": "Say this is a test",
+                    }
+                ],
+                user_id="test_user",
+                user_group_profile="test_group",
+            )
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "Say this is a test"
+            assert interaction_watch.output == "\n\nThis is a test."
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_group"
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+@pytest.mark.asyncio
+async def test_azure_openai_chat__async(openai_chat_completion: ChatCompletion) -> None:
+    with patch(
+        "openai.resources.chat.completions.AsyncCompletions.create", new=AsyncMock()
+    ) as mock_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_create.return_value = openai_chat_completion
+            nebuly_init(observer=mock_observer)
+
+            client = AsyncAzureOpenAI(
+                api_version="2023-07-01-preview",
+                azure_endpoint="https://testaisweden.openai.azure.com/",
+                api_key="123456",
             )
             result = await client.chat.completions.create(  # type: ignore
                 model="gpt-3.5-turbo",

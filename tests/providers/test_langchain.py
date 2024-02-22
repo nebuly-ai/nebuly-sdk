@@ -73,8 +73,8 @@ def test_langchain_llm_chain__callback_on_model(
         )
 
         chain = LLMChain(llm=llm, prompt=prompt)
-        result = chain.run(
-            product="colorful socks",
+        result = chain.invoke(
+            {"product": "colorful socks"},
         )
 
         assert result is not None
@@ -120,7 +120,10 @@ def test_langchain_llm_chain__callback_on_chain(
         )
 
         chain = LLMChain(llm=llm, prompt=prompt)
-        result = chain.run(product="colorful socks", callbacks=[callback])
+        result = chain.invoke(
+            {"product": "colorful socks"},
+            {"callbacks": [callback]},
+        )
 
         assert result is not None
         assert mock_send_interaction.call_count == 1
@@ -188,9 +191,8 @@ def test_langchain_chat_chain__callback_on_model(openai_chat: dict[str, Any]) ->
             ]
         )
         chain = LLMChain(llm=llm, prompt=chat_prompt)
-        result = chain.run(
-            prompt=chat_prompt,
-            name="Valerio",
+        result = chain.invoke(
+            {"name": "Valerio"},
         )
 
         assert result is not None
@@ -277,8 +279,8 @@ def test_langchain__chain_with_function_tool(
         prompt = OpenAIFunctionsAgent.create_prompt(system_message=system_message)
         agent = OpenAIFunctionsAgent(llm=llm, tools=tools, prompt=prompt)  # type: ignore
         agent_executor = AgentExecutor(agent=agent, tools=tools)  # type: ignore
-        agent_executor.run(
-            input="how many letters in the word educa?", callbacks=[callback]
+        agent_executor.invoke(
+            {"input": "how many letters in the word educa?"}, {"callbacks": [callback]}
         )
 
         assert mock_send_interaction.call_count == 1
@@ -344,7 +346,9 @@ def test_langchain_sequential_chain_single_input_var(
             output_variables=["synopsis", "review"],
         )
 
-        overall_chain("Tragedy at sunset on the beach", callbacks=[callback])
+        overall_chain.invoke(
+            {"title": "Tragedy at sunset on the beach"}, {"callbacks": [callback]}
+        )
 
         assert mock_send_interaction.call_count == 1
         interaction_watch = mock_send_interaction.call_args[0][0]
@@ -396,9 +400,9 @@ def test_langchain_sequential_chain_multiple_input_vars(
             output_variables=["synopsis", "review"],
         )
 
-        overall_chain(
+        overall_chain.invoke(
             {"title": "Tragedy at sunset on the beach", "era": "Victorian England"},
-            callbacks=[callback],
+            {"callbacks": [callback]},
         )
 
         assert mock_send_interaction.call_count == 1
@@ -422,6 +426,8 @@ def test_langchain_llm_chain__lcel__callback_on_model(
         callback = LangChainTrackingHandler(
             api_key="test_key",
             user_id="test_user",
+            nebuly_tags={"tenant": "ciao"},
+            feature_flags=["flag1"],
         )
         prompt = PromptTemplate.from_template(
             "What is a good name for a company that makes {product}?"
@@ -439,6 +445,8 @@ def test_langchain_llm_chain__lcel__callback_on_model(
         )
         assert interaction_watch.output == "Sample langchain response"
         assert interaction_watch.end_user == "test_user"
+        assert interaction_watch.tags == {"tenant": "ciao"}
+        assert interaction_watch.feature_flags == ["flag1"]
         assert len(interaction_watch.spans) == 1
         assert len(interaction_watch.hierarchy) == 1
         for span in interaction_watch.spans:

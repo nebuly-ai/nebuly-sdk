@@ -8,22 +8,25 @@ from typing import Any, Dict, Tuple, cast
 from uuid import UUID
 
 import llama_index
-from llama_index.callbacks import CBEventType, EventPayload
-from llama_index.callbacks.base_handler import BaseCallbackHandler
-from llama_index.chat_engine.types import AgentChatResponse, StreamingAgentChatResponse
-from llama_index.llms.types import (
+from llama_index.core.base.llms.types import (
     ChatMessage,
     ChatResponse,
     CompletionResponse,
     MessageRole,
 )
-from llama_index.response.schema import Response, StreamingResponse
+from llama_index.core.base.response.schema import Response, StreamingResponse
+from llama_index.core.callbacks import CBEventType, EventPayload
+from llama_index.core.callbacks.base_handler import BaseCallbackHandler
+from llama_index.core.chat_engine.types import (
+    AgentChatResponse,
+    StreamingAgentChatResponse,
+)
 
 from nebuly.entities import HistoryEntry, InteractionWatch, SpanWatch
 from nebuly.events import Event, EventData, EventsStorage
 from nebuly.requests import post_message
 
-orig_download_loader = llama_index.download_loader
+orig_download_loader = llama_index.core.readers.download_loader
 
 
 def download_loader_patched(*args: Any, **kwargs: Any) -> Any:
@@ -36,12 +39,12 @@ def download_loader_patched(*args: Any, **kwargs: Any) -> Any:
             r.metadata["nebuly_rag_source"] = self.__class__.__name__
         return res
 
-    res.load_data = load_data  # type: ignore[method-assign]
+    res.load_data = load_data
     return res
 
 
 # Patch download_loader to add the source of the RAG node in the metadata
-llama_index.download_loader = download_loader_patched
+llama_index.core.readers.download_loader = download_loader_patched
 
 
 def _get_spans(
@@ -175,14 +178,14 @@ class LlamaIndexTrackingHandler(
         api_key: str,
         user_id: str,
         user_group_profile: str | None = None,
-        tags: dict[str, str] | None = None,
+        nebuly_tags: dict[str, str] | None = None,
         feature_flags: list[str] | None = None,
     ) -> None:
         super().__init__(event_starts_to_ignore=[], event_ends_to_ignore=[])
         self.api_key = api_key
         self.nebuly_user = user_id
         self.nebuly_user_group = user_group_profile
-        self.tags = tags
+        self.tags = nebuly_tags
         self._events_storage = EventsStorage()
 
         # Attributes needed for handling streaming responses

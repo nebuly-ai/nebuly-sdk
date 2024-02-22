@@ -7,19 +7,19 @@ import json
 import os
 from unittest.mock import Mock, patch
 
+import llama_index.core
+import pytest
 import numpy as np
 
 from nebuly.providers.llama_index import LlamaIndexTrackingHandler
 
-import llama_index
-import pytest
-from llama_index import (
-    download_loader,
+from llama_index.core.indices import load_index_from_storage
+from llama_index.core.readers import download_loader
+from llama_index.core.storage import (
     StorageContext,
-    load_index_from_storage,
 )
-from llama_index.llms import OpenAI
-from llama_index.llms.types import ChatMessage, MessageRole
+from llama_index.core.base.llms.types import ChatMessage, MessageRole
+from llama_index.llms.openai import OpenAI  # type: ignore
 from openai.types import CompletionUsage
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
@@ -28,8 +28,11 @@ from nebuly.entities import InteractionWatch, SpanWatch, HistoryEntry
 from nebuly.requests import CustomJSONEncoder
 
 os.environ["OPENAI_API_KEY"] = "test_key"
-llama_index.global_handler = LlamaIndexTrackingHandler(
-    api_key="nb-748b415156ef9cfa46c2e371fff27a6a0c42d6b4a3f1ff9d", user_id="test_user"
+llama_index.core.global_handler = LlamaIndexTrackingHandler(
+    api_key="nb-748b415156ef9cfa46c2e371fff27a6a0c42d6b4a3f1ff9d",
+    user_id="test_user",
+    nebuly_tags={"tenant": "ciao"},
+    feature_flags=["test"],
 )
 
 
@@ -115,6 +118,8 @@ def test_llm_chat(openai_chat_completion: ChatCompletion) -> None:
             HistoryEntry(user="Hello", assistant="Hello, how are you?"),
         ]
         assert interaction_watch.end_user == "test_user"
+        assert interaction_watch.tags == {"tenant": "ciao"}
+        assert interaction_watch.feature_flags == ["test"]
         assert len(interaction_watch.spans) == 1
         assert len(interaction_watch.hierarchy) == 1
         for span in interaction_watch.spans:
