@@ -25,7 +25,6 @@ from openai.types.completion_choice import (  # type: ignore  # noqa: E501
 )
 
 from nebuly.entities import HistoryEntry, ModelInput
-from nebuly.exceptions import ModelNotSupportedError
 from nebuly.providers.base import PicklerHandler, ProviderDataExtractor
 
 logger = logging.getLogger(__name__)
@@ -110,21 +109,37 @@ class OpenAIDataExtractor(ProviderDataExtractor):
         # Convert the history to [(user, assistant), ...] format
         history = [
             HistoryEntry(
-                user=history[i]["content"], assistant=history[i + 1]["content"]
+                user=self._extract_content(history[i]["content"]),
+                assistant=history[i + 1]["content"],
             )
             for i in range(0, len(history), 2)
             if i < len(history) - 1
         ]
         return history
 
+    @staticmethod
+    def _extract_content(content: str | list[dict[str, str | dict[str, str]]]) -> str:
+        if isinstance(content, str):
+            return content
+        if isinstance(content, list):
+            new_content = ""
+            for item in content:
+                if item.get("type") == "text":
+                    new_content += f"{item['text']}\n"
+                elif item.get("type") == "image_url":
+                    if isinstance(item["image_url"], str):
+                        new_content += f"image url: {item['image_url']}\n"
+                    else:
+                        if "url" in item["image_url"]:
+                            new_content += f"image url: {item['image_url']['url']}\n"
+                        else:
+                            new_content += f"image url: {item['image_url']}\n"
+                else:
+                    new_content += f"{item}\n"
+            return new_content
+        return json.dumps(content)
+
     def extract_input_and_history(self, outputs: Any) -> ModelInput:
-        if self.original_kwargs.get("model") in [
-            "gpt-4-vision-preview",
-            "gpt-4-1106-vision-preview",
-        ]:
-            raise ModelNotSupportedError(
-                f"Model {self.original_kwargs.get('model')} is not supported"
-            )
         if self.function_name in [
             "resources.completions.Completions.create",
             "resources.completions.AsyncCompletions.create",
@@ -134,7 +149,9 @@ class OpenAIDataExtractor(ProviderDataExtractor):
             "resources.chat.completions.Completions.create",
             "resources.chat.completions.AsyncCompletions.create",
         ]:
-            prompt = self.original_kwargs.get("messages", [])[-1]["content"]
+            prompt = self._extract_content(
+                self.original_kwargs.get("messages", [])[-1]["content"]
+            )
             history = self._extract_history()
             return ModelInput(prompt=prompt, history=history)
         if self.function_name in [
