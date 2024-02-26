@@ -127,7 +127,10 @@ class OpenAIDataExtractor(ProviderDataExtractor):
             new_content = ""
             for item in content:
                 if item.get("type") == "text":
-                    new_content += f"{item['text']}"
+                    if len(new_content) > 0:
+                        # Add a newline between each text item
+                        new_content += "\n"
+                    new_content += item["text"]
             return new_content
         return json.dumps(content)
 
