@@ -27,6 +27,17 @@ from openai.types.completion_choice import (  # type: ignore  # noqa: E501
 from nebuly.entities import HistoryEntry, ModelInput
 from nebuly.providers.base import PicklerHandler, ProviderDataExtractor
 
+try:
+    # This import is valid only starting from openai==1.8.0
+    from openai._legacy_response import (  # pylint: disable=ungrouped-imports  # type: ignore  # noqa: E501
+        LegacyAPIResponse,
+    )
+except ImportError:
+
+    class LegacyAPIResponse:
+        pass
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -230,7 +241,7 @@ class OpenAIDataExtractor(ProviderDataExtractor):
                     ).message.function_call.arguments,
                 }
             )
-        if isinstance(outputs, APIResponse):
+        if isinstance(outputs, (APIResponse, LegacyAPIResponse)):
             payload_dict = json.loads(outputs.content.decode("utf-8"))
             if payload_dict.get("object") == "chat.completion":
                 payload = ChatCompletion(**payload_dict)
