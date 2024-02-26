@@ -1262,6 +1262,13 @@ def fixture_openai_chat_completion_stream() -> list[ChatCompletionChunk]:
     return [
         ChatCompletionChunk(
             id="chatcmpl-86HPTGAKCDFXJwEM68ekpoBumMh4H",
+            choices=[],
+            created=1696507583,
+            model="gpt-3.5-turbo-0613",
+            object="chat.completion.chunk",
+        ),
+        ChatCompletionChunk(
+            id="chatcmpl-86HPTGAKCDFXJwEM68ekpoBumMh4H",
             choices=[
                 chat_completion_chunk.Choice(
                     delta=chat_completion_chunk.ChoiceDelta(
