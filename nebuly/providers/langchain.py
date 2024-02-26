@@ -137,6 +137,9 @@ def _parse_langchain_data(data: Any) -> str:
         if "answer" in data:
             # If the data is a retrieval chain, we want to return the answer
             return str(data["answer"])
+        if "output" in data:
+            # If the data is a retrieval chain, we want to return the output
+            return str(data["output"])
         if "input" in data:
             # Needed when calling invoke with input and chat_history
             return str(data["input"])
