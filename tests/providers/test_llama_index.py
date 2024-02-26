@@ -28,7 +28,7 @@ from nebuly.entities import InteractionWatch, SpanWatch, HistoryEntry
 from nebuly.requests import CustomJSONEncoder
 
 os.environ["OPENAI_API_KEY"] = "test_key"
-llama_index.core.global_handler = LlamaIndexTrackingHandler(
+llama_index.core.global_handler = LlamaIndexTrackingHandler(  # type: ignore
     api_key="nb-748b415156ef9cfa46c2e371fff27a6a0c42d6b4a3f1ff9d",
     user_id="test_user",
     nebuly_tags={"tenant": "ciao"},
