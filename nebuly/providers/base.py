@@ -25,6 +25,9 @@ class ProviderDataExtractor(abc.ABC):
     def extract_output(self, stream: bool, outputs: Any) -> str | list[str]:
         raise NotImplementedError("extract_output not implemented")
 
+    def extract_media(self) -> list[str] | None:
+        return None
+
 
 class PicklerHandler(abc.ABC):
     @property

@@ -69,6 +69,7 @@ class SpanWatch:  # pylint: disable=too-many-instance-attributes
     generator_first_element_timestamp: datetime | None
     provider_extras: dict[str, Any] | None = None
     rag_source: str | None = None
+    media: list[str] | None = None
     span_id: uuid.UUID = field(default_factory=uuid.uuid4)
 
     @staticmethod
@@ -108,6 +109,7 @@ class SpanWatch:  # pylint: disable=too-many-instance-attributes
             else None,
             "rag_source": self.rag_source,
             "span_id": str(self.span_id),
+            "media": self.media,
         }
 
 

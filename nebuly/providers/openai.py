@@ -120,22 +120,14 @@ class OpenAIDataExtractor(ProviderDataExtractor):
     @staticmethod
     def _extract_content(content: str | list[dict[str, str | dict[str, str]]]) -> str:
         if isinstance(content, str):
+            # Standard case
             return content
         if isinstance(content, list):
+            # Vision models case
             new_content = ""
             for item in content:
                 if item.get("type") == "text":
-                    new_content += f"{item['text']}\n"
-                elif item.get("type") == "image_url":
-                    if isinstance(item["image_url"], str):
-                        new_content += f"image url: {item['image_url']}\n"
-                    else:
-                        if "url" in item["image_url"]:
-                            new_content += f"image url: {item['image_url']['url']}\n"
-                        else:
-                            new_content += f"image url: {item['image_url']}\n"
-                else:
-                    new_content += f"{item}\n"
+                    new_content += f"{item['text']}"
             return new_content
         return json.dumps(content)
 
@@ -180,6 +172,26 @@ class OpenAIDataExtractor(ProviderDataExtractor):
             )
 
         raise ValueError(f"Unknown function name: {self.function_name}")
+
+    def extract_media(self) -> list[str] | None:
+        if self.function_name in [  # pylint: disable=too-many-nested-blocks
+            "resources.chat.completions.Completions.create",
+            "resources.chat.completions.AsyncCompletions.create",
+        ]:
+            content = self.original_kwargs.get("messages", [])[-1]["content"]
+            media_list = []
+            if isinstance(content, list):
+                for item in content:
+                    if item.get("type") == "image_url":
+                        if isinstance(item["image_url"], str):
+                            media_list.append(item["image_url"])
+                        else:
+                            if "url" in item["image_url"]:
+                                media_list.append(item["image_url"]["url"])
+                            else:
+                                media_list.append(item["image_url"])
+                return media_list
+        return None
 
     def extract_output(  # pylint: disable=too-many-return-statements
         self,
