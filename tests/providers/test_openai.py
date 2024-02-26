@@ -1447,3 +1447,219 @@ async def test_openai_chat__stream_async(
                 json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
                 is not None
             )
+
+
+def test_openai_vision_models__url(
+    openai_chat_completion: ChatCompletion,
+) -> None:
+    with patch(
+        "openai.resources.chat.completions.Completions.create"
+    ) as mock_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_create.return_value = openai_chat_completion
+            nebuly_init(observer=mock_observer)
+
+            client = OpenAI(
+                api_key="ciao",
+            )
+
+            result = client.chat.completions.create(  # type: ignore
+                model="gpt-4-vision-preview",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "What is in this image?",
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": "https://upload.wikimedia.org/image1",
+                                },
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": "https://upload.wikimedia.org/image2",
+                                },
+                            },
+                        ],
+                    },
+                    {
+                        "role": "assistant",
+                        "content": "A beautiful landscape",
+                    },
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "What is in this image?",
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": "https://upload.wikimedia.org/image3",
+                                },
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": "https://upload.wikimedia.org/image4",
+                                },
+                            },
+                        ],
+                    },
+                ],
+                user_id="test_user",
+                user_group_profile="test_group",
+                nebuly_tags={
+                    "tenant": "ciao",
+                },
+                feature_flags=["flag1"],
+            )
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "What is in this image?"
+            assert interaction_watch.output == "\n\nThis is a test."
+            assert interaction_watch.history == [
+                HistoryEntry(
+                    user="What is in this image?",
+                    assistant="A beautiful landscape",
+                )
+            ]
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_group"
+            assert interaction_watch.tags == {"tenant": "ciao"}
+            assert interaction_watch.feature_flags == ["flag1"]
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert len(span.media) == 2
+            assert span.media[0] == "https://upload.wikimedia.org/image3"
+
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+def test_openai_vision_models__base64(
+    openai_chat_completion: ChatCompletion,
+) -> None:
+    with patch(
+        "openai.resources.chat.completions.Completions.create"
+    ) as mock_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_create.return_value = openai_chat_completion
+            nebuly_init(observer=mock_observer)
+
+            client = OpenAI(
+                api_key="ciao",
+            )
+            base64_image = "sample_base64_image"
+            result = client.chat.completions.create(  # type: ignore
+                model="gpt-4-vision-preview",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "What is in this image?",
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/jpeg;base64,{base64_image}",
+                                },
+                            },
+                        ],
+                    }
+                ],
+                user_id="test_user",
+                user_group_profile="test_group",
+                nebuly_tags={
+                    "tenant": "ciao",
+                },
+                feature_flags=["flag1"],
+            )
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "What is in this image?"
+            assert interaction_watch.output == "\n\nThis is a test."
+            assert len(interaction_watch.history) == 0
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_group"
+            assert interaction_watch.tags == {"tenant": "ciao"}
+            assert interaction_watch.feature_flags == ["flag1"]
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert len(span.media) == 1
+            assert span.media[0] == f"data:image/jpeg;base64,{base64_image}"
+
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+def test_openai_vision_models__no_media(
+    openai_chat_completion: ChatCompletion,
+) -> None:
+    with patch(
+        "openai.resources.chat.completions.Completions.create"
+    ) as mock_completion_create:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_completion_create.return_value = openai_chat_completion
+            nebuly_init(observer=mock_observer)
+
+            client = OpenAI(
+                api_key="ciao",
+            )
+            result = client.chat.completions.create(  # type: ignore
+                model="gpt-4-vision-preview",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "What is in this image?",
+                            }
+                        ],
+                    }
+                ],
+                user_id="test_user",
+                user_group_profile="test_group",
+                nebuly_tags={
+                    "tenant": "ciao",
+                },
+                feature_flags=["flag1"],
+            )
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "What is in this image?"
+            assert interaction_watch.output == "\n\nThis is a test."
+            assert len(interaction_watch.history) == 0
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_group"
+            assert interaction_watch.tags == {"tenant": "ciao"}
+            assert interaction_watch.feature_flags == ["flag1"]
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert len(span.media) == 0
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
