@@ -295,6 +295,11 @@ def _add_interaction_span(  # pylint: disable=too-many-arguments, too-many-local
         )
         model_input_res = provider_data_extractor.extract_input_and_history(output)
         model_output_res = provider_data_extractor.extract_output(stream, output)
+        media = provider_data_extractor.extract_media()
+
+        # Add media to the watched object
+        if media is not None:
+            watched.media = media
     # FIXME: this is ignoring the model_input_res when the model_output_res throws an
     # exception.
     except ValueError:
