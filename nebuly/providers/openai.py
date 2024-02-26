@@ -9,7 +9,7 @@ from typing import Any, Callable, List, Tuple, cast
 
 import openai
 from openai import AsyncAzureOpenAI, AsyncOpenAI, AzureOpenAI, OpenAI, _ModuleClient
-from openai._response import APIResponse
+from openai._response import APIResponse, AsyncAPIResponse
 from openai.pagination import SyncCursorPage
 from openai.types.beta.threads import ThreadMessage  # type: ignore  # noqa: E501
 from openai.types.chat.chat_completion import (  # type: ignore  # noqa: E501
@@ -241,7 +241,7 @@ class OpenAIDataExtractor(ProviderDataExtractor):
                     ).message.function_call.arguments,
                 }
             )
-        if isinstance(outputs, (APIResponse, LegacyAPIResponse)):
+        if isinstance(outputs, (APIResponse, AsyncAPIResponse, LegacyAPIResponse)):
             payload_dict = json.loads(outputs.content.decode("utf-8"))
             if payload_dict.get("object") == "chat.completion":
                 payload = ChatCompletion(**payload_dict)
