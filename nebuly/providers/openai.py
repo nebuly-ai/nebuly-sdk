@@ -281,6 +281,7 @@ class OpenAIDataExtractor(ProviderDataExtractor):
             "resources.chat.completions.AsyncCompletions.create",
         ]:
             # Filter only outputs where choices has at least one element
+            # This is needed when using Azure OpenAI, the first chunk has no choices
             valid_outputs = [output for output in outputs if len(output.choices) > 0]
             if not all(
                 getattr(output.choices[0].delta, "content") is None
