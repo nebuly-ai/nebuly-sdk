@@ -23,6 +23,17 @@ jobs:
           exit 0
         continue-on-error: false
 
+      - name: Check if tag matches __version__
+        shell: bash
+        run: |
+          version=$(head nebuly/__init__.py | grep "__version__ = " | cut -d "=" -f 2 | sed "s/ // ; s/\"//g")
+          if [ "v$version" != "${{ github.ref_name }}" ]; then
+            echo "Git tag doesn't match __version__: ${{ github.ref_name }} != v$version  "
+            exit 1
+          fi
+          exit 0
+        continue-on-error: false
+
       - name: Set Up Python
         uses: actions/setup-python@v4
         id: setup-python
