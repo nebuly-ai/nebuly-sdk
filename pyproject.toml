@@ -8,6 +8,7 @@ packages = [{ include = "nebuly" }]
 
 [tool.poetry.dependencies]
 python = ">=3.8.1,<4.0"
+packaging = "^23.2"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.7.0"
