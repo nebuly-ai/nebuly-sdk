@@ -9,7 +9,7 @@ from typing import Any, Callable, List, Tuple, cast
 
 import openai
 from openai import AsyncAzureOpenAI, AsyncOpenAI, AzureOpenAI, OpenAI, _ModuleClient
-from openai._response import APIResponse, AsyncAPIResponse
+from openai._response import APIResponse
 from openai.pagination import SyncCursorPage
 from openai.types.beta.threads import ThreadMessage  # type: ignore  # noqa: E501
 from openai.types.chat.chat_completion import (  # type: ignore  # noqa: E501
@@ -35,6 +35,15 @@ try:
 except ImportError:
 
     class LegacyAPIResponse:
+        pass
+
+
+try:
+    # This import is valid only starting from openai==1.8.0
+    from openai._response import AsyncAPIResponse  # type: ignore  # noqa: E501
+except ImportError:
+
+    class AsyncAPIResponse:
         pass
 
 
