@@ -128,7 +128,9 @@ def _parse_output(output: str | dict[str, Any] | AIMessage) -> str:
     return output
 
 
-def _parse_langchain_data(data: Any) -> str:
+def _parse_langchain_data(  # pylint: disable=too-many-return-statements
+    data: Any,
+) -> str:
     if isinstance(data, str):
         return data
     if isinstance(data, dict):
