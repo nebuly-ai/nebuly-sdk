@@ -128,7 +128,9 @@ def _parse_output(output: str | dict[str, Any] | AIMessage) -> str:
     return output
 
 
-def _parse_langchain_data(data: Any) -> str:
+def _parse_langchain_data(  # pylint: disable=too-many-return-statements
+    data: Any,
+) -> str:
     if isinstance(data, str):
         return data
     if isinstance(data, dict):
@@ -137,6 +139,9 @@ def _parse_langchain_data(data: Any) -> str:
         if "answer" in data:
             # If the data is a retrieval chain, we want to return the answer
             return str(data["answer"])
+        if "output" in data:
+            # If the data is a retrieval chain, we want to return the output
+            return str(data["output"])
         if "input" in data:
             # Needed when calling invoke with input and chat_history
             return str(data["input"])
