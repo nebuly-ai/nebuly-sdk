@@ -711,6 +711,7 @@ def function_wrapper(
     function_name: str,
 ) -> Callable[[Any], Any]:
     @wraps(f)
+    # pylint: disable=too-many-return-statements
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         result = None
         try:
