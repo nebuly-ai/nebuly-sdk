@@ -603,6 +603,14 @@ def _is_generator(obj: Any, module: str) -> bool:
     return False
 
 
+def _is_in_context_manager() -> bool:
+    try:
+        get_nearest_open_interaction()
+        return True
+    except NotInInteractionContext:
+        return False
+
+
 def coroutine_wrapper(
     f: Callable[[Any], Any],
     observer: Observer,
@@ -633,6 +641,8 @@ def coroutine_wrapper(
                 result = f(*args, **function_kwargs)
             else:
                 result = await f(*args, **function_kwargs)
+            if len(nebuly_kwargs) == 0 and not _is_in_context_manager():
+                return result
 
             if _is_generator(result, module):
                 logger.debug("Result is a generator")
@@ -735,6 +745,8 @@ def function_wrapper(
 
             called_start = datetime.now(timezone.utc)
             result = f(*args, **function_kwargs)
+            if len(nebuly_kwargs) == 0 and not _is_in_context_manager():
+                return result
 
             if _is_generator(result, module):
                 logger.debug("Result is a generator")
