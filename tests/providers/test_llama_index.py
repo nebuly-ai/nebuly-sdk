@@ -7,12 +7,12 @@ import json
 import os
 from unittest.mock import Mock, patch
 
-import llama_index.core
 import pytest
 import numpy as np
 
 from nebuly.providers.llama_index import LlamaIndexTrackingHandler
 
+import llama_index.core
 from llama_index.core.indices import load_index_from_storage
 from llama_index.core.readers import download_loader
 from llama_index.core.storage import (

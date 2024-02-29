@@ -227,7 +227,7 @@ def test_patcher_calls_observer_after_generator_has_finished(
         )
 
         before = datetime.now(timezone.utc)
-        generator = patched(*args, **kwargs)
+        generator = patched(*args, user_id="test", **kwargs)
         datetime.now(timezone.utc)
 
         consumed_generator = list(generator)
