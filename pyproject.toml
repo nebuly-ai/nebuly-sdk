@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nebuly"
-version = "0.3.22"
+version = "0.3.23"
 description = "The SDK for instrumenting applications for tracking AI costs."
 authors = ["Nebuly"]
 readme = "README.md"
