@@ -130,7 +130,7 @@ class OpenAIDataExtractor(ProviderDataExtractor):
         history = [
             HistoryEntry(
                 user=self._extract_content(history[i]["content"]),
-                assistant=history[i + 1]["content"],
+                assistant=self._extract_content(history[i + 1]["content"]),
             )
             for i in range(0, len(history), 2)
             if i < len(history) - 1

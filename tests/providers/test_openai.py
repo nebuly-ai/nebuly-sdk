@@ -1496,7 +1496,18 @@ def test_openai_vision_models__url(
                     },
                     {
                         "role": "assistant",
-                        "content": "A beautiful landscape",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "A beautiful landscape",
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": "https://upload.wikimedia.org/image1",
+                                },
+                            },
+                        ],
                     },
                     {
                         "role": "user",
