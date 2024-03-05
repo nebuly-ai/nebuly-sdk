@@ -2,16 +2,22 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-from anthropic import Anthropic, AsyncAnthropic, AsyncStream, Stream
-from anthropic.types import Completion
+from anthropic import (
+    Anthropic,
+    AsyncAnthropic,
+    AsyncStream,
+    MessageStreamManager,
+    Stream,
+)
+from anthropic.types import Completion, Message
 
-from nebuly.entities import ModelInput
+from nebuly.entities import HistoryEntry, ModelInput
 from nebuly.providers.base import PicklerHandler, ProviderDataExtractor
-from nebuly.providers.common import extract_anthropic_input_and_history
+from nebuly.providers.common import extract_anthropic_input_and_history, logger
 
 
 def is_anthropic_generator(function: Callable[[Any], Any]) -> bool:
-    return isinstance(function, (Stream, AsyncStream))
+    return isinstance(function, (Stream, AsyncStream, MessageStreamManager))
 
 
 class AnthropicPicklerHandler(PicklerHandler):
@@ -55,6 +61,31 @@ class AnthropicDataExtractor(ProviderDataExtractor):
         self.original_args = original_args
         self.original_kwargs = original_kwargs
 
+    def _extract_history(self) -> list[HistoryEntry]:
+        history = self.original_kwargs.get("messages", [])[:-1]
+
+        # Remove messages that are not from the user or the assistant
+        history = [
+            message
+            for message in history
+            if len(history) > 1 and message["role"].lower() in ["user", "assistant"]
+        ]
+
+        if len(history) % 2 != 0:
+            logger.warning("Odd number of chat history elements, ignoring last element")
+            history = history[:-1]
+
+        # Convert the history to [(user, assistant), ...] format
+        history = [
+            HistoryEntry(
+                user=history[i]["content"],
+                assistant=history[i + 1]["content"],
+            )
+            for i in range(0, len(history), 2)
+            if i < len(history) - 1
+        ]
+        return history
+
     def extract_input_and_history(self, outputs: Any) -> ModelInput:
         if self.function_name in [
             "resources.Completions.create",
@@ -64,6 +95,15 @@ class AnthropicDataExtractor(ProviderDataExtractor):
                 self.original_kwargs["prompt"]
             )
             return ModelInput(prompt=last_user_input, history=history)
+        if self.function_name in [
+            "resources.Messages.create",
+            "resources.AsyncMessages.create",
+            "resources.Messages.stream",
+            "resources.AsyncMessages.stream",
+        ]:
+            prompt = self.original_kwargs["messages"][-1]["content"]
+            history = self._extract_history()
+            return ModelInput(prompt=prompt, history=history)
 
         raise ValueError(f"Unknown function name: {self.function_name}")
 
@@ -79,6 +119,11 @@ class AnthropicDataExtractor(ProviderDataExtractor):
             "resources.AsyncCompletions.create",
         ]:
             return outputs.completion.strip()
+        if isinstance(outputs, Message) and self.function_name in [
+            "resources.Messages.create",
+            "resources.AsyncMessages.create",
+        ]:
+            return outputs.content[0].text.strip()
 
         raise ValueError(
             f"Unknown function name: {self.function_name} or "
