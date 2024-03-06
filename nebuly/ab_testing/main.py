@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 import asyncio
 import json
 import os
