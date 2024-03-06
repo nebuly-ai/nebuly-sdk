@@ -33,7 +33,7 @@ class TrackingBase(ABC):
 
     def get_request_payload(  # pylint: disable=too-many-arguments
         self,
-        user: str,
+        user_id: str,
         action: str,
         text: Optional[str] = None,
         input: Optional[str] = None,  # pylint: disable=redefined-builtin
@@ -46,7 +46,7 @@ class TrackingBase(ABC):
         action_metadata = FeedbackActionMetadata(
             input=input,
             output=output,
-            end_user=user,
+            end_user=user_id,
             timestamp=datetime.now(timezone.utc),
             anonymize=self._anonymize,
         )
@@ -65,7 +65,7 @@ class TrackingSDK(TrackingBase):
 
     def send_feedback_action(  # pylint: disable=too-many-arguments
         self,
-        user: str,
+        user_id: str,
         action: str,
         text: Optional[str] = None,
         input: Optional[str] = None,  # pylint: disable=redefined-builtin
@@ -74,7 +74,7 @@ class TrackingSDK(TrackingBase):
         """
         Send the feedback action to Nebuly's platform
         """
-        payload = self.get_request_payload(user, action, text, input, output)
+        payload = self.get_request_payload(user_id, action, text, input, output)
         return post_json_data(self._URL, payload, self._api_key)
 
 
@@ -85,7 +85,7 @@ class AsyncTrackingSDK(TrackingBase):
 
     async def send_feedback_action(  # pylint: disable=too-many-arguments
         self,
-        user: str,
+        user_id: str,
         action: str,
         text: Optional[str] = None,
         input: Optional[str] = None,  # pylint: disable=redefined-builtin
@@ -94,7 +94,7 @@ class AsyncTrackingSDK(TrackingBase):
         """
         Send the feedback action to Nebuly's platform
         """
-        payload = self.get_request_payload(user, action, text, input, output)
+        payload = self.get_request_payload(user_id, action, text, input, output)
         loop = asyncio.get_running_loop()
         raw_response = await loop.run_in_executor(
             None,

@@ -19,7 +19,7 @@ class FeedbackActionMetadata:
             "output": self.output,
             "end_user": self.end_user,
             "end_user_group_profile": self.end_user_group_profile,
-            "timestamp": self.timestamp,
+            "timestamp": self.timestamp.isoformat(),
             "anonymize": self.anonymize,
         }
 
