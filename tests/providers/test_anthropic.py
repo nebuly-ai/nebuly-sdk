@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from anthropic import AI_PROMPT, HUMAN_PROMPT, Anthropic, AsyncAnthropic
-from anthropic.types import Completion
+from anthropic.types import Completion, ContentBlock, Message, Usage
 
 from nebuly.contextmanager import new_interaction
 from nebuly.entities import HistoryEntry, InteractionWatch, SpanWatch
@@ -269,6 +269,114 @@ async def test_anthropic_completion_async_gen(
                 == "how does a court case get to the Supreme Court?"
             )
             assert interaction_watch.output == "Hello!"
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_group"
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+@pytest.fixture(name="anthropic_message")
+def fixture_anthropic_message() -> Message:
+    return Message(
+        id="123",
+        content=[ContentBlock(type="text", text="Hello! My name is Claude.")],
+        model="claude-2.1",
+        type="message",
+        role="assistant",
+        usage=Usage(input_tokens=3, output_tokens=5),
+    )
+
+
+def test_anthropic_messages__no_context_manager(
+    anthropic_message: Message,
+) -> None:
+    with patch("anthropic.resources.Messages.create") as mock_message:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_message.return_value = anthropic_message
+            nebuly_init(observer=mock_observer)
+
+            client = Anthropic(
+                # defaults to os.environ.get("ANTHROPIC_API_KEY")
+                api_key="my api key",
+            )
+
+            result = client.messages.create(  # type: ignore
+                model="claude-2.1",
+                max_tokens=1024,
+                messages=[
+                    {"role": "user", "content": "Hello, Claude"},
+                    {"role": "assistant", "content": "Hi there!"},
+                    {"role": "user", "content": "How are you?"},
+                ],
+                user_id="test_user",
+                user_group_profile="test_group",
+            )
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "How are you?"
+            assert interaction_watch.history == [
+                HistoryEntry(
+                    user="Hello, Claude",
+                    assistant="Hi there!",
+                )
+            ]
+            assert interaction_watch.output == "Hello! My name is Claude."
+            assert interaction_watch.end_user == "test_user"
+            assert interaction_watch.end_user_group_profile == "test_group"
+            assert len(interaction_watch.spans) == 1
+            span = interaction_watch.spans[0]
+            assert isinstance(span, SpanWatch)
+            assert (
+                json.dumps(interaction_watch.to_dict(), cls=CustomJSONEncoder)
+                is not None
+            )
+
+
+@pytest.mark.asyncio
+async def test_anthropic_messages__no_context_manager__async(
+    anthropic_message: Message,
+) -> None:
+    with patch(
+        "anthropic.resources.AsyncMessages.create", new=AsyncMock()
+    ) as mock_message:
+        with patch.object(NebulyObserver, "on_event_received") as mock_observer:
+            mock_message.return_value = anthropic_message
+            nebuly_init(observer=mock_observer)
+
+            client = AsyncAnthropic(
+                api_key="my api key",
+            )
+
+            result = await client.messages.create(  # type: ignore
+                model="claude-2.1",
+                max_tokens=1024,
+                messages=[
+                    {"role": "user", "content": "Hello, Claude"},
+                    {"role": "assistant", "content": "Hi there!"},
+                    {"role": "user", "content": "How are you?"},
+                ],
+                user_id="test_user",
+                user_group_profile="test_group",
+            )
+            assert result is not None
+            assert mock_observer.call_count == 1
+            interaction_watch = mock_observer.call_args[0][0]
+            assert isinstance(interaction_watch, InteractionWatch)
+            assert interaction_watch.input == "How are you?"
+            assert interaction_watch.history == [
+                HistoryEntry(
+                    user="Hello, Claude",
+                    assistant="Hi there!",
+                )
+            ]
+            assert interaction_watch.output == "Hello! My name is Claude."
             assert interaction_watch.end_user == "test_user"
             assert interaction_watch.end_user_group_profile == "test_group"
             assert len(interaction_watch.spans) == 1

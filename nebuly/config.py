@@ -54,8 +54,6 @@ PACKAGES = (
             "resources.AsyncCompletions.create",
             "resources.Messages.create",
             "resources.AsyncMessages.create",
-            # "resources.Messages.stream",
-            # "resources.AsyncMessages.stream",
         ),
     ),
     Package(

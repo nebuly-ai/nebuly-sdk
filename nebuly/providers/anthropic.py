@@ -76,7 +76,7 @@ class AnthropicDataExtractor(ProviderDataExtractor):
             history = history[:-1]
 
         # Convert the history to [(user, assistant), ...] format
-        history = [
+        history_processed = [
             HistoryEntry(
                 user=history[i]["content"],
                 assistant=history[i + 1]["content"],
@@ -84,7 +84,7 @@ class AnthropicDataExtractor(ProviderDataExtractor):
             for i in range(0, len(history), 2)
             if i < len(history) - 1
         ]
-        return history
+        return history_processed
 
     def extract_input_and_history(self, outputs: Any) -> ModelInput:
         if self.function_name in [
