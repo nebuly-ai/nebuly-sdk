@@ -1,3 +1,3 @@
-from .actions import TrackingSDK, AsyncTrackingSDK
+from .actions import AsyncTrackingSDK, TrackingSDK
 
 __all__ = ["TrackingSDK", "AsyncTrackingSDK"]

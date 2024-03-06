@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 
 @dataclass
@@ -13,7 +13,7 @@ class FeedbackActionMetadata:
     anonymize: bool
     end_user_group_profile: Optional[str] = None
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> Dict[str, Any]:
         return {
             "input": self.input,
             "output": self.output,
@@ -35,9 +35,9 @@ class FeedbackActionName(str, Enum):
 @dataclass
 class FeedbackAction:
     slug: FeedbackActionName
-    extras: Optional[dict[str, Any]] = None
+    extras: Optional[Dict[str, Any]] = None
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> Dict[str, Any]:
         return {
             "slug": self.slug,
             **(self.extras or {}),
