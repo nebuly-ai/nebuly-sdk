@@ -379,17 +379,17 @@ uvloop = ["uvloop (>=0.15.2)"]
 
 [[package]]
 name = "boto3"
-version = "1.34.55"
+version = "1.34.56"
 description = "The AWS SDK for Python"
 optional = false
 python-versions = ">= 3.8"
 files = [
-    {file = "boto3-1.34.55-py3-none-any.whl", hash = "sha256:ee2c96e8a4a741ecb3380e0a406baa67bfea6186be99b75bdeca3e1b5044c088"},
-    {file = "boto3-1.34.55.tar.gz", hash = "sha256:9a6d59e035fac4366dbdaf909c4f66fc817dfbec044fa71564dcf036ad46bb19"},
+    {file = "boto3-1.34.56-py3-none-any.whl", hash = "sha256:300888f0c1b6f32f27f85a9aa876f50f46514ec619647af7e4d20db74d339714"},
+    {file = "boto3-1.34.56.tar.gz", hash = "sha256:b26928f9a21cf3649cea20a59061340f3294c6e7785ceb6e1a953eb8010dc3ba"},
 ]
 
 [package.dependencies]
-botocore = ">=1.34.55,<1.35.0"
+botocore = ">=1.34.56,<1.35.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.10.0,<0.11.0"
 
@@ -398,13 +398,13 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.34.55"
+version = "1.34.56"
 description = "Low-level, data-driven core of boto 3."
 optional = false
 python-versions = ">= 3.8"
 files = [
-    {file = "botocore-1.34.55-py3-none-any.whl", hash = "sha256:07044c3cbfb86d0ecb9c56d887b8ad63a72eff0e4f6ab329cf335f1fd867ea0b"},
-    {file = "botocore-1.34.55.tar.gz", hash = "sha256:bb333e3845bfe65600f36bf92d09668306e224fa9f4e4f87b77f6957192ae59f"},
+    {file = "botocore-1.34.56-py3-none-any.whl", hash = "sha256:fff66e22a5589c2d58fba57d1d95c334ce771895e831f80365f6cff6453285ec"},
+    {file = "botocore-1.34.56.tar.gz", hash = "sha256:bffeb71ab21d47d4ecf947d9bdb2fbd1b0bbd0c27742cea7cf0b77b701c41d9f"},
 ]
 
 [package.dependencies]
@@ -1318,18 +1318,18 @@ grpc = ["grpcio (>=1.38.0,<2.0dev)", "grpcio-status (>=1.38.0,<2.0.dev0)"]
 
 [[package]]
 name = "google-cloud-resource-manager"
-version = "1.12.2"
+version = "1.12.3"
 description = "Google Cloud Resource Manager API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-resource-manager-1.12.2.tar.gz", hash = "sha256:2ede446a5087b236f0e1fb39cca3791bae97eb0d9125057401454b190d5572ee"},
-    {file = "google_cloud_resource_manager-1.12.2-py2.py3-none-any.whl", hash = "sha256:45abbb8911195cc831cc77c8e3be84decc271686579b332d4142af507f423ebf"},
+    {file = "google-cloud-resource-manager-1.12.3.tar.gz", hash = "sha256:809851824119834e4f2310b2c4f38621c1d16b2bb14d5b9f132e69c79d355e7f"},
+    {file = "google_cloud_resource_manager-1.12.3-py2.py3-none-any.whl", hash = "sha256:92be7d6959927b76d90eafc4028985c37975a46ded5466a018f02e8649e113d4"},
 ]
 
 [package.dependencies]
 google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extras = ["grpc"]}
-google-auth = ">=2.14.1,<3.0.0dev"
+google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 grpc-google-iam-v1 = ">=0.12.4,<1.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
 protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
@@ -2174,13 +2174,13 @@ types-requests = ">=2.31.0.2,<3.0.0.0"
 
 [[package]]
 name = "langsmith"
-version = "0.1.20"
+version = "0.1.22"
 description = "Client library to connect to the LangSmith LLM Tracing and Evaluation Platform."
 optional = false
 python-versions = ">=3.8.1,<4.0"
 files = [
-    {file = "langsmith-0.1.20-py3-none-any.whl", hash = "sha256:698b4cc053d211acf134e773f3204d4d7dbaafc9794afdc8aa63ed0e93e6b587"},
-    {file = "langsmith-0.1.20.tar.gz", hash = "sha256:d80b8f9ff62490f2486646dfd8ba489416c508f6951ec2011fb58f71e0e3c682"},
+    {file = "langsmith-0.1.22-py3-none-any.whl", hash = "sha256:b877d302bd4cf7c79e9e6e24bedf669132abf0659143390a29350eda0945544f"},
+    {file = "langsmith-0.1.22.tar.gz", hash = "sha256:2921ae2297c2fb23baa2641b9cf416914ac7fd65f4a9dd5a573bc30efb54b693"},
 ]
 
 [package.dependencies]
@@ -2236,19 +2236,19 @@ files = [
 
 [[package]]
 name = "llama-index"
-version = "0.10.15"
+version = "0.10.16"
 description = "Interface between LLMs and your data"
 optional = false
 python-versions = ">=3.8.1,<4.0"
 files = [
-    {file = "llama_index-0.10.15-py3-none-any.whl", hash = "sha256:b2572d407c9b1070dca2ee9a3f518ab40c7aca9e9212c008cc024c9e0bb2f60d"},
-    {file = "llama_index-0.10.15.tar.gz", hash = "sha256:db1ea0da807b20b819849b1bff2aaf5d49073e1ea36801ff40242a62fb4676eb"},
+    {file = "llama_index-0.10.16-py3-none-any.whl", hash = "sha256:0c23cfb184445fd1ef428c48978293b05247d78fb85189c726df84ae35fd38c0"},
+    {file = "llama_index-0.10.16.tar.gz", hash = "sha256:7ebf1ee760c8957bd469eefbc4453219b2d94b931720d231b9078566bed7432d"},
 ]
 
 [package.dependencies]
 llama-index-agent-openai = ">=0.1.4,<0.2.0"
 llama-index-cli = ">=0.1.2,<0.2.0"
-llama-index-core = ">=0.10.15,<0.11.0"
+llama-index-core = ">=0.10.16,<0.11.0"
 llama-index-embeddings-openai = ">=0.1.5,<0.2.0"
 llama-index-indices-managed-llama-cloud = ">=0.1.2,<0.2.0"
 llama-index-legacy = ">=0.9.48,<0.10.0"
@@ -2293,13 +2293,13 @@ llama-index-vector-stores-chroma = ">=0.1.1,<0.2.0"
 
 [[package]]
 name = "llama-index-core"
-version = "0.10.16"
+version = "0.10.16.post1"
 description = "Interface between LLMs and your data"
 optional = false
 python-versions = ">=3.8.1,<4.0"
 files = [
-    {file = "llama_index_core-0.10.16-py3-none-any.whl", hash = "sha256:189c808b9c92d871b4c27f78e71186f5edbe202c9fafa28ff4e276197c1a05ff"},
-    {file = "llama_index_core-0.10.16.tar.gz", hash = "sha256:a20b246b75e2e5b2dd679953fcede921e8b9896f06e61f473a31ee96d24cd446"},
+    {file = "llama_index_core-0.10.16.post1-py3-none-any.whl", hash = "sha256:fee1216e218e66b738249401dfa37dd7592ea35b958c55d40cbffa64eb834a93"},
+    {file = "llama_index_core-0.10.16.post1.tar.gz", hash = "sha256:1ea8a08a3a872c435501611a1f6edd2abe6c6208c9e68684ef2078d55914c9d5"},
 ]
 
 [package.dependencies]
@@ -2465,13 +2465,13 @@ llama-index-program-openai = ">=0.1.1,<0.2.0"
 
 [[package]]
 name = "llama-index-readers-file"
-version = "0.1.7"
+version = "0.1.8"
 description = "llama-index readers file integration"
 optional = false
 python-versions = ">=3.8.1,<4.0"
 files = [
-    {file = "llama_index_readers_file-0.1.7-py3-none-any.whl", hash = "sha256:46cf03a141b3fa5fd50c81fa607e9de3060aa67ab9a79dd64bea18962776d2de"},
-    {file = "llama_index_readers_file-0.1.7.tar.gz", hash = "sha256:63827ab51e8f66d97f08e1a20be67f86b92484ae120253b5f756fef2371d61bf"},
+    {file = "llama_index_readers_file-0.1.8-py3-none-any.whl", hash = "sha256:f58c72e2c2ed9f36b5308b4b9ee3142f3848156f0e3b85e813db0a26b8d03290"},
+    {file = "llama_index_readers_file-0.1.8.tar.gz", hash = "sha256:f23417a2afc8461a32f08f057e85c8d09b1c687ba16ca6a6a08f08f319eca26a"},
 ]
 
 [package.dependencies]
@@ -2515,13 +2515,13 @@ tokenizers = ">=0.15.1,<0.16.0"
 
 [[package]]
 name = "llama-parse"
-version = "0.3.5"
+version = "0.3.6"
 description = "Parse files into RAG-Optimized formats."
 optional = false
 python-versions = ">=3.8.1,<4.0"
 files = [
-    {file = "llama_parse-0.3.5-py3-none-any.whl", hash = "sha256:8e6e7a0986ad30cb82c5c67a29b7e2c3892620dd2a422afc909654a9d0f1c82c"},
-    {file = "llama_parse-0.3.5.tar.gz", hash = "sha256:736a80e4fc5970b9cbef1048171908021ebd26be43f07b806889f0d1bb3875fe"},
+    {file = "llama_parse-0.3.6-py3-none-any.whl", hash = "sha256:dd7be333009333e941a8ead2b43a1122a1588b8bd42abae3eb24a6b6789fe831"},
+    {file = "llama_parse-0.3.6.tar.gz", hash = "sha256:98093e60225e7abd517a5ba245a822432d345d136a5f988b4b4dbda0575802a1"},
 ]
 
 [package.dependencies]
