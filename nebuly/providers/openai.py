@@ -47,9 +47,9 @@ except ImportError:
 
 
 try:
+    # This import is valid only before openai==1.14.0
     from openai.types.beta.threads import ThreadMessage as Message
 except ImportError:
-    # This import is valid only before openai==1.14.0
     from openai.types.beta.threads import Message
 
 
