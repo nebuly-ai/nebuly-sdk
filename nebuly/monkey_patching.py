@@ -487,8 +487,8 @@ def _handle_unpickleable_objects(module: str, args: Any) -> None:
         )
 
         handle_openai_unpickable_objects()
-    except ImportError:
-        pass
+    except ImportError as e:
+        raise e
     try:
         from nebuly.providers.cohere import (  # pylint: disable=import-outside-toplevel
             handle_cohere_unpickable_objects,
