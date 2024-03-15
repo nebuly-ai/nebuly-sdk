@@ -11,7 +11,6 @@ import openai
 from openai import AsyncAzureOpenAI, AsyncOpenAI, AzureOpenAI, OpenAI, _ModuleClient
 from openai._response import APIResponse
 from openai.pagination import SyncCursorPage
-from openai.types.beta.threads import ThreadMessage  # type: ignore  # noqa: E501
 from openai.types.chat.chat_completion import (  # type: ignore  # noqa: E501
     ChatCompletion,
     Choice,
@@ -45,6 +44,13 @@ except ImportError:
 
     class AsyncAPIResponse:
         pass
+
+
+try:
+    # This import is valid only before openai==1.14.0
+    from openai.types.beta.threads import ThreadMessage as Message
+except ImportError:
+    from openai.types.beta.threads import Message
 
 
 logger = logging.getLogger(__name__)
@@ -323,9 +329,7 @@ class OpenAIDataExtractor(ProviderDataExtractor):
             f"or output type: {type(outputs)}"
         )
 
-    def _openai_assistant_messages_join(
-        self, messages: list[ThreadMessage]
-    ) -> List[str]:
+    def _openai_assistant_messages_join(self, messages: list[Message]) -> List[str]:
         """
         Join messages from the openai assistant when same role has multiple
         messages consecutively
@@ -346,7 +350,7 @@ class OpenAIDataExtractor(ProviderDataExtractor):
         return joined_messages
 
     def _openai_assistant_messages(
-        self, outputs: SyncCursorPage[ThreadMessage]
+        self, outputs: SyncCursorPage[Message]
     ) -> Tuple[List[str], List[str]]:
         """
         Extract the messages from the openai assistant

@@ -4,8 +4,7 @@ from unittest import mock
 import pytest
 from openai import AsyncOpenAI, OpenAI
 from openai.pagination import AsyncCursorPage, SyncCursorPage
-from openai.types.beta.threads import MessageContentText, ThreadMessage
-from openai.types.beta.threads.message_content_text import Text
+from openai.types.beta.threads import Message, Text, TextContentBlock
 
 from nebuly.entities import HistoryEntry, InteractionWatch
 from tests.providers.common import nebuly_init
@@ -15,7 +14,7 @@ def create_fake_messages(
     messages: List[Tuple[Literal["user", "assistant"], str]],
     has_more: bool = False,
     reverse: bool = False,
-) -> SyncCursorPage[ThreadMessage]:
+) -> SyncCursorPage[Message]:
     """
     Create a fake messages list response
     """
@@ -23,17 +22,18 @@ def create_fake_messages(
         messages = messages[::-1]
     response = SyncCursorPage(  # type: ignore[call-arg]
         data=[
-            ThreadMessage(
+            Message(
                 id=f"message_{i}",
                 assistant_id="assistant_1",
                 file_ids=[],
+                status="completed",
                 metadata=None,
                 object="thread.message",
                 role=role,
                 run_id="run_1",
                 thread_id="thread_1",
                 content=[
-                    MessageContentText(
+                    TextContentBlock(
                         text=Text(value=message, annotations=[]),
                         type="text",
                     )
@@ -83,7 +83,7 @@ def create_fake_messages_async(
     messages: List[Tuple[Literal["user", "assistant"], str]],
     has_more: bool = False,
     reverse: bool = False,
-) -> AsyncCursorPage[ThreadMessage]:
+) -> AsyncCursorPage[Message]:
     """
     Create a fake messages list response
     """
@@ -91,17 +91,18 @@ def create_fake_messages_async(
         messages = messages[::-1]
     response = AsyncCursorPage(  # type: ignore[call-arg]
         data=[
-            ThreadMessage(
+            Message(
                 id=f"message_{i}",
                 assistant_id="assistant_1",
                 file_ids=[],
                 metadata=None,
+                status="completed",
                 object="thread.message",
                 role=role,
                 run_id="run_1",
                 thread_id="thread_1",
                 content=[
-                    MessageContentText(
+                    TextContentBlock(
                         text=Text(value=message, annotations=[]),
                         type="text",
                     )

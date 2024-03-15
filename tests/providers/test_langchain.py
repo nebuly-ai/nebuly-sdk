@@ -17,7 +17,8 @@ if sys.version_info < (3, 8, 1):
     pytest.skip("Cannot use langchain in python<3.8.1", allow_module_level=True)
 
 from langchain.agents import AgentExecutor, OpenAIFunctionsAgent, tool
-from langchain.chains import LLMChain, SequentialChain
+from langchain.chains.llm import LLMChain
+from langchain.chains.sequential import SequentialChain
 from langchain.prompts import PromptTemplate
 from langchain.prompts.chat import ChatPromptTemplate
 from langchain.schema import StrOutputParser, SystemMessage
