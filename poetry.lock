@@ -323,17 +323,17 @@ uvloop = ["uvloop (>=0.15.2)"]
 
 [[package]]
 name = "boto3"
-version = "1.34.63"
+version = "1.34.65"
 description = "The AWS SDK for Python"
 optional = false
 python-versions = ">= 3.8"
 files = [
-    {file = "boto3-1.34.63-py3-none-any.whl", hash = "sha256:617174f9051b564a57fb1079186ad15db6519ab3bb0d1fb22cb54767b0c4f46e"},
-    {file = "boto3-1.34.63.tar.gz", hash = "sha256:e14f3866f6f372aadc5457ff9a052a45d9e2dd93466122ba86cdd5351cfeafaf"},
+    {file = "boto3-1.34.65-py3-none-any.whl", hash = "sha256:b611de58ab28940a36c77d7ef9823427ebf25d5ee8277b802f9979b14e780534"},
+    {file = "boto3-1.34.65.tar.gz", hash = "sha256:db97f9c29f1806cf9020679be0dd5ffa2aff2670e28e0e2046f98b979be498a4"},
 ]
 
 [package.dependencies]
-botocore = ">=1.34.63,<1.35.0"
+botocore = ">=1.34.65,<1.35.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.10.0,<0.11.0"
 
@@ -342,13 +342,13 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.34.63"
+version = "1.34.65"
 description = "Low-level, data-driven core of boto 3."
 optional = false
 python-versions = ">= 3.8"
 files = [
-    {file = "botocore-1.34.63-py3-none-any.whl", hash = "sha256:8a6cbc3a5c5988725c00815f8f7f6baf81980b19d9a2ee414b031e726759dba9"},
-    {file = "botocore-1.34.63.tar.gz", hash = "sha256:2237743fc3ed68319bc358b451e7c13a02110242b1522b839806fd64fcee45fb"},
+    {file = "botocore-1.34.65-py3-none-any.whl", hash = "sha256:3b0012d7293880c0a4883883047e93f2888d7317b5e9e8a982a991b90d951f3e"},
+    {file = "botocore-1.34.65.tar.gz", hash = "sha256:399a1b1937f7957f0ee2e0df351462b86d44986b795ced980c11eb768b0e61c5"},
 ]
 
 [package.dependencies]
@@ -524,13 +524,13 @@ colorama = {version = "*", markers = "platform_system == \"Windows\""}
 
 [[package]]
 name = "cohere"
-version = "4.56"
+version = "4.57"
 description = "Python SDK for the Cohere API"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "cohere-4.56-py3-none-any.whl", hash = "sha256:5b85e25d50dda8ef69961aecfa9a68d3f16464908635cafb02b728577eeb31ab"},
-    {file = "cohere-4.56.tar.gz", hash = "sha256:ace010cd3d40feaef85a77dacc2303b68bbb4a73f487e5060b20718a1a8b9b37"},
+    {file = "cohere-4.57-py3-none-any.whl", hash = "sha256:479bdea81ae119e53f671f1ae808fcff9df88211780525d7ef2f7b99dfb32e59"},
+    {file = "cohere-4.57.tar.gz", hash = "sha256:71ace0204a92d1a2a8d4b949b88b353b4f22fc645486851924284cc5a0eb700d"},
 ]
 
 [package.dependencies]
@@ -920,13 +920,13 @@ files = [
 
 [[package]]
 name = "fsspec"
-version = "2024.2.0"
+version = "2024.3.1"
 description = "File-system specification"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "fsspec-2024.2.0-py3-none-any.whl", hash = "sha256:817f969556fa5916bc682e02ca2045f96ff7f586d45110fcb76022063ad2c7d8"},
-    {file = "fsspec-2024.2.0.tar.gz", hash = "sha256:b6ad1a679f760dda52b1168c859d01b7b80648ea6f7f7c7f5a8a91dc3f3ecb84"},
+    {file = "fsspec-2024.3.1-py3-none-any.whl", hash = "sha256:918d18d41bf73f0e2b261824baeb1b124bcf771767e3a26425cd7dec3332f512"},
+    {file = "fsspec-2024.3.1.tar.gz", hash = "sha256:f39780e282d7d117ffb42bb96992f8a90795e4d0fb0f661a70ca39fe9c43ded9"},
 ]
 
 [package.extras]
@@ -1131,13 +1131,13 @@ protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4
 
 [[package]]
 name = "google-cloud-storage"
-version = "2.15.0"
+version = "2.16.0"
 description = "Google Cloud Storage API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-storage-2.15.0.tar.gz", hash = "sha256:7560a3c48a03d66c553dc55215d35883c680fe0ab44c23aa4832800ccc855c74"},
-    {file = "google_cloud_storage-2.15.0-py2.py3-none-any.whl", hash = "sha256:5d9237f88b648e1d724a0f20b5cde65996a37fe51d75d17660b1404097327dd2"},
+    {file = "google-cloud-storage-2.16.0.tar.gz", hash = "sha256:dda485fa503710a828d01246bd16ce9db0823dc51bbca742ce96a6817d58669f"},
+    {file = "google_cloud_storage-2.16.0-py2.py3-none-any.whl", hash = "sha256:91a06b96fb79cf9cdfb4e759f178ce11ea885c79938f89590344d079305f5852"},
 ]
 
 [package.dependencies]
@@ -1547,13 +1547,13 @@ typing = ["types-PyYAML", "types-requests", "types-simplejson", "types-toml", "t
 
 [[package]]
 name = "hypothesis"
-version = "6.99.6"
+version = "6.99.9"
 description = "A library for property-based testing"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "hypothesis-6.99.6-py3-none-any.whl", hash = "sha256:f5287e0ca8be94b2129483e1268639f8675c8c041d1b1756561a374575659940"},
-    {file = "hypothesis-6.99.6.tar.gz", hash = "sha256:397e362c8d7e3a5f4654644db964759f6a7f26a8c8a46d2a9e909595d9769ed1"},
+    {file = "hypothesis-6.99.9-py3-none-any.whl", hash = "sha256:1b19bca587d8ead95875d30a38f38211d5a8de72f4df86953cc6fc060aff740e"},
+    {file = "hypothesis-6.99.9.tar.gz", hash = "sha256:b4a0f683a3a3a682b898758313e61b2b463775d5bb0875ef48e4920cec2d4cec"},
 ]
 
 [package.dependencies]
@@ -1562,10 +1562,10 @@ exceptiongroup = {version = ">=1.0.0", markers = "python_version < \"3.11\""}
 sortedcontainers = ">=2.1.0,<3.0.0"
 
 [package.extras]
-all = ["backports.zoneinfo (>=0.2.1)", "black (>=19.10b0)", "click (>=7.0)", "crosshair-tool (>=0.0.50)", "django (>=3.2)", "dpcontracts (>=0.4)", "hypothesis-crosshair (>=0.0.1)", "lark (>=0.10.1)", "libcst (>=0.3.16)", "numpy (>=1.17.3)", "pandas (>=1.1)", "pytest (>=4.6)", "python-dateutil (>=1.4)", "pytz (>=2014.1)", "redis (>=3.0.0)", "rich (>=9.0.0)", "tzdata (>=2024.1)"]
+all = ["backports.zoneinfo (>=0.2.1)", "black (>=19.10b0)", "click (>=7.0)", "crosshair-tool (>=0.0.51)", "django (>=3.2)", "dpcontracts (>=0.4)", "hypothesis-crosshair (>=0.0.2)", "lark (>=0.10.1)", "libcst (>=0.3.16)", "numpy (>=1.17.3)", "pandas (>=1.1)", "pytest (>=4.6)", "python-dateutil (>=1.4)", "pytz (>=2014.1)", "redis (>=3.0.0)", "rich (>=9.0.0)", "tzdata (>=2024.1)"]
 cli = ["black (>=19.10b0)", "click (>=7.0)", "rich (>=9.0.0)"]
 codemods = ["libcst (>=0.3.16)"]
-crosshair = ["crosshair-tool (>=0.0.50)", "hypothesis-crosshair (>=0.0.1)"]
+crosshair = ["crosshair-tool (>=0.0.51)", "hypothesis-crosshair (>=0.0.2)"]
 dateutil = ["python-dateutil (>=1.4)"]
 django = ["django (>=3.2)"]
 dpcontracts = ["dpcontracts (>=0.4)"]
@@ -1853,13 +1853,13 @@ types-requests = ">=2.31.0.2,<3.0.0.0"
 
 [[package]]
 name = "langsmith"
-version = "0.1.26"
+version = "0.1.29"
 description = "Client library to connect to the LangSmith LLM Tracing and Evaluation Platform."
 optional = false
 python-versions = ">=3.8.1,<4.0"
 files = [
-    {file = "langsmith-0.1.26-py3-none-any.whl", hash = "sha256:3a84c21c01dc9c62fe6713789fed5621ed2d6faa7ffe9b90dde1288b8d4824d3"},
-    {file = "langsmith-0.1.26.tar.gz", hash = "sha256:121e5334b2267dc6e2705c2b219aeda7595b3abf004a9a83504d4c46c1894565"},
+    {file = "langsmith-0.1.29-py3-none-any.whl", hash = "sha256:5439f5bf25b00a43602aa1ddaba0a31d413ed920e7b20494070328f7e1ecbb86"},
+    {file = "langsmith-0.1.29.tar.gz", hash = "sha256:60ba0bd889c6a2683d123f66dc5043368eb2f103c4eb69e382abf7ce69a9f7d6"},
 ]
 
 [package.dependencies]
@@ -1915,19 +1915,19 @@ files = [
 
 [[package]]
 name = "llama-index"
-version = "0.10.19"
+version = "0.10.20"
 description = "Interface between LLMs and your data"
 optional = false
 python-versions = ">=3.8.1,<4.0"
 files = [
-    {file = "llama_index-0.10.19-py3-none-any.whl", hash = "sha256:26804a9dc12abe1ecf58a6148d6a1a5601cbe3d7437ec16ce2b49cf9870ec562"},
-    {file = "llama_index-0.10.19.tar.gz", hash = "sha256:9bf3e5fb94195f104684b0df697933e7c3b4cf9f4fdbe77f873b7ff60cbf7d22"},
+    {file = "llama_index-0.10.20-py3-none-any.whl", hash = "sha256:e42bcb00a41f2e60fad3da2d286e53ba0d3f963f94741e7bffd9600e80208413"},
+    {file = "llama_index-0.10.20.tar.gz", hash = "sha256:796dc3a540f4e531d0f027702ebcb7bb89d5c42a94e77413a06b0c228ea66654"},
 ]
 
 [package.dependencies]
 llama-index-agent-openai = ">=0.1.4,<0.2.0"
 llama-index-cli = ">=0.1.2,<0.2.0"
-llama-index-core = ">=0.10.19,<0.11.0"
+llama-index-core = ">=0.10.20,<0.11.0"
 llama-index-embeddings-openai = ">=0.1.5,<0.2.0"
 llama-index-indices-managed-llama-cloud = ">=0.1.2,<0.2.0"
 llama-index-legacy = ">=0.9.48,<0.10.0"
@@ -1940,13 +1940,13 @@ llama-index-readers-llama-parse = ">=0.1.2,<0.2.0"
 
 [[package]]
 name = "llama-index-agent-openai"
-version = "0.1.5"
+version = "0.1.6"
 description = "llama-index agent openai integration"
 optional = false
 python-versions = ">=3.8.1,<4.0"
 files = [
-    {file = "llama_index_agent_openai-0.1.5-py3-none-any.whl", hash = "sha256:1ab06fe853d9d391ba724dcb0009b249ae88ca4de4b5842226373b0c55ee435a"},
-    {file = "llama_index_agent_openai-0.1.5.tar.gz", hash = "sha256:42099326d526af140493c5f744ef70bef0aed8a941b6c9aea4b3eff9c63f0ba6"},
+    {file = "llama_index_agent_openai-0.1.6-py3-none-any.whl", hash = "sha256:5e8b1f03b56630cfc96304fa748c3c584f78a55f08bf14974b38c9fb8a5d0c90"},
+    {file = "llama_index_agent_openai-0.1.6.tar.gz", hash = "sha256:9c56655822f5eb8b72648e87fe64119b1e907e4a7dbcc2da4b6f3fe162828b71"},
 ]
 
 [package.dependencies]
@@ -1955,13 +1955,13 @@ llama-index-llms-openai = ">=0.1.5,<0.2.0"
 
 [[package]]
 name = "llama-index-cli"
-version = "0.1.9"
+version = "0.1.10"
 description = "llama-index cli"
 optional = false
 python-versions = ">=3.8.1,<4.0"
 files = [
-    {file = "llama_index_cli-0.1.9-py3-none-any.whl", hash = "sha256:d9f8e1040f5770c8410a6b429fde0a504cadc1ed3834b9d63c603c01ac03565b"},
-    {file = "llama_index_cli-0.1.9.tar.gz", hash = "sha256:410abbe74b0efc362ffc5b3ed853ef909bfc97c94f7b276257ce18708f20e22b"},
+    {file = "llama_index_cli-0.1.10-py3-none-any.whl", hash = "sha256:3dd9d2f2cd84fed3d18a322df9dc389b19dc7a8048fa4bfcac1d901ccc59d1cd"},
+    {file = "llama_index_cli-0.1.10.tar.gz", hash = "sha256:1d1d0d2f7b1752a62270438654557d8325f7e8921e45a5b1cc22e6f06ba62600"},
 ]
 
 [package.dependencies]
@@ -1971,13 +1971,13 @@ llama-index-llms-openai = ">=0.1.1,<0.2.0"
 
 [[package]]
 name = "llama-index-core"
-version = "0.10.20"
+version = "0.10.20.post2"
 description = "Interface between LLMs and your data"
 optional = false
 python-versions = ">=3.8.1,<4.0"
 files = [
-    {file = "llama_index_core-0.10.20-py3-none-any.whl", hash = "sha256:db764e480b4f53095db9f0d39792a54c8ebfd9cde216d0a37d9c16344ea4a664"},
-    {file = "llama_index_core-0.10.20.tar.gz", hash = "sha256:7780cf83644dda33c4d7b19c313e82755cbbadacad1d185afb7eba998b736bb6"},
+    {file = "llama_index_core-0.10.20.post2-py3-none-any.whl", hash = "sha256:6d05e53271250dd340ea75f0395d9529eea6788546c1fe9020dc7597fa47907b"},
+    {file = "llama_index_core-0.10.20.post2.tar.gz", hash = "sha256:d7d83a2f89269a3abc64663ef122ab6b132d6fbc1d32b5f0ba2909c4e8c6c55a"},
 ]
 
 [package.dependencies]
@@ -2082,17 +2082,17 @@ query-tools = ["guidance (>=0.0.64,<0.0.65)", "jsonpath-ng (>=1.6.0,<2.0.0)", "l
 
 [[package]]
 name = "llama-index-llms-openai"
-version = "0.1.10"
+version = "0.1.12"
 description = "llama-index llms openai integration"
 optional = false
 python-versions = ">=3.8.1,<4.0"
 files = [
-    {file = "llama_index_llms_openai-0.1.10-py3-none-any.whl", hash = "sha256:662d42314376df81921e0840342fc58db8fa8c83860eaf761c8d99c31047d196"},
-    {file = "llama_index_llms_openai-0.1.10.tar.gz", hash = "sha256:81ea443d0705076c9e6a5bd1d9654f0a3dd1a3093f5b362369a73d8e3610b7ca"},
+    {file = "llama_index_llms_openai-0.1.12-py3-none-any.whl", hash = "sha256:75cf9ad8de0578fc8aae959f3f5f0900f496d8674cfdf97f3e064004e54d7b64"},
+    {file = "llama_index_llms_openai-0.1.12.tar.gz", hash = "sha256:400ca0083951bd668ce8bc24875ce70b636e7db328b27c6a50e6d1a2b081b9e6"},
 ]
 
 [package.dependencies]
-llama-index-core = ">=0.10.19,<0.11.0"
+llama-index-core = ">=0.10.20.post1,<0.11.0"
 
 [[package]]
 name = "llama-index-multi-modal-llms-openai"
@@ -2663,13 +2663,13 @@ wheel = "*"
 
 [[package]]
 name = "openai"
-version = "1.14.0"
+version = "1.14.2"
 description = "The official Python library for the openai API"
 optional = false
 python-versions = ">=3.7.1"
 files = [
-    {file = "openai-1.14.0-py3-none-any.whl", hash = "sha256:5c9fd3a59f5cbdb4020733ddf79a22f6b7a36d561968cb3f3dd255cdd263d9fe"},
-    {file = "openai-1.14.0.tar.gz", hash = "sha256:e287057adf0ec3315abc32ddcc968d095879abd9b68bf51c0402dab13ab5ae9b"},
+    {file = "openai-1.14.2-py3-none-any.whl", hash = "sha256:a48b3c4d635b603952189ac5a0c0c9b06c025b80eb2900396939f02bb2104ac3"},
+    {file = "openai-1.14.2.tar.gz", hash = "sha256:e5642f7c02cf21994b08477d7bb2c1e46d8f335d72c26f0396c5f89b15b5b153"},
 ]
 
 [package.dependencies]

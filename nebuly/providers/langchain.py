@@ -145,6 +145,9 @@ def _parse_langchain_data(  # pylint: disable=too-many-return-statements
         if "input" in data:
             # Needed when calling invoke with input and chat_history
             return str(data["input"])
+        if "question" in data:
+            # Needed when calling invoke with question and chat_history
+            return str(data["question"])
         return "\n".join([f"{key}: {value}" for key, value in data.items()])
     return str(data)
 
@@ -152,12 +155,19 @@ def _parse_langchain_data(  # pylint: disable=too-many-return-statements
 def _parse_langchain_history(inputs: dict[str, Any]) -> list[HistoryEntry]:
     if "chat_history" in inputs:
         history = inputs["chat_history"]
-        return [
-            HistoryEntry(
-                user=str(history[i].content), assistant=str(history[i + 1].content)
-            )
-            for i in range(0, len(history), 2)
-        ]
+        if len(history) > 0:
+            if isinstance(history[0], tuple):
+                # In some chains, the chat history is a list of tuples
+                return [
+                    HistoryEntry(user=str(message[0]), assistant=str(message[1]))
+                    for message in history
+                ]
+            return [
+                HistoryEntry(
+                    user=str(history[i].content), assistant=str(history[i + 1].content)
+                )
+                for i in range(0, len(history), 2)
+            ]
     return []
 
 
