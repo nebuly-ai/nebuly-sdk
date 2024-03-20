@@ -337,9 +337,8 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
         if langchain.__version__ < "0.1.0":
             logger.warning(
                 "LangChain version 0.1.0 or higher is required to use the "
-                "LangChainTrackingHandler with Nebuly SDK. Detected version: "
-                f"{langchain.__version__}. "
-                "Please upgrade your LangChain version."
+                "LangChainTrackingHandler with Nebuly SDK. "
+                "Please upgrade your LangChain version.",
             )
 
     def _send_interaction(self, run_id: uuid.UUID) -> None:
