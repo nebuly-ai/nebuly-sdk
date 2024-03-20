@@ -8,6 +8,7 @@ from enum import Enum
 from typing import Any, Dict, Sequence, Tuple, cast
 from uuid import UUID
 
+import langchain
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain.chains.base import Chain
 from langchain.load import load
@@ -323,12 +324,22 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
         feature_flags: list[str] | None = None,
         nebuly_tags: dict[str, str] | None = None,
     ) -> None:
+        self._check_version()
         self.api_key = api_key
         self.nebuly_user = user_id
         self.nebuly_user_group = user_group_profile
         self.nebuly_feature_flags = feature_flags
         self.nebuly_tags = nebuly_tags
         self._events_storage = EventsStorage()
+
+    @staticmethod
+    def _check_version() -> None:
+        if langchain.__version__ < "0.1.0":
+            logger.warning(
+                "LangChain version 0.1.0 or higher is required to use the "
+                "LangChainTrackingHandler with Nebuly SDK. "
+                "Please upgrade your LangChain version.",
+            )
 
     def _send_interaction(self, run_id: uuid.UUID) -> None:
         if (

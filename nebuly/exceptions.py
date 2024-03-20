@@ -47,7 +47,3 @@ class NotInInteractionContext(InteractionContextError):
 
 class InteractionMustBeLocalVariable(InteractionContextError):
     """Exception raised when the interaction manager creation misses the 'as'"""
-
-
-class ModelNotSupportedError(Exception):
-    """Exception raised when the model is not supported."""
