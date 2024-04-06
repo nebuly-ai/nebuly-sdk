@@ -8,6 +8,7 @@ from enum import Enum
 from typing import Any, Dict, Sequence, Tuple, cast
 from uuid import UUID
 
+import langchain
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain.chains.base import Chain
 from langchain.load import load
@@ -145,6 +146,9 @@ def _parse_langchain_data(  # pylint: disable=too-many-return-statements
         if "input" in data:
             # Needed when calling invoke with input and chat_history
             return str(data["input"])
+        if "question" in data:
+            # Needed when calling invoke with question and chat_history
+            return str(data["question"])
         return "\n".join([f"{key}: {value}" for key, value in data.items()])
     return str(data)
 
@@ -152,12 +156,19 @@ def _parse_langchain_data(  # pylint: disable=too-many-return-statements
 def _parse_langchain_history(inputs: dict[str, Any]) -> list[HistoryEntry]:
     if "chat_history" in inputs:
         history = inputs["chat_history"]
-        return [
-            HistoryEntry(
-                user=str(history[i].content), assistant=str(history[i + 1].content)
-            )
-            for i in range(0, len(history), 2)
-        ]
+        if len(history) > 0:
+            if isinstance(history[0], tuple):
+                # In some chains, the chat history is a list of tuples
+                return [
+                    HistoryEntry(user=str(message[0]), assistant=str(message[1]))
+                    for message in history
+                ]
+            return [
+                HistoryEntry(
+                    user=str(history[i].content), assistant=str(history[i + 1].content)
+                )
+                for i in range(0, len(history), 2)
+            ]
     return []
 
 
@@ -313,12 +324,22 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
         feature_flags: list[str] | None = None,
         nebuly_tags: dict[str, str] | None = None,
     ) -> None:
+        self._check_version()
         self.api_key = api_key
         self.nebuly_user = user_id
         self.nebuly_user_group = user_group_profile
         self.nebuly_feature_flags = feature_flags
         self.nebuly_tags = nebuly_tags
         self._events_storage = EventsStorage()
+
+    @staticmethod
+    def _check_version() -> None:
+        if langchain.__version__ < "0.1.0":
+            logger.warning(
+                "LangChain version 0.1.0 or higher is required to use the "
+                "LangChainTrackingHandler with Nebuly SDK. "
+                "Please upgrade your LangChain version.",
+            )
 
     def _send_interaction(self, run_id: uuid.UUID) -> None:
         if (
