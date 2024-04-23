@@ -1,6 +1,7 @@
 from typing import List, Literal, Optional, Tuple
 from unittest import mock
 
+import openai
 import pytest
 from openai import AsyncOpenAI, OpenAI
 from openai.pagination import AsyncCursorPage, SyncCursorPage
@@ -8,6 +9,19 @@ from openai.types.beta.threads import Message, Text, TextContentBlock
 
 from nebuly.entities import HistoryEntry, InteractionWatch
 from tests.providers.common import nebuly_init
+
+if openai.__version__ < "1.21.0":
+    assistant_messages_list = (
+        "openai.resources.beta.threads.messages.messages.Messages.list"
+    )
+    assistant_messages_async_list = (
+        "openai.resources.beta.threads.messages.messages.AsyncMessages.list"
+    )
+else:
+    assistant_messages_list = "openai.resources.beta.threads.messages.Messages.list"
+    assistant_messages_async_list = (
+        "openai.resources.beta.threads.messages.AsyncMessages.list"
+    )
 
 
 def create_fake_messages(
@@ -25,7 +39,6 @@ def create_fake_messages(
             Message(
                 id=f"message_{i}",
                 assistant_id="assistant_1",
-                file_ids=[],
                 status="completed",
                 metadata=None,
                 object="thread.message",
@@ -57,7 +70,7 @@ def run_fake_assistant_messages(
     messages
     """
     with mock.patch(
-        "openai.resources.beta.threads.messages.messages.Messages.list",
+        assistant_messages_list,
     ) as mock_messages_list:
         reverse = order == "asc"
         response = create_fake_messages(messages, has_more=has_more, reverse=reverse)
@@ -94,7 +107,6 @@ def create_fake_messages_async(
             Message(
                 id=f"message_{i}",
                 assistant_id="assistant_1",
-                file_ids=[],
                 metadata=None,
                 status="completed",
                 object="thread.message",
@@ -126,7 +138,7 @@ async def run_fake_assistant_messages_async(
     messages
     """
     with mock.patch(
-        "openai.resources.beta.threads.messages.messages.AsyncMessages.list",
+        assistant_messages_async_list,
     ) as mock_messages_list:
         reverse = order == "asc"
         response = create_fake_messages_async(
