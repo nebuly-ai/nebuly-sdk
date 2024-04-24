@@ -1,16 +1,16 @@
 from typing import List, Literal, Optional, Tuple
 from unittest import mock
 
-import openai
 import pytest
 from openai import AsyncOpenAI, OpenAI
 from openai.pagination import AsyncCursorPage, SyncCursorPage
 from openai.types.beta.threads import Message, Text, TextContentBlock
 
 from nebuly.entities import HistoryEntry, InteractionWatch
+from nebuly.utils import is_module_version_less_than
 from tests.providers.common import nebuly_init
 
-if openai.__version__ < "1.21.0":
+if is_module_version_less_than("openai", "1.21.0"):
     assistant_messages_list = (
         "openai.resources.beta.threads.messages.messages.Messages.list"
     )

@@ -25,6 +25,7 @@ from openai.types.completion_choice import (  # type: ignore  # noqa: E501
 
 from nebuly.entities import HistoryEntry, ModelInput
 from nebuly.providers.base import PicklerHandler, ProviderDataExtractor
+from nebuly.utils import is_module_version_less_than
 
 try:
     # This import is valid only starting from openai==1.8.0
@@ -37,7 +38,7 @@ except ImportError:
         pass
 
 
-if openai.__version__ < "1.21.0":
+if is_module_version_less_than("openai", "1.21.0"):
     assistant_messages_list = "resources.beta.threads.messages.messages.Messages.list"
     assistant_messages_async_list = (
         "resources.beta.threads.messages.messages.AsyncMessages.list"
