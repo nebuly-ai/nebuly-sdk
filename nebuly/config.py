@@ -26,7 +26,7 @@ PACKAGES = (
     ),
     Package(
         "openai",
-        SupportedVersion("1.0.0"),
+        SupportedVersion("1.0.0", "1.21.0"),
         (
             "resources.chat.completions.Completions.create",
             "resources.chat.completions.AsyncCompletions.create",
@@ -34,6 +34,18 @@ PACKAGES = (
             "resources.completions.AsyncCompletions.create",
             "resources.beta.threads.messages.messages.Messages.list",
             "resources.beta.threads.messages.messages.AsyncMessages.list",
+        ),
+    ),
+    Package(
+        "openai",
+        SupportedVersion("1.21.0"),
+        (
+            "resources.chat.completions.Completions.create",
+            "resources.chat.completions.AsyncCompletions.create",
+            "resources.completions.Completions.create",
+            "resources.completions.AsyncCompletions.create",
+            "resources.beta.threads.messages.Messages.list",
+            "resources.beta.threads.messages.AsyncMessages.list",
         ),
     ),
     Package(

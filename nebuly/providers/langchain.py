@@ -96,14 +96,16 @@ def _get_input_and_history(chain: Chain, inputs: dict[str, Any] | Any) -> ModelI
 def _get_input_and_history_runnable_seq(
     sequence: RunnableSequence[Any, Any], inputs: dict[str, Any] | Any
 ) -> ModelInput:
-    first = getattr(sequence, "first", None)
+    steps = getattr(sequence, "steps", None)
 
-    if isinstance(first, PromptTemplate):
-        return ModelInput(prompt=_process_prompt_template(inputs, first))
+    if steps is not None and len(steps) > 0:
+        for step in steps:
+            if isinstance(step, PromptTemplate):
+                return ModelInput(prompt=_process_prompt_template(inputs, step))
 
-    if isinstance(first, ChatPromptTemplate):
-        prompt, history = _process_chat_prompt_template(inputs, first)
-        return ModelInput(prompt=prompt, history=history)
+            if isinstance(step, ChatPromptTemplate):
+                prompt, history = _process_chat_prompt_template(inputs, step)
+                return ModelInput(prompt=prompt, history=history)
 
     return ModelInput(prompt="")
 
@@ -163,11 +165,18 @@ def _parse_langchain_history(inputs: dict[str, Any]) -> list[HistoryEntry]:
                     HistoryEntry(user=str(message[0]), assistant=str(message[1]))
                     for message in history
                 ]
-            return [
-                HistoryEntry(
-                    user=str(history[i].content), assistant=str(history[i + 1].content)
+
+            human_messages = [message for message in history if message.type == "human"]
+            ai_messages = [message for message in history if message.type == "ai"]
+
+            if len(human_messages) != len(ai_messages):
+                logger.warning(
+                    "Unequal number of human and AI messages in chat history"
                 )
-                for i in range(0, len(history), 2)
+
+            return [
+                HistoryEntry(user=str(human.content), assistant=str(ai.content))
+                for human, ai in zip(human_messages, ai_messages)
             ]
     return []
 

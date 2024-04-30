@@ -25,6 +25,7 @@ from openai.types.completion_choice import (  # type: ignore  # noqa: E501
 
 from nebuly.entities import HistoryEntry, ModelInput
 from nebuly.providers.base import PicklerHandler, ProviderDataExtractor
+from nebuly.utils import is_module_version_less_than
 
 try:
     # This import is valid only starting from openai==1.8.0
@@ -35,6 +36,16 @@ except ImportError:
 
     class LegacyAPIResponse:
         pass
+
+
+if is_module_version_less_than("openai", "1.21.0"):
+    assistant_messages_list = "resources.beta.threads.messages.messages.Messages.list"
+    assistant_messages_async_list = (
+        "resources.beta.threads.messages.messages.AsyncMessages.list"
+    )
+else:
+    assistant_messages_list = "resources.beta.threads.messages.Messages.list"
+    assistant_messages_async_list = "resources.beta.threads.messages.AsyncMessages.list"
 
 
 try:
@@ -176,8 +187,8 @@ class OpenAIDataExtractor(ProviderDataExtractor):
             history = self._extract_history()
             return ModelInput(prompt=prompt, history=history)
         if self.function_name in [
-            "resources.beta.threads.messages.messages.Messages.list",
-            "resources.beta.threads.messages.messages.AsyncMessages.list",
+            assistant_messages_list,
+            assistant_messages_async_list,
         ]:
             if outputs.has_more:
                 return ModelInput(prompt="")
@@ -262,8 +273,8 @@ class OpenAIDataExtractor(ProviderDataExtractor):
                 payload = ChatCompletion(**payload_dict)
                 return cast(str, cast(Choice, payload.choices[0]).message.content)
         if self.function_name in [
-            "resources.beta.threads.messages.messages.Messages.list",
-            "resources.beta.threads.messages.messages.AsyncMessages.list",
+            assistant_messages_list,
+            assistant_messages_async_list,
         ]:
             if outputs.has_more:
                 return ""

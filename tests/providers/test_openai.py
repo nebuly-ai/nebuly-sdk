@@ -17,7 +17,6 @@ if version("openai").startswith("0."):
 
 import openai
 from openai import AsyncAzureOpenAI, AsyncOpenAI, AzureOpenAI, OpenAI
-from openai._legacy_response import LegacyAPIResponse
 from openai._response import APIResponse
 from openai.types import Completion, CompletionChoice, CompletionUsage
 from openai.types.chat import (
@@ -34,6 +33,13 @@ from nebuly.entities import HistoryEntry, InteractionWatch, SpanWatch
 from nebuly.observers import NebulyObserver
 from nebuly.requests import CustomJSONEncoder
 from tests.providers.common import nebuly_init
+
+try:
+    from openai._legacy_response import (  # pylint: disable=ungrouped-imports
+        LegacyAPIResponse,
+    )
+except ImportError:
+    LegacyAPIResponse = MagicMock
 
 os.environ["OPENAI_API_KEY"] = "test_key"
 
