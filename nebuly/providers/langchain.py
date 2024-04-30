@@ -163,11 +163,18 @@ def _parse_langchain_history(inputs: dict[str, Any]) -> list[HistoryEntry]:
                     HistoryEntry(user=str(message[0]), assistant=str(message[1]))
                     for message in history
                 ]
-            return [
-                HistoryEntry(
-                    user=str(history[i].content), assistant=str(history[i + 1].content)
+
+            human_messages = [message for message in history if message.type == "human"]
+            ai_messages = [message for message in history if message.type == "ai"]
+
+            if len(human_messages) != len(ai_messages):
+                logger.warning(
+                    "Unequal number of human and AI messages in chat history"
                 )
-                for i in range(0, len(history), 2)
+
+            return [
+                HistoryEntry(user=str(human.content), assistant=str(ai.content))
+                for human, ai in zip(human_messages, ai_messages)
             ]
     return []
 
