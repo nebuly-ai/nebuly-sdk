@@ -96,14 +96,16 @@ def _get_input_and_history(chain: Chain, inputs: dict[str, Any] | Any) -> ModelI
 def _get_input_and_history_runnable_seq(
     sequence: RunnableSequence[Any, Any], inputs: dict[str, Any] | Any
 ) -> ModelInput:
-    first = getattr(sequence, "first", None)
+    steps = getattr(sequence, "steps", None)
 
-    if isinstance(first, PromptTemplate):
-        return ModelInput(prompt=_process_prompt_template(inputs, first))
+    if steps is not None and len(steps) > 0:
+        for step in steps:
+            if isinstance(step, PromptTemplate):
+                return ModelInput(prompt=_process_prompt_template(inputs, step))
 
-    if isinstance(first, ChatPromptTemplate):
-        prompt, history = _process_chat_prompt_template(inputs, first)
-        return ModelInput(prompt=prompt, history=history)
+            if isinstance(step, ChatPromptTemplate):
+                prompt, history = _process_chat_prompt_template(inputs, step)
+                return ModelInput(prompt=prompt, history=history)
 
     return ModelInput(prompt="")
 
