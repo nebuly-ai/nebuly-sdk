@@ -15,7 +15,7 @@ from langchain.load import load
 from langchain.prompts import ChatPromptTemplate, PromptTemplate
 from langchain.prompts.chat import AIMessagePromptTemplate, HumanMessagePromptTemplate
 from langchain.schema import Document
-from langchain.schema.messages import AIMessage, BaseMessage, HumanMessage
+from langchain.schema.messages import AIMessage, BaseMessage, HumanMessage, ToolMessage
 from langchain.schema.output import LLMResult
 from langchain.schema.runnable import RunnableSequence
 
@@ -134,10 +134,8 @@ def _parse_output(output: str | dict[str, Any] | AIMessage) -> str:
 def _parse_langchain_data(  # pylint: disable=too-many-return-statements
     data: Any,
 ) -> str:
-    if isinstance(data, str):
-        return data
     if isinstance(data, dict):
-        if len(data) == 1:
+        if len(data) == 1 and isinstance(list(data.values())[0], str):
             return str(list(data.values())[0])
         if "answer" in data:
             # If the data is a retrieval chain, we want to return the answer
@@ -151,7 +149,15 @@ def _parse_langchain_data(  # pylint: disable=too-many-return-statements
         if "question" in data:
             # Needed when calling invoke with question and chat_history
             return str(data["question"])
+        if "messages" in data and isinstance(
+            data["messages"][-1], (HumanMessage, AIMessage, ToolMessage)
+        ):
+            return str(data["messages"][-1].content)
         return "\n".join([f"{key}: {value}" for key, value in data.items()])
+    if isinstance(data, list):
+        data = data[-1]
+    if isinstance(data, (HumanMessage, AIMessage, ToolMessage)):
+        return str(data.content)
     return str(data)
 
 
