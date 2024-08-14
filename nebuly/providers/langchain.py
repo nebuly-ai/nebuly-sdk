@@ -394,7 +394,7 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
         **kwargs: Any,
     ) -> None:
         if self.verbose:
-            logger.info(f"Tool started with input: {input_str}")
+            logger.info("Tool started with input: %s", input_str)
         data = EventData(
             type=EventType.TOOL,
             kwargs={
@@ -414,7 +414,7 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
         **kwargs: Any,
     ) -> None:
         if self.verbose:
-            logger.info(f"Tool ended with output: {output}")
+            logger.info("Tool ended with output: %s", output)
         self._events_storage.events[run_id].data.add_end_event_data(
             kwargs=kwargs, output=output
         )
@@ -429,7 +429,7 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
         **kwargs: Any,
     ) -> None:
         if self.verbose:
-            logger.info(f"Retriever started with query: {query}")
+            logger.info("Retriever started with query: %s", query)
         data = EventData(
             type=EventType.RETRIEVAL,
             kwargs={
@@ -449,7 +449,7 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
         **kwargs: Any,
     ) -> None:
         if self.verbose:
-            logger.info(f"Retriever ended with {len(documents)} documents")
+            logger.info("Retriever ended with %d documents", len(documents))
         self._events_storage.events[run_id].data.add_end_event_data(
             kwargs=kwargs, output=documents
         )
@@ -464,7 +464,7 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
         **kwargs: Any,
     ) -> None:
         if self.verbose:
-            logger.info(f"LLM model started with {len(prompts)} prompts")
+            logger.info("LLM model started with %d prompts", len(prompts))
         data = EventData(
             type=EventType.LLM_MODEL,
             kwargs={
@@ -492,7 +492,7 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
 
         if len(self._events_storage.events) == 1:
             if self.verbose:
-                logger.info("Sending interaction for id: {run_id}")
+                logger.info("Sending interaction for id: %s", str(run_id))
             self._send_interaction(run_id)
             self._events_storage.delete_events(run_id)
 
@@ -525,7 +525,7 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
         **kwargs: Any,
     ) -> None:
         if self.verbose:
-            logger.info(f"Chain started with run_id: {run_id}")
+            logger.info("Chain started with run_id: %s", str(run_id))
         data = EventData(
             type=EventType.CHAIN,
             kwargs={
@@ -545,7 +545,7 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
         **kwargs: Any,
     ) -> None:
         if self.verbose:
-            logger.info(f"Chain ended with run_id: {run_id}")
+            logger.info("Chain ended with run_id: %s", str(run_id))
         self._events_storage.events[run_id].data.add_end_event_data(
             kwargs=kwargs, output=outputs
         )
@@ -553,12 +553,12 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
 
         if self._events_storage.events[run_id].hierarchy is None:
             if self.verbose:
-                logger.info("Sending interaction for id: {run_id}")
+                logger.info("Sending interaction for id: %s", str(run_id))
             self._send_interaction(run_id)
             self._events_storage.delete_events(run_id)
 
     def send_pending_interaction(self, output: dict[str, str]) -> None:
-        for run_id in self._events_storage.events:
+        for run_id in self._events_storage.events:  # pylint: disable=consider-using-dict-items
             if self._events_storage.events[run_id].hierarchy is None:
                 self._events_storage.events[run_id].data.add_end_event_data(
                     kwargs={}, output=output
