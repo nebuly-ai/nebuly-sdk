@@ -484,7 +484,7 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
         **kwargs: Any,
     ) -> None:
         if self.verbose:
-            logger.info(f"LLM model ended")
+            logger.info("LLM model ended")
         self._events_storage.events[run_id].data.add_end_event_data(
             kwargs=kwargs, output=response
         )
