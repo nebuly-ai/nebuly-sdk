@@ -75,8 +75,10 @@ class AWSBedrockDataExtractor(ProviderDataExtractor):
                     prompt=json.loads(self.original_args[2]["body"])["inputText"]
                 )
             if self.provider == "anthropic":  # Anthropic
+                body = json.loads(self.original_args[2]["body"])
+                user_input = body["prompt"] if "prompt" in body else body["messages"]
                 last_user_input, history = extract_anthropic_input_and_history(
-                    json.loads(self.original_args[2]["body"])["prompt"]
+                    user_input
                 )
                 return ModelInput(prompt=last_user_input, history=history)
             # Cohere and AI21
@@ -102,7 +104,9 @@ class AWSBedrockDataExtractor(ProviderDataExtractor):
             if self.provider == "cohere":
                 return response_body["generations"][0]["text"]
             if self.provider == "anthropic":
-                return response_body["completion"].strip()
+                if "completion" in response_body:
+                    return response_body["completion"].strip()
+                return response_body["content"][0]["text"]
             if self.provider == "ai21":
                 return response_body["completions"][0]["data"]["text"]
 
