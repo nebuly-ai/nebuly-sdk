@@ -338,6 +338,7 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
         user_group_profile: str | None = None,
         feature_flags: list[str] | None = None,
         nebuly_tags: dict[str, str] | None = None,
+        verbose: bool = False,
     ) -> None:
         self._check_version()
         self.api_key = api_key
@@ -346,6 +347,7 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
         self.nebuly_feature_flags = feature_flags
         self.nebuly_tags = nebuly_tags
         self._events_storage = EventsStorage()
+        self.verbose = verbose
 
     @staticmethod
     def _check_version() -> None:
@@ -391,6 +393,8 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
         parent_run_id: UUID | None = None,
         **kwargs: Any,
     ) -> None:
+        if self.verbose:
+            logger.info("Tool started with input: %s", input_str)
         data = EventData(
             type=EventType.TOOL,
             kwargs={
@@ -409,6 +413,8 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
         run_id: UUID,
         **kwargs: Any,
     ) -> None:
+        if self.verbose:
+            logger.info("Tool ended with output: %s", output)
         self._events_storage.events[run_id].data.add_end_event_data(
             kwargs=kwargs, output=output
         )
@@ -422,6 +428,8 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
         parent_run_id: UUID | None = None,
         **kwargs: Any,
     ) -> None:
+        if self.verbose:
+            logger.info("Retriever started with query: %s", query)
         data = EventData(
             type=EventType.RETRIEVAL,
             kwargs={
@@ -440,6 +448,8 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
         run_id: UUID,
         **kwargs: Any,
     ) -> None:
+        if self.verbose:
+            logger.info("Retriever ended with %d documents", len(documents))
         self._events_storage.events[run_id].data.add_end_event_data(
             kwargs=kwargs, output=documents
         )
@@ -453,6 +463,8 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
         parent_run_id: UUID | None = None,
         **kwargs: Any,
     ) -> None:
+        if self.verbose:
+            logger.info("LLM model started with %d prompts", len(prompts))
         data = EventData(
             type=EventType.LLM_MODEL,
             kwargs={
@@ -471,12 +483,16 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
         run_id: UUID,
         **kwargs: Any,
     ) -> None:
+        if self.verbose:
+            logger.info("LLM model ended")
         self._events_storage.events[run_id].data.add_end_event_data(
             kwargs=kwargs, output=response
         )
         self._events_storage.events[run_id].set_end_time()
 
         if len(self._events_storage.events) == 1:
+            if self.verbose:
+                logger.info("Sending interaction for id: %s", str(run_id))
             self._send_interaction(run_id)
             self._events_storage.delete_events(run_id)
 
@@ -508,6 +524,8 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
         parent_run_id: UUID | None = None,
         **kwargs: Any,
     ) -> None:
+        if self.verbose:
+            logger.info("Chain started with run_id: %s", str(run_id))
         data = EventData(
             type=EventType.CHAIN,
             kwargs={
@@ -526,11 +544,30 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
         run_id: UUID,
         **kwargs: Any,
     ) -> None:
+        if self.verbose:
+            logger.info("Chain ended with run_id: %s", str(run_id))
         self._events_storage.events[run_id].data.add_end_event_data(
             kwargs=kwargs, output=outputs
         )
         self._events_storage.events[run_id].set_end_time()
 
         if self._events_storage.events[run_id].hierarchy is None:
+            if self.verbose:
+                logger.info("Sending interaction for id: %s", str(run_id))
             self._send_interaction(run_id)
             self._events_storage.delete_events(run_id)
+
+    def send_pending_interaction(self, output: dict[str, str]) -> None:
+        for run_id in self._events_storage.events:  # pylint: disable=consider-using-dict-items
+            if self._events_storage.events[run_id].hierarchy is None:
+                self._events_storage.events[run_id].data.add_end_event_data(
+                    kwargs={}, output=output
+                )
+                self._events_storage.events[run_id].set_end_time()
+                # remove unfinised events
+                for key, value in list(self._events_storage.events.items()):
+                    if value.end_time is None:
+                        self._events_storage.delete_events(key)
+                self._send_interaction(run_id)
+                self._events_storage.delete_events(run_id)
+                break
