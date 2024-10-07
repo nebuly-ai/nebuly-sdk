@@ -39,6 +39,7 @@ class Event(abc.ABC):
     module: str
     start_time: datetime
     end_time: datetime | None = None
+    input_llm: str | None = None
 
     @property
     @abc.abstractmethod
@@ -118,3 +119,21 @@ class EventsStorage:
 
         for key in keys_to_delete:
             self.events.pop(key)
+
+    def update_chain_input(self, prompt: str) -> None:
+        """
+        This method overrides the input of the chain event
+        """
+        chain_events = [
+            event for event in self.events.values() if event.data.type.value == "chain"
+        ]
+        if len(chain_events) == 1:
+            chain_input = chain_events[0].input
+
+            if (
+                isinstance(chain_input, str)
+                and len(chain_input) > 0
+                and chain_input in prompt
+                and chain_input != prompt
+            ):
+                chain_events[0].input_llm = prompt

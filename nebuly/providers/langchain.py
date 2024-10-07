@@ -201,8 +201,12 @@ class EventType(Enum):
 
 @dataclass
 class LangChainEvent(Event):
+    input_llm = None
+
     @property
-    def input(self) -> str:
+    def input(self) -> str:  # pylint: disable=too-many-return-statements
+        if self.input_llm is not None:
+            return self.input_llm
         if self.data.kwargs is None:
             raise ValueError("Event has no kwargs.")
         if self.data.type is EventType.CHAT_MODEL:
@@ -221,6 +225,8 @@ class LangChainEvent(Event):
                 raise ValueError("Event has no inputs.")
             try:
                 chain = load(self.data.kwargs.get("serialized", {}))
+                if chain is None:
+                    return _parse_langchain_data(inputs)
                 if isinstance(chain, RunnableSequence):
                     return _get_input_and_history_runnable_seq(chain, inputs).prompt
                 return _get_input_and_history(chain, inputs).prompt
@@ -240,6 +246,8 @@ class LangChainEvent(Event):
                 raise ValueError("Event has no kwargs.")
             try:
                 chain = load(self.data.kwargs.get("serialized", {}))
+                if chain is None:
+                    return _parse_langchain_data(self.data.output)
                 if isinstance(chain, RunnableSequence):
                     return _parse_output(self.data.output)
                 return _get_output_chain(chain, self.data.output)
@@ -249,7 +257,9 @@ class LangChainEvent(Event):
         raise ValueError(f"Event type {self.data.type} not supported.")
 
     @property
-    def history(self) -> list[HistoryEntry]:
+    def history(  # pylint: disable=too-many-return-statements
+        self,
+    ) -> list[HistoryEntry]:
         if self.data.kwargs is None:
             raise ValueError("Event has no kwargs.")
 
@@ -283,6 +293,8 @@ class LangChainEvent(Event):
                 raise ValueError("Event has no inputs.")
             try:
                 chain = load(self.data.kwargs.get("serialized", {}))
+                if chain is None:
+                    return _parse_langchain_history(inputs)
                 if isinstance(chain, RunnableSequence):
                     return _get_input_and_history_runnable_seq(chain, inputs).history
                 return _get_input_and_history(chain, inputs).history
@@ -317,7 +329,10 @@ class LangChainEvent(Event):
             raise ValueError("Event has no kwargs.")
         if self.data.type is EventType.TOOL:
             return self.data.kwargs["serialized"]["name"]  # type: ignore
-        return ".".join(self.data.kwargs["serialized"]["id"])
+        try:
+            return ".".join(self.data.kwargs["serialized"]["id"])
+        except TypeError:
+            return "unknown"
 
     def _get_rag_source(self) -> str | None:
         if self.data.kwargs is None or len(self.data.kwargs) == 0:
@@ -465,6 +480,10 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
     ) -> None:
         if self.verbose:
             logger.info("LLM model started with %d prompts", len(prompts))
+
+        if len(prompts) == 1:
+            self._events_storage.update_chain_input(prompts[0])
+
         data = EventData(
             type=EventType.LLM_MODEL,
             kwargs={
@@ -558,7 +577,9 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
             self._events_storage.delete_events(run_id)
 
     def send_pending_interaction(self, output: dict[str, str]) -> None:
-        for run_id in self._events_storage.events:  # pylint: disable=consider-using-dict-items
+        for (
+            run_id
+        ) in self._events_storage.events:  # pylint: disable=consider-using-dict-items
             if self._events_storage.events[run_id].hierarchy is None:
                 self._events_storage.events[run_id].data.add_end_event_data(
                     kwargs={}, output=output
