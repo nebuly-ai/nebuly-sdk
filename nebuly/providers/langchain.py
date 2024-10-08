@@ -338,8 +338,14 @@ class LangChainEvent(Event):
         if self.data.kwargs is None or len(self.data.kwargs) == 0:
             raise ValueError("Event has no kwargs.")
         if self.data.type is EventType.TOOL:
+            serialized = self.data.kwargs["serialized"]
+            if serialized is None and "name" in self.data.kwargs:
+                return str(self.data.kwargs["name"])
             return self.data.kwargs["serialized"]["name"]  # type: ignore
         if self.data.type is EventType.RETRIEVAL:
+            serialized = self.data.kwargs["serialized"]
+            if serialized is None and "name" in self.data.kwargs:
+                return str(self.data.kwargs["name"])
             return self.data.kwargs["serialized"]["id"][-1]  # type: ignore
 
         return None
