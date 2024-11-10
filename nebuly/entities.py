@@ -127,6 +127,7 @@ class InteractionWatch:  # pylint: disable=too-many-instance-attributes
     tags: dict[str, str] | None = None
     feature_flags: list[str] | None = None
     api_key: str | None = None
+    conversation_id: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -147,6 +148,7 @@ class InteractionWatch:  # pylint: disable=too-many-instance-attributes
             "end_user_group_profile": self.end_user_group_profile,
             "tags": self.tags,
             "feature_flags": self.feature_flags,
+            "conversation_id": self.conversation_id,
         }
 
 

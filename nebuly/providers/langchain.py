@@ -351,6 +351,7 @@ class LangChainEvent(Event):
         return None
 
 
+# pylint: disable=too-many-instance-attributes
 class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
     def __init__(  # pylint: disable=too-many-arguments
         self,
@@ -359,6 +360,7 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
         user_group_profile: str | None = None,
         feature_flags: list[str] | None = None,
         nebuly_tags: dict[str, str] | None = None,
+        conversation_id: str | None = None,
         verbose: bool = False,
     ) -> None:
         self._check_version()
@@ -367,6 +369,7 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
         self.nebuly_user_group = user_group_profile
         self.nebuly_feature_flags = feature_flags
         self.nebuly_tags = nebuly_tags
+        self.conversation_id = conversation_id
         self._events_storage = EventsStorage()
         self.verbose = verbose
 
@@ -395,6 +398,7 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
             time_end=cast(datetime, self._events_storage.events[run_id].end_time),
             history=self._events_storage.events[run_id].history,
             spans=_get_spans(events=self._events_storage.events),
+            conversation_id=self.conversation_id,
             hierarchy={
                 event.event_id: event.hierarchy.parent_run_id
                 if event.hierarchy is not None
