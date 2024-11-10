@@ -6,3 +6,4 @@ coverage.xml
 .idea/
 dist/
 scripts/
+**/.DS_Store
