@@ -81,7 +81,7 @@ chat_completion = client.chat.completions.create(
         }
     ],
     model="gpt-3.5-turbo",
-    user_id="user-123",
+    user="user-123",
     feature_flags=["new-feature_flag"],
 )
 ```
@@ -112,7 +112,7 @@ import cohere
 
 co = cohere.Client(os.getenv("COHERE_API_KEY"))
 
-with new_interaction(user_id="test_user", user_group_profile="test_group") as interaction:
+with new_interaction(user="test_user", user_group_profile="test_group") as interaction:
     # interaction.set_input("Some custom input")
     # interaction.set_history([{"role": "user/assistant", "content": "sample content"}}])
     completion_1 = openai.ChatCompletion.create(
@@ -163,7 +163,7 @@ import os
 from nebuly.providers.llama_index import LlamaIndexTrackingHandler
 
 handler = LlamaIndexTrackingHandler(
-    api_key=os.getenv("NEBULY_API_KEY"), user_id="test_user"
+    api_key=os.getenv("NEBULY_API_KEY"), user="test_user"
 )
 
 import llama_index

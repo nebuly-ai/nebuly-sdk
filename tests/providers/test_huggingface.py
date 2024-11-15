@@ -51,7 +51,7 @@ def test_hf_conversational_pipelines__single_prompt__with_history(
                 ]
             )
             result = converse(
-                conversation, user_id="test_user", user_group_profile="test_group"
+                conversation, user="test_user", user_group_profile="test_group"
             )
 
             assert result is not None
@@ -108,7 +108,7 @@ def test_hf_conversational_pipelines__prompt_list(
             conversation_2 = Conversation("What's the last book you have read?")
             result = converse(
                 [conversation_1, conversation_2],
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             )
 
@@ -168,7 +168,7 @@ def test_hf_text_generation_pipelines__single_prompt(
             generator = pipeline("text-generation")
             result = generator(
                 user_input,
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             )
 
@@ -208,7 +208,7 @@ def test_hf_text_generation_pipelines__single_prompt__multiple_return_sequences(
             result = generator(
                 user_input,
                 num_return_sequences=2,
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             )
 
@@ -252,7 +252,7 @@ def test_hf_text_generation_pipelines__batch_prompt(
             generator = pipeline("text-generation")
             result = generator(
                 [user_input, user_input],
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             )
 

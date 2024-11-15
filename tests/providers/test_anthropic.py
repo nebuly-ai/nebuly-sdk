@@ -45,7 +45,7 @@ def test_anthropic_completion__no_context_manager(
                 max_tokens_to_sample=300,
                 prompt=f"{HUMAN_PROMPT} say hi{AI_PROMPT} hi {HUMAN_PROMPT} "
                 f"say hello{AI_PROMPT}",
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             )
             assert result is not None
@@ -131,7 +131,7 @@ async def test_anthropic_completion__async(anthropic_completion: Completion) -> 
                 max_tokens_to_sample=300,
                 prompt=f"{HUMAN_PROMPT} how does a court case get to the "
                 f"Supreme Court?{AI_PROMPT}",
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             )
             assert result is not None
@@ -191,7 +191,7 @@ def test_anthropic_completion_gen(anthropic_completion_gen: list[Completion]) ->
                 prompt=f"{HUMAN_PROMPT} how does a court case get to the "
                 f"Supreme Court?{AI_PROMPT}",
                 stream=True,
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             ):
                 ...
@@ -257,7 +257,7 @@ async def test_anthropic_completion_async_gen(
                 prompt=f"{HUMAN_PROMPT} how does a court case get to the "
                 f"Supreme Court?{AI_PROMPT}",
                 stream=True,
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             ):
                 ...

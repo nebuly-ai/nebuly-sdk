@@ -82,11 +82,11 @@ def run_fake_assistant_messages(
         client = OpenAI(api_key="test_key")
         if order is not None:
             client.beta.threads.messages.list(  # type: ignore[call-arg]  # pylint: disable=unexpected-keyword-arg  # noqa: E501
-                "thread_WPTJKw22r54NrYVM35FfHqYN", order=order, user_id="user_1"
+                "thread_WPTJKw22r54NrYVM35FfHqYN", order=order, user="user_1"
             )
         else:
             client.beta.threads.messages.list(  # type: ignore[call-arg]  # pylint: disable=unexpected-keyword-arg  # noqa: E501
-                "thread_WPTJKw22r54NrYVM35FfHqYN", user_id="user_1"
+                "thread_WPTJKw22r54NrYVM35FfHqYN", user="user_1"
             )
 
     return dummy_observer
@@ -152,11 +152,11 @@ async def run_fake_assistant_messages_async(
         client = AsyncOpenAI(api_key="test_key")
         if order is not None:
             await client.beta.threads.messages.list(  # type: ignore[call-arg]  # pylint: disable=unexpected-keyword-arg  # noqa: E501
-                "thread_WPTJKw22r54NrYVM35FfHqYN", order=order, user_id="user_1"
+                "thread_WPTJKw22r54NrYVM35FfHqYN", order=order, user="user_1"
             )
         else:
             await client.beta.threads.messages.list(  # type: ignore[call-arg]  # pylint: disable=unexpected-keyword-arg  # noqa: E501
-                "thread_WPTJKw22r54NrYVM35FfHqYN", user_id="user_1"
+                "thread_WPTJKw22r54NrYVM35FfHqYN", user="user_1"
             )
 
     return dummy_observer

@@ -38,7 +38,7 @@ def test_patcher_doesnt_change_any_behavior(
     patched = _patcher(lambda _: None, "module", "0.1.0", "function_name")(to_patched)
 
     assert patched(
-        *args, **kwargs, user_id="test", user_group_profile="test"
+        *args, **kwargs, user="test", user_group_profile="test"
     ) == to_patched(*args, **kwargs)
     assert patched.__name__ == to_patched.__name__
     assert patched.__doc__ == to_patched.__doc__
@@ -63,7 +63,7 @@ def test_patcher_calls_observer(
     patched = _patcher(observer.append, "module", "0.1.0", "function_name")(to_patched)
 
     before = datetime.now(timezone.utc)
-    patched(*args, **kwargs, user_id="test", user_group_profile="test")
+    patched(*args, **kwargs, user="test", user_group_profile="test")
     after = datetime.now(timezone.utc)
 
     assert len(observer) == 1
@@ -88,7 +88,7 @@ def test_watched_is_immutable() -> None:
     mutable: list[int] = []
 
     _patcher(observer.append, "module", "0.1.0", "function_name")(to_patched)(
-        mutable, user_id="test", user_group_profile="test"
+        mutable, user="test", user_group_profile="test"
     )
 
     mutable.append(2)
@@ -124,7 +124,7 @@ def test_nebuly_args_are_intercepted() -> None:
     observer: list[InteractionWatch] = []
     patched = _patcher(observer.append, "module", "0.1.0", "function_name")(function)
 
-    patched(1, 2, user_id="user", user_group_profile="group_profile")
+    patched(1, 2, user="user", user_group_profile="group_profile")
 
     assert len(observer) == 1
     watched = observer[0]
@@ -162,7 +162,7 @@ def test_monkey_patch() -> None:
         return_value=True,
     ):
         result = ToPatch().to_patch_one(  # type: ignore  # pylint: disable=unexpected-keyword-arg  # noqa: E501
-            1, 2.0, c=3, user_id="test", user_group_profile="test"
+            1, 2.0, c=3, user="test", user_group_profile="test"
         )
     assert result == 6
 
@@ -199,7 +199,7 @@ def test_monkey_patch_missing_component_doesnt_break_other_patches() -> None:
         return_value=True,
     ):
         result = ToPatch().to_patch_one(  # type: ignore  # pylint: disable=unexpected-keyword-arg  # noqa: E501
-            1, 2.0, c=3, user_id="test", user_group_profile="test"
+            1, 2.0, c=3, user="test", user_group_profile="test"
         )
     assert result == 6
 

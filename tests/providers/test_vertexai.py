@@ -91,7 +91,7 @@ def test_vertexai_completion__no_context_manager(
                 result = model.predict(
                     "Give me ten interview questions for the role of program manager.",
                     **parameters,
-                    user_id="user_id",
+                    user="user_id",
                     user_group_profile="test_group",
                 )
             assert result is not None
@@ -284,7 +284,7 @@ def test_vertexai_completion_stream(
                     prompt="Give me two interview questions for the role of program "
                     "manager.",
                     **parameters,
-                    user_id="user_id",
+                    user="user_id",
                     user_group_profile="test_group",
                 ):
                     result += chunk.text
@@ -345,7 +345,7 @@ def test_vertexai_chat__no_context_manager(
                 result = chat.send_message(
                     "How many planets are there in the solar system?",
                     **parameters,
-                    user_id="user_id",
+                    user="user_id",
                     user_group_profile="test_group",
                 )
             assert result is not None
@@ -412,7 +412,7 @@ def test_vertexai_chat__no_context_manager__with_history(
                 result = chat.send_message(
                     "How many planets are there in the solar system?",
                     **parameters,
-                    user_id="user_id",
+                    user="user_id",
                     user_group_profile="test_group",
                 )
 
@@ -531,7 +531,7 @@ async def test_vertexai_chat__async(palm_completion: TextGenerationResponse) -> 
                 result = await chat.send_message_async(
                     "How many planets are there in the solar system?",
                     **parameters,
-                    user_id="user_id",
+                    user="user_id",
                     user_group_profile="test_group",
                 )
 
@@ -591,7 +591,7 @@ def test_vertexai_chat__stream(
                 for chunk in chat.send_message_streaming(
                     message="How many planets are there in the solar system?",
                     **parameters,
-                    user_id="user_id",
+                    user="user_id",
                     user_group_profile="test_group",
                 ):
                     result += chunk.text

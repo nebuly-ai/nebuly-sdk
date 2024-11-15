@@ -278,8 +278,8 @@ def test_langchain__chain_with_function_tool(
             "calculating lengths of words."
         )
         prompt = OpenAIFunctionsAgent.create_prompt(system_message=system_message)
-        agent = OpenAIFunctionsAgent(llm=llm, tools=tools, prompt=prompt)  # type: ignore
-        agent_executor = AgentExecutor(agent=agent, tools=tools)  # type: ignore
+        agent = OpenAIFunctionsAgent(llm=llm, tools=tools, prompt=prompt)
+        agent_executor = AgentExecutor(agent=agent, tools=tools)
         agent_executor.invoke(
             {"input": "how many letters in the word educa?"}, {"callbacks": [callback]}
         )

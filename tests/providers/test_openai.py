@@ -74,7 +74,7 @@ def test_openai_completion__old_format(openai_completion: Completion) -> None:
             result = openai.completions.create(  # type: ignore  # pylint: disable=no-member  # noqa: E501
                 model="gpt-3.5-turbo-instruct",
                 prompt="Say this is a test",
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             )
             assert result is not None
@@ -108,7 +108,7 @@ def test_openai_completion__no_context_manager(openai_completion: Completion) ->
             result = client.completions.create(  # type: ignore
                 model="gpt-3.5-turbo-instruct",
                 prompt="Say this is a test",
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             )
             assert result is not None
@@ -141,7 +141,7 @@ def test_openai_completion__context_manager(openai_completion: Completion) -> No
             )
 
             with new_interaction(
-                user_id="test_user", user_group_profile="test_group"
+                user="test_user", user_group_profile="test_group"
             ) as interaction:
                 interaction.set_input("Say this is a test")
                 result = client.completions.create(
@@ -180,7 +180,7 @@ async def test_openai_completion__async(openai_completion: Completion) -> None:
             result = await client.completions.create(  # type: ignore
                 model="gpt-3.5-turbo-instruct",
                 prompt="Say this is a test",
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             )
             assert result is not None
@@ -303,7 +303,7 @@ def test_openai_completion__stream(openai_completion_stream: list[Completion]) -
                 model="gpt-3.5-turbo-instruct",
                 prompt="Say this is a test",
                 stream=True,
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             ):
                 ...
@@ -349,7 +349,7 @@ async def test_openai_completion__stream_async(
                 model="gpt-3.5-turbo-instruct",
                 prompt="Say this is a test",
                 stream=True,
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             ):
                 ...
@@ -437,7 +437,7 @@ def test_openai_chat__function_call(
                 messages=messages,
                 functions=functions,
                 function_call="auto",
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             )
             assert result is not None
@@ -1537,7 +1537,7 @@ def test_openai_vision_models__url(
                         ],
                     },
                 ],
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
                 nebuly_tags={
                     "tenant": "ciao",

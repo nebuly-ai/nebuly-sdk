@@ -73,7 +73,7 @@ def test_aws_bedrock_invoke_model__a2i(
                 modelId=modelId,
                 accept=accept,
                 contentType=contentType,
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_user_group_profile",
             )
 
@@ -155,7 +155,7 @@ def test_aws_bedrock_invoke_model__anthropic(
                 modelId=modelId,
                 accept=accept,
                 contentType=contentType,
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_user_group_profile",
             )
 
@@ -238,7 +238,7 @@ def test_aws_bedrock_invoke_model__cohere(
                 modelId=modelId,
                 accept=accept,
                 contentType=contentType,
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_user_group_profile",
             )
 
@@ -333,7 +333,7 @@ def test_aws_bedrock_invoke_model_stream__anthropic(
             result = bedrock.invoke_model_with_response_stream(
                 modelId="anthropic.claude-v2",
                 body=body,
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_user_group_profile",
             )
 
@@ -429,7 +429,7 @@ def test_aws_bedrock_invoke_model_stream__cohere(
             result = bedrock.invoke_model_with_response_stream(
                 modelId="cohere.command-text-v14",
                 body=body,
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_user_group_profile",
             )
 

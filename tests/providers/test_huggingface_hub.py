@@ -39,7 +39,7 @@ def test_hf_hub_text_generation_str(hf_hub_text_generation_str: str) -> None:
             client = InferenceClient()
             result = client.text_generation(
                 "The huggingface_hub library is ",
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             )
 
@@ -76,7 +76,7 @@ def test_hf_hub_text_generation_stream(hf_hub_text_generation_list: list[str]) -
             for _ in client.text_generation(  # pylint: disable=not-an-iterable
                 "The huggingface_hub library is ",
                 stream=True,
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             ):
                 ...
@@ -115,10 +115,12 @@ async def test_hf_hub_text_generation_stream_async(
             nebuly_init(observer=mock_observer)
 
             client = AsyncInferenceClient()
-            async for _ in await client.text_generation(  # pylint: disable=not-an-iterable  # noqa: E501
+            async for (
+                _
+            ) in await client.text_generation(  # pylint: disable=not-an-iterable  # noqa: E501
                 "The huggingface_hub library is ",
                 stream=True,
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             ):
                 ...
@@ -169,7 +171,7 @@ def test_hf_hub_text_generation_details(
             result = client.text_generation(
                 "The huggingface_hub library is ",
                 details=True,
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             )
 
@@ -230,7 +232,7 @@ def test_hf_hub_text_generation_details_stream(
                 "The huggingface_hub library is ",
                 stream=True,
                 details=True,
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             ):
                 ...
@@ -268,7 +270,7 @@ async def test_hf_hub_text_generation_async(hf_hub_text_generation_str: str) -> 
             client = AsyncInferenceClient()
             result = await client.text_generation(
                 "The huggingface_hub library is ",
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             )
 
@@ -334,7 +336,7 @@ def test_hf_hub_conversational__no_context_manager__no_history(
             client = InferenceClient()
             result = client.conversational(
                 text="Wow, that's scary!",
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             )
 
@@ -374,7 +376,7 @@ def test_hf_hub_conversational__no_context_manager__with_history(
                 past_user_inputs=hf_hub_sample_input["conversation"][
                     "past_user_inputs"
                 ],
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             )
 
@@ -515,7 +517,7 @@ async def test_hf_hub_conversational__async(
             client = AsyncInferenceClient()
             result = await client.conversational(
                 text="Wow, that's scary!",
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             )
 

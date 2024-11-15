@@ -52,9 +52,7 @@ class PicklerHandler(abc.ABC):
     ) -> Any:
         return constructor(**kwargs)  # type: ignore
 
-    def _pickle_object(
-        self, obj: Any
-    ) -> tuple[
+    def _pickle_object(self, obj: Any) -> tuple[
         Callable[[Callable[[Any], Any], dict[str, Any]], Any],
         tuple[Callable[[Any], Any], dict[str, Any]],
     ]:

@@ -10,15 +10,17 @@ import pytest
 if sys.version_info < (3, 9, 0):
     pytest.skip("Cannot use google.generativeai in python<3.9", allow_module_level=True)
 
-import google.generativeai as palm  # type: ignore
-from google.generativeai.discuss import (  # type: ignore # pylint: disable=no-name-in-module  # noqa: E501
+import google.generativeai as palm  # type: ignore[import-untyped]
+from google.generativeai.discuss import (  # type: ignore[import-untyped] # pylint: disable=no-name-in-module  # noqa: E501
     ChatResponse,
 )
-from google.generativeai.text import (  # type: ignore  # pylint: disable=no-name-in-module  # noqa: E501
+from google.generativeai.text import (  # type: ignore[import-untyped]  # pylint: disable=no-name-in-module  # noqa: E501
     Completion,
 )
-from google.generativeai.types.discuss_types import MessageDict  # type: ignore
-from google.generativeai.types.safety_types import (  # type: ignore
+from google.generativeai.types.discuss_types import (  # type: ignore[import-untyped]
+    MessageDict,
+)
+from google.generativeai.types.safety_types import (  # type: ignore[import-untyped]
     HarmCategory,
     HarmProbability,
 )
@@ -81,7 +83,7 @@ def test_google_palm_completion__no_context_manager(
 
             result = palm.generate_text(  # pylint: disable=unexpected-keyword-arg
                 prompt="The opposite of hot is",
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             )
             assert result is not None
@@ -171,7 +173,7 @@ def test_google_palm_chat__first_interaction__no_context_manager(
 
             result = palm.chat(
                 messages=["Hello."],
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             )
             assert result is not None
@@ -289,7 +291,7 @@ def test_google_palm_chat__with_history__no_context_manager(
                     "Hello! How can I help you today?",
                     "What can you do?",
                 ],
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             )
             assert result is not None
@@ -380,7 +382,7 @@ def test_google_palm_chat__reply__no_context_manager(
 
             result = palm_chat_response.reply(
                 message="What can you do?",
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             )
 
@@ -451,7 +453,7 @@ async def test_google_palm_chat__async(palm_chat_response: ChatResponse) -> None
 
             result = await palm.chat_async(
                 messages=["Hello."],
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             )
             assert result is not None

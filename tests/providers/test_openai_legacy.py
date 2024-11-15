@@ -51,7 +51,7 @@ def test_openai_completion__no_context_manager(
                 prompt="Say this is a test",
                 max_tokens=7,
                 temperature=0,
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             )
             assert result is not None
@@ -232,7 +232,7 @@ async def test_openai_completion__async(openai_completion: dict[str, Any]) -> No
                 prompt="Say this is a test",
                 max_tokens=7,
                 temperature=0,
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             )
             assert result is not None
@@ -310,7 +310,7 @@ def test_openai_chat__function_call(openai_chat_function_call: dict[str, Any]) -
                 messages=messages,
                 functions=functions,
                 function_call="auto",
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             )
             assert result is not None
@@ -366,7 +366,7 @@ def test_openai_chat__no_context_manager(openai_chat: dict[str, Any]) -> None:
                     {"role": "system", "content": "You are a helpful assistant."},
                     {"role": "user", "content": "Hello!"},
                 ],
-                user_id="test_user",
+                user="test_user",
                 user_group_profile="test_group",
             )
             assert result is not None

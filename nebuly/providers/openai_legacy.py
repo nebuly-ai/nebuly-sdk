@@ -62,10 +62,9 @@ class OpenAILegacyDataExtractor(ProviderDataExtractor):
     def extract_output(
         self,
         stream: bool,
-        outputs: dict[str, Any]
-        | list[dict[str, Any]]
-        | OpenAIObject
-        | list[OpenAIObject],
+        outputs: (
+            dict[str, Any] | list[dict[str, Any]] | OpenAIObject | list[OpenAIObject]
+        ),
     ) -> str:
         if isinstance(outputs, list) and stream:
             return self._extract_output_generator(outputs)
