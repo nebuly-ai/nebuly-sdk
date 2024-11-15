@@ -120,9 +120,11 @@ class VertexAIDataExtractor(ProviderDataExtractor):
             prompt = get_argument(
                 args=self.original_args,
                 kwargs=self.original_kwargs,
-                arg_name="prompt"
-                if "TextGenerationModel" in self.function_name
-                else "message",
+                arg_name=(
+                    "prompt"
+                    if "TextGenerationModel" in self.function_name
+                    else "message"
+                ),
                 arg_idx=1,
             )
             history = self._extract_history()

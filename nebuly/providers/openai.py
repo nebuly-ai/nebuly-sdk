@@ -236,10 +236,9 @@ class OpenAIDataExtractor(ProviderDataExtractor):
     def extract_output(  # pylint: disable=too-many-return-statements
         self,
         stream: bool,
-        outputs: ChatCompletion
-        | Completion
-        | list[ChatCompletionChunk]
-        | list[Completion],
+        outputs: (
+            ChatCompletion | Completion | list[ChatCompletionChunk] | list[Completion]
+        ),
     ) -> str:
         if isinstance(outputs, list) and stream:
             return self._extract_output_generator(outputs)

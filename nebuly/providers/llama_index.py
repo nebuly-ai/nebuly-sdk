@@ -322,9 +322,9 @@ class LlamaIndexTrackingHandler(
             self._events_storage.add_event(
                 constructor=LLamaIndexEvent,
                 event_id=UUID(event_id),
-                parent_id=UUID(parent_id)
-                if parent_id and parent_id != "root"
-                else None,
+                parent_id=(
+                    UUID(parent_id) if parent_id and parent_id != "root" else None
+                ),
                 data=EventData(
                     type=event_type.value,
                     args=tuple(),

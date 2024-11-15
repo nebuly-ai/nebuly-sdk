@@ -400,9 +400,11 @@ class LangChainTrackingHandler(BaseCallbackHandler):  # noqa
             spans=_get_spans(events=self._events_storage.events),
             conversation_id=self.conversation_id,
             hierarchy={
-                event.event_id: event.hierarchy.parent_run_id
-                if event.hierarchy is not None
-                else None
+                event.event_id: (
+                    event.hierarchy.parent_run_id
+                    if event.hierarchy is not None
+                    else None
+                )
                 for event in self._events_storage.events.values()
             },
             feature_flags=self.nebuly_feature_flags,

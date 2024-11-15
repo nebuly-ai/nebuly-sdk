@@ -100,13 +100,15 @@ class SpanWatch:  # pylint: disable=too-many-instance-attributes
                 if self.generator_first_element_timestamp
                 else None
             ),
-            "provider_extras": {
-                k: v
-                for k, v in self.provider_extras.items()
-                if k != "nebuly_interaction"
-            }
-            if self.provider_extras is not None
-            else None,
+            "provider_extras": (
+                {
+                    k: v
+                    for k, v in self.provider_extras.items()
+                    if k != "nebuly_interaction"
+                }
+                if self.provider_extras is not None
+                else None
+            ),
             "rag_source": self.rag_source,
             "span_id": str(self.span_id),
             "media": self.media,
