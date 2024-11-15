@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import os
+import ssl
+
 from nebuly.entities import Package, SupportedVersion
 
 NEBULY_KWARGS = {
@@ -112,3 +115,19 @@ PACKAGES = (
         ("client.BaseClient._make_api_call",),
     ),
 )
+
+
+def get_ssl_verify_mode() -> ssl.VerifyMode:
+    verify_mode = os.getenv("NEBULY_SSL_VERIFY_MODE", "CERT_REQUIRED")
+    match verify_mode:
+        case "CERT_OPTIONAL":
+            return ssl.CERT_OPTIONAL
+        case "CERT_REQUIRED":
+            return ssl.CERT_REQUIRED
+        case "CERT_NONE":
+            return ssl.CERT_NONE
+        case _:
+            raise ValueError(
+                f"Invalid value for NEBULY_SSL_VERIFY_MODE: {verify_mode}. "
+                f"Supported values are: CERT_OPTIONAL, CERT_REQUIRED, CERT_NONE."
+            )

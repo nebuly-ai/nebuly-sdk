@@ -115,7 +115,9 @@ async def test_hf_hub_text_generation_stream_async(
             nebuly_init(observer=mock_observer)
 
             client = AsyncInferenceClient()
-            async for _ in await client.text_generation(  # pylint: disable=not-an-iterable  # noqa: E501
+            async for (
+                _
+            ) in await client.text_generation(  # pylint: disable=not-an-iterable  # noqa: E501
                 "The huggingface_hub library is ",
                 stream=True,
                 user_id="test_user",
