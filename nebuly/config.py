@@ -119,15 +119,14 @@ PACKAGES = (
 
 def get_ssl_verify_mode() -> ssl.VerifyMode:
     verify_mode = os.getenv("NEBULY_SSL_VERIFY_MODE", "CERT_REQUIRED")
-    match verify_mode:
-        case "CERT_OPTIONAL":
-            return ssl.CERT_OPTIONAL
-        case "CERT_REQUIRED":
-            return ssl.CERT_REQUIRED
-        case "CERT_NONE":
-            return ssl.CERT_NONE
-        case _:
-            raise ValueError(
-                f"Invalid value for NEBULY_SSL_VERIFY_MODE: {verify_mode}. "
-                f"Supported values are: CERT_OPTIONAL, CERT_REQUIRED, CERT_NONE."
-            )
+    if verify_mode == "CERT_OPTIONAL":
+        return ssl.CERT_OPTIONAL
+    elif verify_mode == "CERT_REQUIRED":
+        return ssl.CERT_REQUIRED
+    elif verify_mode == "CERT_NONE":
+        return ssl.CERT_NONE
+    else:
+        raise ValueError(
+            f"Invalid value for NEBULY_SSL_VERIFY_MODE: {verify_mode}. "
+            f"Supported values are: CERT_OPTIONAL, CERT_REQUIRED, CERT_NONE."
+        )
