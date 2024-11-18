@@ -93,7 +93,10 @@ def post_json_data(url: str, json_data: str, api_key: str) -> Any:
     )
 
     ctx = ssl.create_default_context()
-    ctx.verify_mode = config.get_ssl_verify_mode()
+    ssl_verify_mode = config.get_ssl_verify_mode()
+    if ssl_verify_mode is ssl.CERT_NONE:
+        ctx.check_hostname = False
+    ctx.verify_mode = ssl_verify_mode
 
     tries = 0
     while tries < 3:
