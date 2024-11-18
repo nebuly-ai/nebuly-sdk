@@ -3,10 +3,12 @@ from __future__ import annotations
 import json
 import logging
 import os
+import ssl
 import urllib.request
 from time import sleep
 from typing import Any
 
+from nebuly import config
 from nebuly.entities import InteractionWatch
 from nebuly.exceptions import InvalidNebulyKeyError
 
@@ -90,11 +92,20 @@ def post_json_data(url: str, json_data: str, api_key: str) -> Any:
         },
     )
 
-    # TODO: move retries out of this function
+    ctx = ssl.create_default_context()
+    ssl_verify_mode = config.get_ssl_verify_mode()
+    if ssl_verify_mode is ssl.CERT_NONE:
+        ctx.check_hostname = False
+    ctx.verify_mode = ssl_verify_mode
+
     tries = 0
     while tries < 3:
         try:
-            with urllib.request.urlopen(request, timeout=3) as response:  # nosec
+            with urllib.request.urlopen(
+                request,
+                timeout=3,
+                context=ctx,
+            ) as response:  # nosec[CWE-22]
                 response_body = response.read().decode("utf-8")
                 logger.debug("response_body: %s", response_body)
                 return response_body

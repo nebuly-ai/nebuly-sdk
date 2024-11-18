@@ -61,11 +61,13 @@ class HuggingFaceHubDataExtractor(ProviderDataExtractor):
     def extract_output(
         self,
         stream: bool,
-        outputs: str
-        | ConversationalOutput
-        | TextGenerationResponse
-        | list[str]
-        | list[TextGenerationStreamResponse],
+        outputs: (
+            str
+            | ConversationalOutput
+            | TextGenerationResponse
+            | list[str]
+            | list[TextGenerationStreamResponse]
+        ),
     ) -> str:
         if stream and isinstance(outputs, list):
             return self._extract_output_generator(outputs)
@@ -107,9 +109,11 @@ class HuggingFaceHubDataExtractor(ProviderDataExtractor):
                 result = cast(List[TextGenerationStreamResponse], outputs)
                 return "".join(
                     [
-                        output.generated_text  # type: ignore
-                        if output.generated_text is not None  # type: ignore
-                        else ""
+                        (
+                            output.generated_text  # type: ignore
+                            if output.generated_text is not None  # type: ignore
+                            else ""
+                        )
                         for output in result
                     ]
                 )

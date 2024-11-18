@@ -85,10 +85,9 @@ class HuggingFaceDataExtractor(ProviderDataExtractor):
     def extract_output(
         self,
         stream: bool,
-        outputs: Conversation
-        | list[Conversation]
-        | TextGeneration
-        | list[TextGeneration],
+        outputs: (
+            Conversation | list[Conversation] | TextGeneration | list[TextGeneration]
+        ),
     ) -> str | list[str]:
         if stream:
             return self._extract_output_generator(outputs)

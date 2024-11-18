@@ -63,5 +63,3 @@ install-dev: ## Install CloudSurfer with all the development dependencies
 
 .PHONY: setup
 setup: poetry install-dev ## Setup the dev environment
-	@poetry run pre-commit install
-	@poetry run pre-commit install-hooks
