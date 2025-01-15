@@ -10,6 +10,10 @@ from typing import Any
 
 from nebuly import config
 from nebuly.entities import InteractionWatch
+from nebuly.event_parsers import (
+    remove_base64_media_from_spans,
+    trim_all_base64_from_interaction_schema,
+)
 from nebuly.exceptions import InvalidNebulyKeyError
 
 logger = logging.getLogger(__name__)
@@ -70,6 +74,10 @@ class CustomJSONEncoder(json.JSONEncoder):
 def post_message(
     watched: InteractionWatch, api_key: str, anonymize: bool = True
 ) -> None:
+    # Remove base64 media from spans and trim all base64 from the interaction schema
+    remove_base64_media_from_spans(watched.spans)
+    trim_all_base64_from_interaction_schema(watched)
+
     message = json.dumps(
         {"body": watched, "anonymize": anonymize}, cls=CustomJSONEncoder
     )
