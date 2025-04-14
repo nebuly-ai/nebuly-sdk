@@ -171,7 +171,7 @@ def _remove_long_text(
             if isinstance(v, (dict, list)):
                 _remove_long_text(v)
             elif isinstance(v, str) and len(v.split()) > max_words:
-                item[k] = "Removed Text: size is too large"
+                item[k] = item[k][:50] + "..."
     elif isinstance(item, list):
         for v in item:
             _remove_long_text(v)
