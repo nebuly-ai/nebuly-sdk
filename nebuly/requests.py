@@ -156,7 +156,7 @@ def _crop_spans(
         message_dict = json.loads(message)
         _remove_long_text(message_dict["body"]["spans"])
         return json.dumps(message_dict)
-    except Exception:
+    except (json.JSONDecodeError, KeyError, AttributeError):
         return message
     
     
