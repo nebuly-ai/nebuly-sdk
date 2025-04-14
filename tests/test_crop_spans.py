@@ -7,7 +7,7 @@ from nebuly.requests import _crop_spans
 
 
 def test_crop_spans__is_working() -> None:
-    with open("./tests/huge_message.json") as f:
+    with open("./tests/huge_message.json", encoding="utf-8") as f:
         message = json.load(f)
 
     old_size = len(str(message).encode("utf-8")) / 1_000_000
@@ -31,7 +31,7 @@ def test_crop_spans__is_working() -> None:
         
 
 def test_crop_spans__is_doing_nothing_if_size_is_small() -> None:
-    with open("./tests/huge_message.json") as f:
+    with open("./tests/huge_message.json", encoding="utf-8") as f:
         message = json.load(f)
 
     old_size = len(str(message).encode("utf-8")) / 1_000_000
