@@ -81,6 +81,8 @@ def post_message(
     message = json.dumps(
         {"body": watched, "anonymize": anonymize}, cls=CustomJSONEncoder
     )
+    message = _crop_spans(message=message)
+
     url = os.environ.get(
         "NEBULY_API_URL",
         "https://backend.nebuly.com/event-ingestion/api/v1/events",
@@ -88,6 +90,7 @@ def post_message(
     if watched.api_key:
         api_key = watched.api_key
     post_json_data(url, message, api_key)
+    
 
 
 def post_json_data(url: str, json_data: str, api_key: str) -> Any:
@@ -140,3 +143,35 @@ def post_json_data(url: str, json_data: str, api_key: str) -> Any:
 
     logger.error("Failed to publish the interaction, giving up.")
     return None
+
+
+def _crop_spans(
+    message: str,
+    max_size: float = 0.5 
+) -> str:
+    message_size = len(str(message).encode("utf-8")) / 1_000_000
+    if message_size < max_size:
+        return message
+    try:
+        message_dict = json.loads(message)
+        _remove_long_text(message_dict["body"]["spans"])
+        return json.dumps(message_dict)
+    except Exception:
+        return message
+    
+    
+def _remove_long_text(
+    item: dict[str, Any] | list[Any] | Any, max_words: int = 20
+) -> None:
+    """
+    Recursively remove long text fields from a dictionary or list.
+    """
+    if isinstance(item, dict):
+        for k, v in item.items():
+            if isinstance(v, (dict, list)):
+                _remove_long_text(v)
+            elif isinstance(v, str) and len(v.split()) > max_words:
+                item[k] = "Removed Text: size is too large"
+    elif isinstance(item, list):
+        for v in item:
+            _remove_long_text(v)
