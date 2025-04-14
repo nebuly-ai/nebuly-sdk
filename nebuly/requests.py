@@ -156,9 +156,12 @@ def _crop_spans(
         message_dict = json.loads(message)
         _remove_long_text(message_dict["body"]["spans"])
         return json.dumps(message_dict)
-    except (json.JSONDecodeError, KeyError, AttributeError):
+    except (json.JSONDecodeError, KeyError, AttributeError) as e:
+        logger.warning(
+            "Failed to crop spans. Error: %s",
+            str(e)
+        )
         return message
-    
     
 def _remove_long_text(
     item: dict[str, Any] | list[Any] | Any, max_words: int = 20
