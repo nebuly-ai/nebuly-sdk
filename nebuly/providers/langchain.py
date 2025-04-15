@@ -153,6 +153,10 @@ def _parse_langchain_data(  # pylint: disable=too-many-return-statements
             data["messages"][-1], (HumanMessage, AIMessage, ToolMessage)
         ):
             return str(data["messages"][-1].content)
+        if "chat_history" in data:
+            messages: list[HumanMessage | AIMessage] = data["chat_history"]
+            human_messages = [m for m in messages if m.type == "human"]
+            return str(human_messages[-1].content)
         return "\n".join([f"{key}: {value}" for key, value in data.items()])
     if isinstance(data, list):
         data = data[-1]
