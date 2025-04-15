@@ -28,7 +28,7 @@ def test_crop_spans__is_working() -> None:
         _ = InteractionWatch(**message["body"])
     except (TypeError, ValueError, KeyError) as e:
         pytest.fail(f"Creating InteractionWatch raised an error: {e}")
-        
+
 
 def test_crop_spans__is_doing_nothing_if_size_is_small() -> None:
     with open("./tests/huge_message.json", encoding="utf-8") as f:

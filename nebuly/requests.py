@@ -90,7 +90,6 @@ def post_message(
     if watched.api_key:
         api_key = watched.api_key
     post_json_data(url, message, api_key)
-    
 
 
 def post_json_data(url: str, json_data: str, api_key: str) -> Any:
@@ -145,10 +144,7 @@ def post_json_data(url: str, json_data: str, api_key: str) -> Any:
     return None
 
 
-def _crop_spans(
-    message: str,
-    max_size: float = 0.5 
-) -> str:
+def _crop_spans(message: str, max_size: float = 0.5) -> str:
     message_size = len(str(message).encode("utf-8")) / 1_000_000
     if message_size < max_size:
         return message
@@ -157,12 +153,10 @@ def _crop_spans(
         _remove_long_text(message_dict["body"]["spans"])
         return json.dumps(message_dict)
     except (json.JSONDecodeError, KeyError, AttributeError) as e:
-        logger.warning(
-            "Failed to crop spans. Error: %s",
-            str(e)
-        )
+        logger.warning("Failed to crop spans. Error: %s", str(e))
         return message
-    
+
+
 def _remove_long_text(
     item: dict[str, Any] | list[Any] | Any, max_words: int = 20
 ) -> None:
